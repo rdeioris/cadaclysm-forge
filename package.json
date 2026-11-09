@@ -1,0 +1,20 @@
+{
+  "name": "cadaclysm-forge",
+  "version": "0.1.0",
+  "description": "A parametric CAD modeller in the browser that makes exact B-rep solids, on the cadaclysm kernel's web package.",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "repository": "github:rdeioris/cadaclysm-forge",
+  "homepage": "https://cadaclysm.blitter.studio/",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "node scripts/serve.mjs",
+    "serve": "node scripts/serve.mjs",
+    "test": "node test/run.mjs",
+    "test:browser": "node test/browser.mjs"
+  },
+  "devDependencies": {
+    "fflate": "0.8.3"
+  }
+}

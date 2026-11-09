@@ -1,0 +1,12 @@
+Third-party software in the forge
+=================================
+
+Quantico -- the display font (font/Quantico-Bold.ttf)
+SIL Open Font License 1.1: see font/OFL.txt
+
+The cadaclysm web package (pkg/, fetched by `npm run setup`) is not part of this
+repository and has its own licence: the LICENSE file in the package, and
+https://cadaclysm.blitter.studio/license
+
+fflate (a development dependency: scripts/setup.mjs unzips the package with it; not
+served with the page) is under the MIT License, in node_modules/fflate/LICENSE.

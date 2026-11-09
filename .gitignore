@@ -1,0 +1,8 @@
+node_modules/
+# The cadaclysm web package (npm run setup).
+pkg/
+pkg.next/
+# A license of your own.
+*.lic
+# What the headless check writes (test/browser.mjs --out).
+test/out/

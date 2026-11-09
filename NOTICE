@@ -1,0 +1,13 @@
+cadaclysm forge
+Copyright 2026 Blitter S.r.l. and Roberto De Ioris
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It includes the Quantico font, under the SIL Open Font License 1.1 (see
+THIRD-PARTY.txt and font/OFL.txt).
+
+It runs on the cadaclysm web package, which `npm run setup` fetches into pkg/. That
+package is not part of this product, is not covered by the Apache License, and has its
+own licence: https://cadaclysm.blitter.studio/license
+
+The cadaclysm name and logo are not covered by the Apache License.
