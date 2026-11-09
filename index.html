@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>cadaclysm — the forge</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+    /* The site's palette: graphite, ivory, the discharge blue for what is
+       selected or pressed; square corners, Quantico for the brand and the tabs. The tones
+       between the page and the panels are steps of the same graphite. */
+    @font-face { font-family: "Quantico"; src: url("font/Quantico-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+    :root {
+        color-scheme: dark;
+        --bg: #1C1B1A; --deep: #171615; --raised: #2A2927; --hover: #353432; --lit: #403E3B; --row: #242321;
+        --rule: #3A3937; --edge: #4A4845; --fg: #F1EFE8; --core: #E6F1FB; --muted: #B4B2A9; --glyph: #CFCDC5;
+        --dim: #7A7872; --faint: #4A4845; --blue: #378ADD; --blue-lit: #4E9AE3; --error: #E07070; --amber: #E8C070;
+        --display: "Quantico", "Arial Narrow", sans-serif;
+    }
+    body {
+        margin: 0; height: 100vh; display: flex; flex-direction: column;
+        background: var(--bg); color: var(--fg);
+        font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    header { padding: 8px 16px; display: flex; gap: 16px; align-items: center; }
+    h1 { display: flex; align-items: center; gap: 10px; margin: 0; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase; }
+    h1 img { width: 30px; height: 30px; }
+    h1 span { color: var(--muted); }
+    header a { color: var(--muted); }
+    header a:hover { color: var(--fg); }
+    #status { color: var(--muted); }
+    #status.error { color: var(--error); }
+    #props input[aria-invalid="true"] { outline: 1px solid var(--error); }
+    /* The toolbar: a tab per workspace (Sketch, Solid), each a row of
+       groups (Create, Modify ...) of buttons with a glyph over a label. The tab follows
+       what is selected -- a curve or a sketch opens Sketch, a body Solid -- and the
+       tabs switch it by hand. The layers and the file tools sit at the right, on
+       every tab. */
+    #tools { flex: none; border-bottom: 1px solid var(--rule); font-size: 13px; }
+    #tabs { display: flex; align-items: flex-end; gap: 2px; padding: 4px 10px 0; border-bottom: 1px solid var(--rule); background: var(--deep); }
+    #tabs button { background: none; border: 1px solid transparent; border-bottom: none; border-radius: 0; color: var(--muted); padding: 3px 14px; font: inherit; font-family: var(--display); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; }
+    #tabs button:hover { color: var(--fg); }
+    #tabs button[aria-selected=true] { background: var(--bg); border-color: var(--rule); color: var(--blue); margin-bottom: -1px; }
+    #tabs .spacer { flex: 1; }
+    #tabs #file-tools { display: flex; gap: 6px; align-items: center; padding-bottom: 4px; }
+    #tabs #file-tools button, #tabs #file-tools label { font-family: inherit; font-weight: 400; text-transform: none; letter-spacing: 0; }
+    #tabs #file-tools button { border: 1px solid var(--edge); border-radius: 0; background: var(--raised); padding: 2px 8px; }
+    #tabs #file-tools button:disabled { color: var(--dim); }
+    #tabs #file-tools select { border: 1px solid var(--edge); border-radius: 0; background: var(--raised); color: var(--fg); font: inherit; font-size: 12px; padding: 1px 4px; }
+    #tabs label { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+    .ribbon { display: none; padding: 6px 10px; gap: 18px; align-items: stretch; overflow-x: auto; }
+    .ribbon.open { display: flex; }
+    .ribbon .group { display: flex; flex-direction: column; gap: 3px; }
+    .ribbon .group > div { display: flex; gap: 4px; }
+    .ribbon .group > span { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: center; }
+    .ribbon button { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 54px; padding: 3px 6px 2px; background: none; border: 1px solid transparent; border-radius: 0; color: var(--fg); font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap; }
+    .ribbon button .g { width: 22px; height: 22px; color: var(--glyph); fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    svg.icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; flex: none; }
+    .ribbon button:hover { background: var(--raised); border-color: var(--rule); }
+    .ribbon button:hover .g { color: var(--fg); }
+    .ribbon button:disabled { color: var(--dim); cursor: default; }
+    .ribbon button:disabled .g { color: var(--faint); }
+    .ribbon button:disabled:hover { background: none; border-color: transparent; }
+    .ribbon button[aria-pressed=true] { background: var(--blue); border-color: var(--blue); color: var(--bg); }
+    .ribbon button[aria-pressed=true] .g { color: var(--bg); }
+    #panel button, #panel input {
+        background: var(--raised); color: inherit; border: 1px solid var(--edge); border-radius: 0;
+        padding: 2px 6px; font: inherit;
+    }
+    #panel button:hover { background: var(--lit); }
+    #panel button:disabled { color: var(--dim); background: var(--raised); }
+    /* The dialog: the active item's numbers and the tool's choices, a panel floating at
+       the top right of the views -- a title, a row
+       per field, and OK / Cancel while a tool is in progress. Rows show for the kinds
+       (`data-for`) the page says are in context. */
+    /* The view bar: which view fills the area -- Perspective, or one of the three
+       orthographic views to sketch in -- or the four in a grid; a view cube
+       flattened to buttons. */
+    #viewbar { position: absolute; top: 10px; right: 12px; z-index: 2; display: flex; gap: 2px; background: var(--raised); border: 1px solid var(--edge); border-radius: 0; padding: 2px; }
+    #viewbar button { background: none; border: 1px solid transparent; border-radius: 0; color: var(--muted); font: inherit; font-size: 11px; padding: 1px 8px; cursor: pointer; }
+    #viewbar button:hover { color: var(--fg); background: var(--hover); }
+    #viewbar button[aria-pressed=true] { background: var(--blue); color: var(--bg); border-color: var(--blue); }
+    #dialog { position: absolute; top: 44px; right: 12px; width: 250px; z-index: 2; background: var(--raised); border: 1px solid var(--edge); border-radius: 0; box-shadow: 0 6px 24px rgba(0, 0, 0, .45); font-size: 12px; color: var(--muted); }
+    #dialog[hidden] { display: none; }
+    #dialog-head { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--edge); color: var(--fg); font-size: 13px; font-weight: 600; }
+    #dialog-glyph { color: var(--blue); width: 1.1em; display: inline-flex; justify-content: center; }
+    #dialog-glyph svg.icon { width: 16px; height: 16px; }
+    #dialog-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #dialog-sub { color: var(--muted); font-weight: 400; font-size: 11px; white-space: nowrap; }
+    #dialog-body { padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; max-height: 45vh; overflow-y: auto; }
+    #dialog .row { display: grid; grid-template-columns: 5.5em 1fr; align-items: center; gap: 8px; min-height: 24px; }
+    #dialog .row.wide { grid-template-columns: 1fr; }
+    #dialog .row.buttons { grid-template-columns: 1fr 1fr; }
+    #dialog .row.buttons.three { grid-template-columns: 1fr 1fr 1fr; }
+    #dialog .row[hidden] { display: none; }
+    #dialog .row.sep { min-height: 0; border-top: 1px solid var(--rule); margin: 3px 0; }
+    #dialog input[type=number], #dialog select { width: 100%; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--edge); border-radius: 0; padding: 2px 5px; font: inherit; }
+    #dialog input[type=range] { width: 100%; }
+    #dialog input[type=color] { width: 44px; height: 22px; padding: 0 2px; background: var(--bg); border: 1px solid var(--edge); border-radius: 0; cursor: pointer; }
+    #dialog button { background: var(--hover); color: inherit; border: 1px solid var(--edge); border-radius: 0; padding: 2px 6px; font: inherit; }
+    #dialog button:hover { background: var(--lit); }
+    #dialog button[aria-pressed=true] { border-color: var(--blue); background: var(--blue); color: var(--bg); }
+    #dialog-note { color: var(--muted); font-size: 11px; line-height: 1.4; }
+    #dialog-note:empty { display: none; }
+    #dialog-note.error { color: var(--error); }
+    #dialog-foot { display: flex; gap: 6px; justify-content: flex-end; padding: 6px 10px; border-top: 1px solid var(--edge); }
+    #dialog-foot[hidden] { display: none; }
+    #dialog-ok { background: var(--blue) !important; color: var(--bg) !important; border-color: var(--blue) !important; font-weight: 600; padding: 2px 14px !important; }
+    #dialog-ok:hover { background: var(--blue-lit) !important; border-color: var(--blue-lit) !important; }
+    /* The timeline: the history as a strip of feature chips under the views
+       -- a chip per feature (a sketch with what is drawn on it, a body), the marker
+       where the document stands (`head`), the chips past it rolled back. */
+    #timeline { flex: none; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-top: 1px solid var(--rule); background: var(--deep); overflow-x: auto; min-height: 30px; }
+    #timeline-chips { display: flex; align-items: center; gap: 2px; position: relative; padding: 0 2px; }
+    #timeline .chip { display: flex; align-items: center; justify-content: center; width: 26px; height: 22px; border: 1px solid var(--rule); border-radius: 0; background: var(--raised); color: var(--fg); cursor: pointer; user-select: none; position: relative; font-size: 13px; }
+    #timeline .chip svg.icon { width: 15px; height: 15px; }
+    #timeline .chip:hover { background: var(--lit); }
+    #timeline .chip.selected { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+    #timeline .chip.rolled { opacity: .35; }
+    #timeline .chip.error::after { content: ""; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 0; background: var(--error); }
+    #timeline .marker { width: 11px; height: 26px; margin: 0 -2px; cursor: ew-resize; flex: none; background: linear-gradient(to right, transparent 4px, var(--blue) 4px, var(--blue) 7px, transparent 7px); }
+    #timeline .marker:hover { background: linear-gradient(to right, transparent 3px, var(--blue-lit) 3px, var(--blue-lit) 8px, transparent 8px); }
+    #timeline .step { background: none; border: 1px solid var(--rule); border-radius: 0; color: var(--muted); font: inherit; padding: 0 6px; height: 22px; cursor: pointer; }
+    #timeline .step:hover { color: var(--fg); background: var(--raised); }
+    #timeline .step:disabled { opacity: .35; cursor: default; }
+    #timeline-count { color: var(--dim); font-size: 11px; margin-left: 6px; white-space: nowrap; }
+    /* The foot: the hint for the item or the tool at hand and the document's counts. */
+    #foot { flex: none; display: flex; align-items: center; gap: 16px; padding: 4px 10px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); min-height: 22px; }
+    #hint { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* The progress dialog: a card in the middle of the page, over a dimmed backdrop,
+       while the worker builds a body -- what it builds, the kernel's phase, a bar, the
+       time so far and left. The scene behind keeps the solid the build started from. */
+    #progress { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(12, 13, 16, .45); }
+    #progress[hidden] { display: none; }
+    #progress-card { width: 340px; max-width: calc(100vw - 32px); background: var(--raised); border: 1px solid var(--edge); border-radius: 0; box-shadow: 0 10px 40px rgba(0, 0, 0, .55); padding: 14px 18px 12px; font-size: 12px; color: var(--muted); }
+    #progress-title { font-size: 13px; font-weight: 600; color: var(--fg); margin-bottom: 4px; }
+    #progress-what { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #progress .bar { display: block; width: 100%; height: 8px; margin: 10px 0 8px; background: var(--bg); border: 1px solid var(--edge); border-radius: 0; overflow: hidden; }
+    #progress-fill { display: block; height: 100%; width: 0; background: var(--blue); transition: width .1s linear; }
+    #progress-time { white-space: nowrap; }
+    #stats { white-space: nowrap; }
+    /* The panel on the left holds the document -- the curves, one row each -- and the
+       views on the right are one canvas (the View's, which draws the curves and bodies,
+       on WebGPU or WebGL2) with a transparent
+       2D overlay of the same size on top of it that draws the selected curve's handles
+       and takes every pointer event. */
+    #split { flex: 1; min-height: 0; display: flex; }
+    #panel {
+        flex: none; width: 270px; border-right: 1px solid var(--rule); display: flex; flex-direction: column;
+        font-size: 13px;
+    }
+    /* The browser: the document as a tree -- Bodies, then Sketches with what
+       is drawn on each plane -- each row a fold arrow, an eye, an icon and the name,
+       guide lines down the levels, the folders' eyes working everything under them. */
+    #panel-title { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 8px 10px 2px; }
+    #curves { list-style: none; margin: 0; padding: 2px 0; flex: 1; overflow-y: auto; }
+    #curves li {
+        display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px 0 4px; cursor: default;
+        user-select: none; white-space: nowrap;
+    }
+    #curves li:hover { background: var(--row); }
+    #curves li.selected { background: var(--hover); }
+    #curves li.active { background: var(--lit); box-shadow: inset 2px 0 var(--blue); }
+    #curves li.header { color: var(--fg); }
+    #curves li.header.top { font-weight: 600; }
+    #curves li.header.top:not(:first-child) { margin-top: 4px; }
+    #curves .guide { width: 14px; height: 100%; flex: none; border-left: 1px solid var(--rule); margin-left: 7px; }
+    #curves .fold { color: var(--muted); width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; flex: none; border-radius: 0; }
+    #curves .fold:hover { color: var(--fg); background: var(--lit); }
+    #curves .fold.none { visibility: hidden; }
+    /* The eye: shown or hidden, a click toggles it and selects nothing. */
+    #curves .eye { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--blue); flex: none; border-radius: 0; }
+    #curves .eye svg { width: 14px; height: 14px; pointer-events: none; }
+    #curves .eye.off { color: var(--dim); }
+    #curves .eye:hover { background: var(--lit); }
+    #curves .glyph { color: var(--muted); width: 18px; display: inline-flex; justify-content: center; flex: none; }
+    #curves .glyph svg.icon { width: 15px; height: 15px; }
+    #curves .glyph.folder { color: var(--amber); }
+    #curves .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #curves input.name { padding: 0 4px; min-width: 0; }
+    #curves .tag { color: var(--dim); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 0; }
+    #curves .name { flex: 1 0 40%; }
+    #curves .dot { width: 8px; height: 8px; border-radius: 0; background: var(--error); visibility: hidden; flex: none; }
+    #curves li.hidden .glyph, #curves li.hidden .name, #curves li.hidden .tag { opacity: .45; }
+    #curves li.open .dot { visibility: visible; background: var(--amber); }
+    #curves li.error .dot { visibility: visible; }
+    #curve-tools { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border-top: 1px solid var(--rule); }
+    #curve-tools button { flex: 1 0 30%; padding: 2px 0; }
+    #views { position: relative; flex: 1; min-width: 0; }
+    #views canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    #overlay { cursor: default; touch-action: none; }
+    /* A dimension's value typed over its label on a double-click. */
+    #views input.dim-edit { position: absolute; z-index: 3; width: 76px; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--blue); border-radius: 0; padding: 0 4px; height: 18px; font: 11px system-ui, sans-serif; }
+    #text-file { background: var(--raised); color: var(--fg); border: 1px solid var(--edge); border-radius: 0; padding: 12px; width: min(720px, 90vw); }
+    #text-file::backdrop { background: rgba(0, 0, 0, .5); }
+    #text-file p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+    #text-file textarea { width: 100%; height: 50vh; box-sizing: border-box; background: var(--bg); color: inherit; border: 1px solid var(--edge); border-radius: 0; font: 12px/1.4 ui-monospace, monospace; }
+    #text-file-tools { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+    #text-file button { background: var(--raised); color: inherit; border: 1px solid var(--edge); border-radius: 0; padding: 2px 10px; font: inherit; }
+</style>
+</head>
+<body>
+<!-- The icons: one symbol per curve kind, body kind and tool, line art on a 24 grid
+     in the current colour, used by the ribbon, the browser, the timeline and the dialog. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-line" viewBox="0 0 24 24"><path d="M4 20 L20 4"/></symbol>
+    <symbol id="i-polyline" viewBox="0 0 24 24"><path d="M3 18 L9 6 L14 15 L21 5"/></symbol>
+    <symbol id="i-rect" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/></symbol>
+    <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></symbol>
+    <symbol id="i-arc" viewBox="0 0 24 24"><path d="M4 18 A9 9 0 0 1 20 18"/></symbol>
+    <symbol id="i-ellipse" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="5.5"/></symbol>
+    <symbol id="i-polygon" viewBox="0 0 24 24"><path d="M12 3 L20 7.5 V16.5 L12 21 L4 16.5 V7.5 Z"/></symbol>
+    <symbol id="i-nurbs" viewBox="0 0 24 24"><path d="M3 17 C8 2 14 22 21 7"/></symbol>
+    <symbol id="i-polycurve" viewBox="0 0 24 24"><path d="M3 18 L9 18 A5 5 0 0 0 14 13 L14 8 A4 4 0 0 1 18 4 L21 4"/></symbol>
+    <symbol id="i-add-point" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v5 M12 16v5 M3 12h5 M16 12h5"/></symbol>
+    <symbol id="i-closed" viewBox="0 0 24 24"><path d="M5 16 A8 8 0 1 1 19 16 Z"/></symbol>
+    <symbol id="i-round" viewBox="0 0 24 24"><path d="M4 20 V10 Q4 4 10 4 H20"/><path d="M4 4 H8 M4 4 V8" stroke-dasharray="1.5 2"/></symbol>
+    <symbol id="i-merge" viewBox="0 0 24 24"><path d="M3 5 L10 12 L3 19 M10 12 H21"/></symbol>
+    <symbol id="i-snip" viewBox="0 0 24 24"><path d="M3 12 H9 M15 12 H21"/><path d="M9 12 L15 12" stroke-dasharray="2 2"/><path d="M12 4 V20"/></symbol>
+    <symbol id="i-explode" viewBox="0 0 24 24"><path d="M21 5 L14 12 L21 19 M3 12 H14"/></symbol>
+    <symbol id="i-c-coincident" viewBox="0 0 24 24"><path d="M3 19 L12 12 L21 17"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></symbol>
+    <symbol id="i-c-horizontal" viewBox="0 0 24 24"><path d="M3 16 H21"/><path d="M8 10 H16"/></symbol>
+    <symbol id="i-c-vertical" viewBox="0 0 24 24"><path d="M8 3 V21"/><path d="M14 8 V16"/></symbol>
+    <symbol id="i-c-parallel" viewBox="0 0 24 24"><path d="M4 19 L12 5 M12 19 L20 5"/></symbol>
+    <symbol id="i-c-perpendicular" viewBox="0 0 24 24"><path d="M4 20 H20 M12 20 V4"/></symbol>
+    <symbol id="i-c-tangent" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M3 8 H21"/></symbol>
+    <symbol id="i-c-concentric" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></symbol>
+    <symbol id="i-c-equal" viewBox="0 0 24 24"><path d="M5 9 H19 M5 15 H19"/></symbol>
+    <symbol id="i-c-midpoint" viewBox="0 0 24 24"><path d="M3 15 H21 M12 8 V15"/><circle cx="12" cy="15" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-c-symmetric" viewBox="0 0 24 24"><path d="M12 3 V21" stroke-dasharray="2 2"/><circle cx="6" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="12" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-c-fix" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.5" fill="currentColor" fill-opacity=".25"/><path d="M12 12.5 V21 M7 21 H17"/></symbol>
+    <symbol id="i-c-dimension" viewBox="0 0 24 24"><path d="M4 7 V17 M20 7 V17 M4 12 H20 M4 12 L7 10 M4 12 L7 14 M20 12 L17 10 M20 12 L17 14"/></symbol>
+    <symbol id="i-sketch" viewBox="0 0 24 24"><path d="M14 4 L20 10 L8 22 H2 V16 Z M11 7 L17 13"/></symbol>
+    <symbol id="i-plane-offset" viewBox="0 0 24 24"><path d="M2 20 L7 15 H22 L17 20 Z" stroke-dasharray="2 2"/><path d="M2 10 L7 5 H22 L17 10 Z" fill="currentColor" fill-opacity=".25"/><path d="M12 17 V11 M10 13 L12 11 L14 13"/></symbol>
+    <symbol id="i-plane-angle" viewBox="0 0 24 24"><path d="M2 20 L7 15 H22 L17 20 Z" stroke-dasharray="2 2"/><path d="M2 20 L6 4 H21 L17 20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-plane-mid" viewBox="0 0 24 24"><path d="M2 22 L6 18 H22 L18 22 Z M2 6 L6 2 H22 L18 6 Z" stroke-dasharray="2 2"/><path d="M2 14 L6 10 H22 L18 14 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-plane-points" viewBox="0 0 24 24"><path d="M2 18 L8 8 H22 L16 18 Z" fill="currentColor" fill-opacity=".25"/><circle cx="6" cy="16" r="1.8" fill="currentColor"/><circle cx="16" cy="16" r="1.8" fill="currentColor"/><circle cx="13" cy="10" r="1.8" fill="currentColor"/></symbol>
+    <symbol id="i-plane-path" viewBox="0 0 24 24"><path d="M4 21 C4 12 12 8 21 8" stroke-dasharray="2 2"/><path d="M1 17 L4 11 V17 L7 23 V17 Z" fill="currentColor" fill-opacity=".25"/><path d="M1 23 L1 17 L4 11 L7 17 L7 23 Z"/></symbol>
+    <symbol id="i-plane-face" viewBox="0 0 24 24"><path d="M4 12 L12 16 L20 12 V20 L12 24 L4 20 Z M12 16 V24" /><path d="M4 12 L12 8 L20 12 L12 16 Z" fill="currentColor" fill-opacity=".25"/><path d="M12 12 V2"/></symbol>
+    <symbol id="i-surface" viewBox="0 0 24 24"><path d="M3 9 L13 4 L21 10 L11 15 Z" fill="currentColor" fill-opacity=".3"/><path d="M3 9 V15 L11 21 L21 16 V10 M11 15 V21"/></symbol>
+    <symbol id="i-extrusion" viewBox="0 0 24 24"><path d="M5 15 L12 19 L19 15 V9 L12 5 L5 9 Z M5 9 L12 13 L19 9 M12 13 V19"/></symbol>
+    <symbol id="i-solid" viewBox="0 0 24 24"><path d="M5 15 L12 19 L19 15 V9 L12 5 L5 9 Z" fill="currentColor" fill-opacity=".25"/><path d="M5 9 L12 13 L19 9 M12 13 V19"/></symbol>
+    <symbol id="i-prism" viewBox="0 0 24 24"><path d="M5 15 L12 19 L19 15 V9 L12 5 L5 9 Z" fill="currentColor" fill-opacity=".25"/><path d="M5 9 L12 13 L19 9 M12 13 V19"/></symbol>
+    <symbol id="i-revolution" viewBox="0 0 24 24"><path d="M8 4 C4 7 6 11 9 12 C5 14 4 19 9 20 M16 4 C20 7 18 11 15 12 C19 14 20 19 15 20"/><path d="M12 2 V22" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-sweep" viewBox="0 0 24 24"><path d="M5 18 C11 18 11 6 19 6"/><circle cx="5" cy="18" r="2.5"/><ellipse cx="19" cy="6" rx="1.5" ry="2.5"/></symbol>
+    <symbol id="i-loft" viewBox="0 0 24 24"><path d="M3 19 H21 M4 19 L8 6 M20 19 L16 6"/><ellipse cx="12" cy="6" rx="4" ry="2"/></symbol>
+    <symbol id="i-join" viewBox="0 0 24 24"><rect x="4" y="4" width="11" height="11" fill="currentColor" fill-opacity=".3"/><rect x="9" y="9" width="11" height="11" fill="currentColor" fill-opacity=".3"/></symbol>
+    <symbol id="i-cut" viewBox="0 0 24 24"><path d="M4 4 H20 V12 H12 V20 H4 Z" fill="currentColor" fill-opacity=".3"/><path d="M12 12 H20 V20 H12 Z" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-intersect" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/><path d="M12 6.8 A6 6 0 0 1 12 17.2 A6 6 0 0 1 12 6.8 Z" fill="currentColor" fill-opacity=".45" stroke="none"/></symbol>
+    <symbol id="i-thicken" viewBox="0 0 24 24"><path d="M3 14 C8 9 16 9 21 14"/><path d="M3 19 C8 14 16 14 21 19"/><path d="M3 14 V19 M21 14 V19"/><path d="M12 4 V9 M10 7 L12 9 L14 7"/></symbol>
+    <symbol id="i-shell" viewBox="0 0 24 24"><path d="M4 7 L12 11 L20 7 M4 7 V16 L12 20 L20 16 V7 M12 11 V20"/><path d="M4 7 L12 3 L20 7" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-fillet" viewBox="0 0 24 24"><path d="M20 20 H4 V10 Q4 4 10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-chamfer" viewBox="0 0 24 24"><path d="M20 20 H4 V10 L10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6 H10 L12 8 H21 V19 H3 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14"/><path d="M3 16 L9 10 L14 15 L17 12 L21 16"/><circle cx="16" cy="9" r="1.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12 C6 5 18 5 22 12 C18 19 6 19 2 12 Z"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M2 12 C6 5 18 5 22 12 C18 19 6 19 2 12 Z"/><path d="M4 20 L20 4"/></symbol>
+    <symbol id="i-trim" viewBox="0 0 24 24"><path d="M4 5 H20 V19 H4 Z"/><path d="M4 19 L20 5" stroke-dasharray="2 2"/><path d="M4 19 L20 5 L20 19 Z" fill="currentColor" fill-opacity=".25" stroke="none"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M5 8 L12 4 L19 8 V16 L12 20 L5 16 Z" fill="currentColor" fill-opacity=".25"/><path d="M5 8 L12 12 L19 8 M12 12 V20"/></symbol>
+    <symbol id="i-cylinder" viewBox="0 0 24 24"><path d="M5 6 V18 A7 2.5 0 0 0 19 18 V6" fill="currentColor" fill-opacity=".25"/><ellipse cx="12" cy="6" rx="7" ry="2.5"/></symbol>
+    <symbol id="i-sphere" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor" fill-opacity=".25"/><path d="M4 12 A8 3 0 0 0 20 12"/><path d="M4 12 A8 3 0 0 1 20 12" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-cone" viewBox="0 0 24 24"><path d="M12 3 L5 18 A7 2.5 0 0 0 19 18 Z" fill="currentColor" fill-opacity=".25"/><path d="M5 18 A7 2.5 0 0 1 19 18" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-pyramid" viewBox="0 0 24 24"><path d="M12 3 L4 17 L11 21 L20 16 Z" fill="currentColor" fill-opacity=".25"/><path d="M12 3 L11 21"/><path d="M4 17 L13 13 L20 16 M12 3 L13 13" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-torus" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9.5" ry="6" fill="currentColor" fill-opacity=".25"/><path d="M8 11.5 A4.5 2 0 0 0 16 11.5 M9 12.5 A3.5 1.6 0 0 1 15 12.5"/></symbol>
+    <symbol id="i-coil" viewBox="0 0 24 24"><path d="M7 4 C21 5 21 8 12 8 C3 8 3 11 12 11 C21 11 21 14 12 14 C3 14 3 17 12 17 C21 17 21 20 7 20"/></symbol>
+    <symbol id="i-pipe" viewBox="0 0 24 24"><path d="M3 20 H10 A9 9 0 0 0 19 11 V3 H13 V11 A3 3 0 0 1 10 14 H3 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-split" viewBox="0 0 24 24"><path d="M4 6 H11 L9 18 H4 Z M13 6 H20 V18 H11 Z" fill="currentColor" fill-opacity=".25"/><path d="M13 2 L10 22" stroke-dasharray="2 2"/></symbol>
+</svg>
+<header>
+    <h1><img src="mark-dark.svg" alt="" width="30" height="30">cadaclysm <span>forge</span></h1>
+    <span id="status">loading…</span>
+    <a href="https://cadaclysm.blitter.studio/" style="margin-left:auto">cadaclysm</a>
+</header>
+<div id="tools">
+    <div id="tabs">
+        <button id="tab-sketch" aria-selected="true">Sketch</button>
+        <button id="tab-solid" aria-selected="false">Solid</button>
+        <button id="tab-construct" aria-selected="false">Construct</button>
+        <span class="spacer"></span>
+        <span id="file-tools">
+            <label><input type="checkbox" id="layer-mesh" checked> surfaces</label>
+            <label><input type="checkbox" id="layer-edges" checked> curves</label>
+            <label><input type="checkbox" id="layer-isocurves"> isocurves</label>
+            <label><input type="checkbox" id="layer-measures"> measures</label>
+            <label><input type="checkbox" id="layer-images" checked> images</label>
+            <label title="how bodies with no look of their own are lit -- the showroom shows only on those; a body given a material in its dialog keeps that material's own lamps">light <select id="lighting"><option value="headlight">headlight</option><option value="studio">studio</option><option value="showroom">showroom</option></select></label>
+            <button id="stl" disabled>stl</button>
+            <button id="glb" disabled>glb</button>
+            <button id="obj" disabled>obj</button>
+            <button id="step" disabled title="the bodies' exact B-reps, as one STEP file">step</button>
+            <button id="save">save</button>
+            <button id="load">load</button>
+            <input type="file" id="load-file" accept=".json,application/json" hidden>
+        </span>
+    </div>
+    <div class="ribbon open" id="ribbon-sketch">
+        <div class="group">
+            <div>
+                <button data-kind="line" title="a line (L)"><svg class="g"><use href="#i-line"/></svg>line</button>
+                <button data-kind="polyline"><svg class="g"><use href="#i-polyline"/></svg>polyline</button>
+                <button data-kind="rect" title="a rectangle (R)"><svg class="g"><use href="#i-rect"/></svg>rectangle</button>
+                <button data-kind="circle" title="a circle (C)"><svg class="g"><use href="#i-circle"/></svg>circle</button>
+                <button data-kind="arc"><svg class="g"><use href="#i-arc"/></svg>arc</button>
+                <button data-kind="ellipse"><svg class="g"><use href="#i-ellipse"/></svg>ellipse</button>
+                <button data-kind="polygon" title="a regular polygon (P)"><svg class="g"><use href="#i-polygon"/></svg>polygon</button>
+                <button data-kind="nurbs"><svg class="g"><use href="#i-nurbs"/></svg>spline</button>
+            </div>
+            <span>create</span>
+        </div>
+        <div class="group">
+            <div>
+                <button id="closed" aria-pressed="false" disabled title="close the selected polyline, spline or polycurve: by a segment, smoothly, or by a line between its ends; one that is closed opens"><svg class="g"><use href="#i-closed"/></svg>close</button>
+                <button id="sketch-fillet" aria-pressed="false" disabled title="round the corners of the selected rectangle, polygon, polyline or polycurve, or the corner where two selected lines meet"><svg class="g"><use href="#i-round"/></svg>fillet</button>
+                <button id="merge" aria-pressed="false" disabled title="join the selected curves end to end into one polycurve -- click more, then OK"><svg class="g"><use href="#i-merge"/></svg>merge</button>
+                <button id="explode" aria-pressed="false" disabled title="break the selected polycurve into its pieces"><svg class="g"><use href="#i-explode"/></svg>explode</button>
+                <button id="sketch-trim" aria-pressed="false" disabled title="then click a piece of a selected curve, between where other curves cross it, to remove it"><svg class="g"><use href="#i-snip"/></svg>trim</button>
+                <button id="surface" aria-pressed="false" disabled title="a surface over the selected closed curve, or the curves that close a loop together"><svg class="g"><use href="#i-surface"/></svg>surface</button>
+            </div>
+            <span>modify</span>
+        </div>
+        <div class="group">
+            <div>
+                <button data-constrain="coincident" aria-pressed="false" title="hold two points together -- or a point on a line, an arc or a circle: click them on a sketch"><svg class="g"><use href="#i-c-coincident"/></svg>coincident</button>
+                <button data-constrain="horizontal" aria-pressed="false" title="hold a line level -- or two points at one height: click it, or them, on a sketch"><svg class="g"><use href="#i-c-horizontal"/></svg>horizontal</button>
+                <button data-constrain="vertical" aria-pressed="false" title="hold a line upright -- or two points one above the other: click it, or them, on a sketch"><svg class="g"><use href="#i-c-vertical"/></svg>vertical</button>
+                <button data-constrain="parallel" aria-pressed="false" title="hold two lines parallel: click them on a sketch"><svg class="g"><use href="#i-c-parallel"/></svg>parallel</button>
+                <button data-constrain="perpendicular" aria-pressed="false" title="hold two lines square to each other: click them on a sketch"><svg class="g"><use href="#i-c-perpendicular"/></svg>perpendicular</button>
+                <button data-constrain="tangent" aria-pressed="false" title="hold a line and an arc or circle, or two arcs or circles, tangent: click them on a sketch"><svg class="g"><use href="#i-c-tangent"/></svg>tangent</button>
+                <button data-constrain="concentric" aria-pressed="false" title="give two arcs or circles one centre: click them on a sketch"><svg class="g"><use href="#i-c-concentric"/></svg>concentric</button>
+                <button data-constrain="equal" aria-pressed="false" title="hold two lines at one length, or two arcs or circles at one radius: click them on a sketch"><svg class="g"><use href="#i-c-equal"/></svg>equal</button>
+                <button data-constrain="midpoint" aria-pressed="false" title="hold a point at the middle of a line: click the point and the line on a sketch"><svg class="g"><use href="#i-c-midpoint"/></svg>midpoint</button>
+                <button data-constrain="symmetric" aria-pressed="false" title="hold two points mirrored about a line: click the two points, then the line, on a sketch"><svg class="g"><use href="#i-c-symmetric"/></svg>symmetric</button>
+                <button data-constrain="fix" aria-pressed="false" title="hold a point or a curve where it is: click it on a sketch"><svg class="g"><use href="#i-c-fix"/></svg>fix</button>
+                <button data-constrain="dimension" aria-pressed="false" title="dimension: a line's length (Enter), two points' distance (shift: across or up), two lines' angle, a point's or a circle's distance from a line, a circle's radius (Enter; shift: diameter) -- click them on a sketch; double-click a dimension to type its value"><svg class="g"><use href="#i-c-dimension"/></svg>dimension</button>
+            </div>
+            <span>constrain</span>
+        </div>
+        <div class="group">
+            <div>
+                <button id="add-sketch"><svg class="g"><use href="#i-sketch"/></svg>new sketch</button>
+            </div>
+            <span>sketch</span>
+        </div>
+    </div>
+    <div class="ribbon" id="ribbon-solid">
+        <div class="group">
+            <div>
+                <button id="extrude" aria-pressed="false" title="then click a curve (to a sheet), a surface (to a solid), or a face of a solid (to join or cut) or of a sheet"><svg class="g"><use href="#i-extrusion"/></svg>extrude</button>
+                <button id="revolve" aria-pressed="false" title="then click the curve to revolve, and place the axis"><svg class="g"><use href="#i-revolution"/></svg>revolve</button>
+                <button id="sweep" aria-pressed="false" title="then click the curve or surface to sweep, then its path"><svg class="g"><use href="#i-sweep"/></svg>sweep</button>
+                <button id="loft" aria-pressed="false" title="then click the profiles in order -- surfaces (a solid) or curves (a sheet), each on its own plane; two rule straight, more run smooth through them all"><svg class="g"><use href="#i-loft"/></svg>loft</button>
+                <button id="add-sketch-solid" title="a new sketch -- on a plane, at an angle, along a path or on a face"><svg class="g"><use href="#i-sketch"/></svg>new sketch</button>
+            </div>
+            <span>create</span>
+        </div>
+        <div class="group">
+            <div>
+                <button data-quick="box" title="a box on the selected sketch's plane (Top without one) -- its sizes in the dialog"><svg class="g"><use href="#i-box"/></svg>box</button>
+                <button data-quick="cylinder" title="a cylinder standing on the selected sketch's plane"><svg class="g"><use href="#i-cylinder"/></svg>cylinder</button>
+                <button data-quick="sphere" title="a sphere about the selected sketch's origin"><svg class="g"><use href="#i-sphere"/></svg>sphere</button>
+                <button data-quick="cone" title="a cone standing on the selected sketch's plane"><svg class="g"><use href="#i-cone"/></svg>cone</button>
+                <button data-quick="pyramid" title="a pyramid standing on the selected sketch's plane -- its sides, radius and height in the dialog"><svg class="g"><use href="#i-pyramid"/></svg>pyramid</button>
+                <button data-quick="torus" title="a torus lying in the selected sketch's plane"><svg class="g"><use href="#i-torus"/></svg>torus</button>
+                <button data-quick="coil" title="a coiled round wire -- a spring -- standing on the selected sketch's plane"><svg class="g"><use href="#i-coil"/></svg>coil</button>
+                <button id="pipe" aria-pressed="false" title="then click the curve the pipe runs along -- its radius and wall in the dialog"><svg class="g"><use href="#i-pipe"/></svg>pipe</button>
+            </div>
+            <span>primitives</span>
+        </div>
+        <div class="group">
+            <div>
+                <button id="join" aria-pressed="false" disabled title="join the selected solids -- one selected, then click the others and OK (J)"><svg class="g"><use href="#i-join"/></svg>join</button>
+                <button id="cut" aria-pressed="false" disabled title="cut a tool out of the selected solid -- the tool selected too (active), or click it"><svg class="g"><use href="#i-cut"/></svg>cut</button>
+                <button id="intersect" aria-pressed="false" disabled title="what the selected solid shares with a tool -- the tool selected too (active), or click it"><svg class="g"><use href="#i-intersect"/></svg>intersect</button>
+                <button id="split" aria-pressed="false" disabled title="split the selected solid into bodies -- then click a face (its whole plane), a closed curve (pushed straight through), or a body or a sketch in the list, or pick Top, Front or Right in the dialog"><svg class="g"><use href="#i-split"/></svg>split</button>
+                <button id="shell" aria-pressed="false" disabled title="hollow a solid, picking the faces to leave open"><svg class="g"><use href="#i-shell"/></svg>shell</button>
+                <button id="thicken" aria-pressed="false" disabled title="make the selected sheet a solid of a thickness -- set in the dialog, negative for the other side"><svg class="g"><use href="#i-thicken"/></svg>thicken</button>
+                <button id="fillet" aria-pressed="false" disabled title="round a solid's edges"><svg class="g"><use href="#i-fillet"/></svg>fillet</button>
+                <button id="chamfer" aria-pressed="false" disabled title="chamfer a solid's edges (H)"><svg class="g"><use href="#i-chamfer"/></svg>chamfer</button>
+                <button id="remove" aria-pressed="false" disabled title="take a fillet or a chamfer off the selected solid -- then click its face"><svg class="g"><use href="#i-fillet"/></svg>remove</button>
+                <button id="trim" aria-pressed="false" disabled title="trim a sheet by a solid or a curve -- select either, click the other, then pick the pieces (T)"><svg class="g"><use href="#i-trim"/></svg>trim</button>
+            </div>
+            <span>modify</span>
+        </div>
+    </div>
+    <div class="ribbon" id="ribbon-construct">
+        <div class="group">
+            <div>
+                <button data-plane-mode="offset" title="a plane parallel to Top, Front or Right, an offset along its normal -- set in the dialog"><svg class="g"><use href="#i-plane-offset"/></svg>offset plane</button>
+                <button data-plane-mode="angle" title="a plane hinged on a line and turned out of its sketch by an angle -- then click the line in the list"><svg class="g"><use href="#i-plane-angle"/></svg>at angle</button>
+                <button data-plane-mode="mid" title="the plane midway between two planes -- then click two sketches in the list or flat faces in a view, or Top, Front or Right in the dialog"><svg class="g"><use href="#i-plane-mid"/></svg>midplane</button>
+                <button data-plane-mode="points" title="the plane through three points -- then click three curve ends in any view: its origin, towards its x, and a third it leans to"><svg class="g"><use href="#i-plane-points"/></svg>3 points</button>
+                <button data-plane-mode="path" title="a plane square across a curve at its start -- then click the curve in the list"><svg class="g"><use href="#i-plane-path"/></svg>along path</button>
+                <button data-plane-mode="face" title="a plane on a flat face of a body -- then click the face in a view"><svg class="g"><use href="#i-plane-face"/></svg>on face</button>
+            </div>
+            <span>planes</span>
+        </div>
+        <div class="group">
+            <div>
+                <button id="image-add" title="a reference image on the sketch plane, to trace over -- its size, place, angle and opacity in the dialog; not saved with the document"><svg class="g"><use href="#i-image"/></svg>image</button>
+                <input type="file" id="image-file" accept="image/*" hidden>
+            </div>
+            <span>reference</span>
+        </div>
+    </div>
+</div>
+<div id="split">
+    <aside id="panel">
+        <div id="panel-title">browser</div>
+        <ul id="curves"></ul>
+        <div id="curve-tools">
+            <button id="duplicate" disabled>duplicate</button>
+            <button id="rename" disabled>rename</button>
+            <button id="delete" disabled>delete</button>
+        </div>
+    </aside>
+    <div id="views">
+        <canvas id="view"></canvas>
+        <canvas id="overlay"></canvas>
+        <div id="viewbar">
+            <button data-view="0">Top</button>
+            <button data-view="2">Front</button>
+            <button data-view="3">Right</button>
+            <button data-view="1" aria-pressed="true">Perspective</button>
+            <button data-view="quad" title="the four views">⊞</button>
+        </div>
+        <!-- The dialog: the active item's fields, the tool in progress's choices. The
+             controls keep their ids: the page's handlers are theirs. -->
+        <div id="dialog" hidden>
+            <div id="dialog-head"><span id="dialog-glyph"></span><span id="dialog-title"></span><span id="dialog-sub"></span></div>
+            <div id="dialog-body">
+                <label class="row" data-for="nurbs">degree <select id="degree" disabled><option>2</option><option selected>3</option></select></label>
+                <label class="row" data-for="nurbs-point">weight <span style="display:flex;gap:6px;align-items:center"><input type="range" id="weight" min="0" max="1" step="0.01" value="0.5" disabled> <span id="weight-value"></span></span></label>
+                <label class="row" data-for="body">colour <span style="display:flex;gap:6px;align-items:center"><input type="color" id="look-colour" value="#a5a5a9"><button id="look-reset" title="the default grey">reset</button></span></label>
+                <label class="row" data-for="body">material <select id="look-material"><option value="plastic">plastic</option><option value="metal">metal</option><option value="matte">matte (rubber)</option><option value="paint">gloss paint</option><option value="brushed">brushed metal</option><option value="glass">glass (dithered)</option></select></label>
+                <label class="row" data-for="glass">opacity <input type="range" id="look-opacity" min="0.05" max="0.95" step="0.05" value="0.35"></label>
+                <label class="row" data-for="image">width <input type="number" id="image-width" value="100" min="0.1" step="1"></label>
+                <label class="row" data-for="image">x <input type="number" id="image-x" value="0" step="1"></label>
+                <label class="row" data-for="image">y <input type="number" id="image-y" value="0" step="1"></label>
+                <label class="row" data-for="image">angle° <input type="number" id="image-angle" value="0" step="1"></label>
+                <label class="row" data-for="image">opacity <input type="range" id="image-opacity" min="0.05" max="1" step="0.05" value="0.6"></label>
+                <div class="row buttons" data-for="image">
+                    <button id="image-flip-x" title="mirror left to right">flip ↔</button>
+                    <button id="image-flip-y" title="mirror top to bottom">flip ↕</button>
+                </div>
+                <label class="row" data-for="extrusion solid prism press">distance <input type="number" id="height" value="20" min="-500" max="500" step="1"></label>
+                <label class="row" data-for="extrusion solid">taper° <input type="number" id="taper" value="0" min="-89" max="89" step="1"></label>
+                <label class="row" data-for="revolution axis">angle° <input type="number" id="angle" value="360" min="1" max="360" step="1"></label>
+                <label class="row" data-for="shell shellmode thicken">thickness <input type="number" id="thickness" value="2" min="-500" max="500" step="0.5"></label>
+                <label class="row" data-for="fillet refillet rechamfer"><span id="radius-label">radius</span> <input type="number" id="radius" value="2" min="0.01" max="500" step="0.5"></label>
+                <div class="row" data-for="picks"><span id="picks-label">picked</span><span id="picks"></span></div>
+                <div class="row buttons three" data-for="split-pick">
+                    <button data-split-plane="top">Top</button>
+                    <button data-split-plane="front">Front</button>
+                    <button data-split-plane="right">Right</button>
+                </div>
+                <label class="row" data-for="operation">operation <select id="operation"><option value="new">new body</option><option value="join">join</option><option value="cut">cut</option><option value="intersect">intersect</option></select></label>
+                <span id="sketch-tools" data-for="sketch" style="display: contents">
+                    <label class="row">plane <select id="mode"><option value="offset">offset</option><option value="angle">at angle</option><option value="path">along path</option><option value="face">on face</option><option value="mid">midplane</option><option value="points">3 points</option></select></label>
+                    <label class="row" id="base-field">from <select id="base"><option value="top">Top</option><option value="front">Front</option><option value="right">Right</option></select></label>
+                    <label class="row" id="offset-field">offset <input type="number" id="offset" value="0" min="-500" max="500" step="1"></label>
+                    <label class="row" id="tilt-field">tilt° <input type="number" id="tilt" value="0" min="-180" max="180" step="1"></label>
+                    <div class="row buttons three">
+                        <button id="pick-hinge" aria-pressed="false">hinge</button>
+                        <button id="pick-path" aria-pressed="false">path</button>
+                        <button id="pick-face" aria-pressed="false">face</button>
+                        <button id="pick-mid" aria-pressed="false">planes</button>
+                        <button id="pick-points" aria-pressed="false">points</button>
+                    </div>
+                    <div class="row buttons three" id="mid-origin">
+                        <button data-mid-plane="top">Top</button>
+                        <button data-mid-plane="front">Front</button>
+                        <button data-mid-plane="right">Right</button>
+                    </div>
+                    <div class="row wide"><button id="look-at" aria-pressed="false">look at</button></div>
+                </span>
+                <div class="row wide sep" data-for="props"></div>
+                <div id="props" style="display: contents"></div>
+                <div id="dialog-note" class="row wide"></div>
+            </div>
+            <div id="dialog-foot" hidden><button id="dialog-cancel">Cancel</button><button id="dialog-ok" title="Enter does the same">OK</button></div>
+        </div>
+    </div>
+</div>
+<div id="timeline">
+    <button class="step" id="timeline-back" title="undo (ctrl+Z)">◀</button>
+    <div id="timeline-chips"></div>
+    <button class="step" id="timeline-forward" title="redo (ctrl+shift+Z)">▶</button>
+    <span id="timeline-count"></span>
+</div>
+<div id="foot">
+    <span id="hint"></span>
+    <span id="stats"></span>
+</div>
+<div id="progress" hidden role="dialog" aria-live="polite">
+    <div id="progress-card">
+        <div id="progress-title"></div>
+        <div id="progress-what"></div>
+        <span class="bar"><span id="progress-fill"></span></span>
+        <div id="progress-time"></div>
+    </div>
+</div>
+<!-- Where no file dialog can open (the page in a sandboxed frame, as an artifact is), the
+     document goes through this text instead: copied out on a save, pasted in on a load. -->
+<dialog id="text-file">
+    <p id="text-file-title"></p>
+    <textarea id="text-file-body" spellcheck="false"></textarea>
+    <div id="text-file-tools">
+        <button id="text-file-copy">copy</button>
+        <button id="text-file-load">load</button>
+        <button id="text-file-close">close</button>
+    </div>
+</dialog>
+<script type="module" src="forge.js"></script>
+</body>
+</html>
