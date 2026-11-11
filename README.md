@@ -183,15 +183,6 @@ WebAssembly module (the kernel and the View), its loader (`index.js`) and `view.
 forge needs the web package from 0.14 on, which has `View.showSolid`'s face subsets,
 `mesh_file` and `document_evaluate_with`.
 
-> **TODO(0.14):** 0.14 is not released yet. Until it is, set the package up from a copy you
-> already have:
->
-> ```bash
-> npm run setup -- --zip path/to/cadaclysm-0.14.0-web.zip
-> ```
->
-> or from a local build's `pkg/` folder with `npm run setup -- --pkg path/to/pkg`.
-
 ## Run
 
 ```bash
