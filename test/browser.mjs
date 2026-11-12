@@ -218,7 +218,9 @@ async function checkExample(cdp, base, name, { webgl2, out, pins }) {
         throw e;
     } finally {
         await cdp.send("Target.closeTarget", { targetId }).catch(() => {});
-        rmSync(downloads, { recursive: true, force: true });
+        // Chrome can hold the download folder a moment after the tab closes (EBUSY on Windows):
+        // retried, and a folder left in the temp folder is no failure.
+        try { rmSync(downloads, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch { /* left behind */ }
     }
 }
 
