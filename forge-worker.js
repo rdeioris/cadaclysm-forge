@@ -33,7 +33,7 @@
 // `forge.test.result`) are forge-cameras.js's. Messages wait for the wasm, in order.
 import * as wasm from "./pkg/index.js";
 import { createForgeScene, createForgeRouter, VIEW_ID } from "./forge-scene.js";
-import { createViewerHost } from "./viewer-host.js";
+import { createViewerHost } from "./pkg/viewer-host.js";
 import { createForgeCameras } from "./forge-cameras.js";
 
 // Exported for test/worker-crash.mjs, which shims `self` and drives these directly.

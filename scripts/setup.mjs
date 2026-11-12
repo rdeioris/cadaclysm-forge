@@ -15,7 +15,7 @@ const VERSION = "0.14.0";
 const ASSET = `cadaclysm-${VERSION}-web-pro.zip`;
 const URL = `https://github.com/rdeioris/cadaclysm-sdk/releases/download/v${VERSION}/${ASSET}`;
 // What the forge loads from the package.
-const NEEDED = ["cadaclysm.js", "cadaclysm_bg.wasm", "index.js", "view.js"];
+const NEEDED = ["cadaclysm.js", "cadaclysm_bg.wasm", "index.js", "view.js", "viewer-host.js", "viewer-client.js", "view-canvas.js"];
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "pkg");

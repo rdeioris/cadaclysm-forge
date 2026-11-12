@@ -31,7 +31,7 @@ import * as sk from "./forge-constraints.js";
 import { V, Q, placeOf, LOOP_TOLERANCE, beziersOf, chainPieces, trimPieces, trimmedChains, chainCurve, roundCorner, roundPolyline, roundPolycurve, polygonPoints, worldAxis, parseEdges, closureText, isQuickKind } from "./forge-curves.js";
 import { typedBytes, createWantedSender } from "./forge-wanted.js";
 import { faceColoursOver } from "./forge-items.js";
-import { attachViewer } from "./viewer-client.js";
+import { attachViewer } from "./pkg/viewer-client.js";
 import { VIEW_ID, dropRedo, itemOfNode, createQuarantine } from "./forge-scene.js";
 import { cameraOf } from "./projection.js";
 import { cubeFaces, cubeFaceAt, aimAt } from "./view-cube.js";

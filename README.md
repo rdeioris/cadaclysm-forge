@@ -132,8 +132,8 @@ whole log, so the SDK's `Document` can open what the forge saved and re-evaluate
 
 The worker owns the package's `View`. It draws with WebGPU, or with WebGL2 where the browser
 has no WebGPU (`?backend=webgl2` forces the fallback). The page transfers its canvas to the
-worker as an `OffscreenCanvas` (`viewer-client.js` on the page, `viewer-host.js` in the
-worker). A body is shown with `View.showSolid` from the solid handle. On WebGPU the View
+worker as an `OffscreenCanvas` (`pkg/viewer-client.js` on the page, `pkg/viewer-host.js` in
+the worker). A body is shown with `View.showSolid` from the solid handle. On WebGPU the View
 draws the B-rep's exact surfaces (`surfaces: "exact"`), and on WebGL2 it draws the kernel's
 triangles (0.5 mm). Faces are numbered as the B-rep numbers them, on both backends and in
 picks, `setFaceColours` and the export tables. A trim's ghost, the faces a trim will drop,
@@ -179,7 +179,10 @@ npm run setup
 ```
 
 `npm run setup` puts the cadaclysm web package's `pkg/` folder here. That folder holds the
-WebAssembly module (the kernel and the View), its loader (`index.js`) and `view.js`. The
+WebAssembly module (the kernel and the View), its loader (`index.js`) and `view.js`. It also
+holds the page modules that go with the View, which the forge imports from there instead of
+keeping copies: `viewer-host.js` and `viewer-client.js` (a View in a worker, drawing a
+canvas the page hands over) and `view-canvas.js` (the canvas's capped drawing size). The
 forge needs the web package from 0.14 on, which has `View.showSolid`'s face subsets,
 `mesh_file` and `document_evaluate_with`.
 
@@ -217,10 +220,9 @@ npm test
   STEP and mesh export, picks, undo, redo, branches, drags and the crash quarantine.
 - `forge-constraints.mjs` tests the sketch solver layer on a real wasm sketch session.
 - `forge-input.mjs`, `forge-cameras.mjs`, `forge-order.mjs`, `forge-items.mjs`,
-  `forge-wanted.mjs`, `forge-canvas.mjs`, `projection.mjs`, `view-cube.mjs`,
-  `manipulator.mjs`, `viewer-client.mjs`, `viewer-host.mjs` and `worker-crash.mjs` test the
-  input routing, the cameras, the command order, the shown-item sync, the 3D view's
-  client/host bridge and the worker's trap handling.
+  `forge-wanted.mjs`, `projection.mjs`, `view-cube.mjs`, `manipulator.mjs` and
+  `worker-crash.mjs` test the input routing, the cameras, the command order, the shown-item
+  sync, the overlay and the worker's trap handling.
 
 The headless check loads the real page in an installed Chrome or Edge, over the DevTools
 protocol, with no extra dependency:
@@ -249,7 +251,6 @@ page or its worker logs fails the check. Chrome is found in the usual places. Pa
 | `forge-worker.js`, `forge-scene.js` | the module worker: the full evaluation, bodies, export, quarantine |
 | `forge-items.js`, `forge-wanted.js` | what the View shows, synced by key |
 | `forge-input.js`, `forge-cameras.js`, `forge-order.js` | input routing, camera moves in the worker, command order |
-| `viewer-client.js`, `viewer-host.js`, `forge-canvas.js` | the View across the worker boundary |
 | `projection.js`, `view-cube.js`, `manipulator.js` | the overlay's maths, the view cube, the move/turn/scale gizmo |
 | `examples/` | example documents |
 | `scripts/setup.mjs`, `scripts/serve.mjs` | fetch the package; a static server |
