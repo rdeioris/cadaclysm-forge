@@ -1,0 +1,78 @@
+{
+ "source": "test/fixtures/forge-constraints.json",
+ "start": "test/fixtures/forge-constraints.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Sketch 1",
+   "kind": "sketch",
+   "mode": "offset",
+   "base": "top",
+   "offset": 0,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": null,
+   "mid": null,
+   "points": null,
+   "hidden": false,
+   "constraints": [
+    {
+     "id": 1,
+     "kind": "coincident",
+     "refs": [
+      {
+       "curve": 3,
+       "at": "end"
+      },
+      {
+       "curve": 4,
+       "at": "start"
+      }
+     ],
+     "driving": true
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "name": "Rectangle 1",
+   "kind": "rect",
+   "plane": 1,
+   "shape": {
+    "x0": -60,
+    "y0": -20,
+    "x1": -20,
+    "y1": 20
+   },
+   "hidden": false
+  },
+  {
+   "id": 3,
+   "name": "Line 1",
+   "kind": "line",
+   "plane": 1,
+   "shape": {
+    "x0": 0,
+    "y0": 0,
+    "x1": 30,
+    "y1": 0
+   },
+   "hidden": false
+  },
+  {
+   "id": 4,
+   "name": "Line 2",
+   "kind": "line",
+   "plane": 1,
+   "shape": {
+    "x0": 30,
+    "y0": 0,
+    "x1": 30,
+    "y1": 25
+   },
+   "hidden": false
+  }
+ ],
+ "bodies": {}
+}

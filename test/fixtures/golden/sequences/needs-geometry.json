@@ -1,0 +1,185 @@
+{
+ "source": "needs geometry",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "primitive",
+     "id": 1,
+     "kind": "box",
+     "plane": "top",
+     "dims": [
+      20,
+      20,
+      20
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 1,
+     "dims": [
+      30,
+      30,
+      30
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      30
+     ],
+     "area": 5399.999999999999,
+     "volume": 27000
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 2,
+     "from": 1,
+     "face": 1
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      30
+     ],
+     "area": 5399.999999999999,
+     "volume": 27000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -15,
+      -15,
+      30,
+      15,
+      15,
+      30
+     ],
+     "area": 899.9999999999998,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 3,
+     "source": 1,
+     "radius": 1
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      30
+     ],
+     "area": 5399.999999999999,
+     "volume": 27000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -15,
+      -15,
+      30,
+      15,
+      15,
+      30
+     ],
+     "area": 899.9999999999998,
+     "volume": 0
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      30
+     ],
+     "area": 5399.999999999999,
+     "volume": 27000
+    }
+   }
+  }
+ ]
+}

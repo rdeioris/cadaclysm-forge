@@ -1,0 +1,191 @@
+{
+ "source": "test/fixtures/forge-v1.json",
+ "start": "test/fixtures/forge-v1.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Surface 1",
+   "kind": "surface",
+   "hidden": false,
+   "plane": "top",
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": {
+    "curves": [
+     {
+      "kind": "circle",
+      "shape": {
+       "cx": 0,
+       "cy": 0,
+       "r": 5
+      }
+     }
+    ],
+    "perLoop": [
+     1
+    ]
+   }
+  },
+  {
+   "id": 2,
+   "name": "Join 1",
+   "kind": "join",
+   "hidden": false,
+   "plane": "top",
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "scale": 1,
+    "tx": 0,
+    "ty": 0,
+    "angle": 0
+   },
+   "parts": [
+    {
+     "kind": "solid",
+     "frame": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0
+     ],
+     "pivot": [
+      0,
+      0
+     ],
+     "transform": {
+      "tx": 0,
+      "ty": 0,
+      "angle": 0,
+      "scale": 1
+     },
+     "holes": 0,
+     "height": 4,
+     "axis": null,
+     "angle": 0,
+     "source": {
+      "curves": [
+       {
+        "kind": "rect",
+        "shape": {
+         "x0": -30,
+         "y0": -20,
+         "x1": 30,
+         "y1": 20
+        }
+       }
+      ],
+      "perLoop": [
+       1
+      ]
+     }
+    },
+    {
+     "kind": "solid",
+     "frame": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0
+     ],
+     "pivot": [
+      0,
+      0
+     ],
+     "transform": {
+      "tx": 0,
+      "ty": 0,
+      "angle": 0,
+      "scale": 1
+     },
+     "holes": 0,
+     "height": 12,
+     "axis": null,
+     "angle": 0,
+     "source": {
+      "curves": [
+       {
+        "kind": "circle",
+        "shape": {
+         "cx": 10,
+         "cy": 0,
+         "r": 6
+        }
+       }
+      ],
+      "perLoop": [
+       1
+      ]
+     }
+    }
+   ],
+   "thickness": 2,
+   "open": [],
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null
+  }
+ ],
+ "bodies": {
+  "Surface 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    -4.9999999652681915,
+    -4.999999965268191,
+    0,
+    5,
+    5.000000000000001,
+    0
+   ],
+   "area": 78.53981579417886,
+   "volume": 0
+  },
+  "Join 1": {
+   "kind": "solid",
+   "faces": 9,
+   "edges": 16,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    -30,
+    -20,
+    0,
+    30,
+    20,
+    12
+   ],
+   "area": 5901.59289000561,
+   "volume": 10504.778655799806
+  }
+ }
+}

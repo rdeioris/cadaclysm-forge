@@ -1,0 +1,261 @@
+{
+ "source": "examples/plate-peg.json",
+ "start": "examples/plate-peg.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Rectangle 1",
+   "kind": "rect",
+   "plane": "top",
+   "shape": {
+    "x0": -30,
+    "y0": -20,
+    "x1": 30,
+    "y1": 20
+   },
+   "hidden": true
+  },
+  {
+   "id": 2,
+   "name": "Surface 1",
+   "kind": "surface",
+   "plane": "top",
+   "loops": [
+    [
+     1
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 3,
+   "name": "Solid 1",
+   "kind": "solid",
+   "plane": "top",
+   "loops": [
+    [
+     1
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 4,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 2
+  },
+  {
+   "id": 4,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": "top",
+   "shape": {
+    "cx": 50,
+    "cy": 0,
+    "r": 6
+   },
+   "hidden": true
+  },
+  {
+   "id": 5,
+   "name": "Surface 2",
+   "kind": "surface",
+   "plane": "top",
+   "loops": [
+    [
+     4
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    50,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 6,
+   "name": "Solid 2",
+   "kind": "solid",
+   "plane": "top",
+   "loops": [
+    [
+     4
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    50,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 12,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 5
+  }
+ ],
+ "bodies": {
+  "Surface 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    -30,
+    -20,
+    0,
+    30,
+    20,
+    0
+   ],
+   "area": 2400,
+   "volume": 0
+  },
+  "Solid 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -30,
+    -20,
+    0,
+    30,
+    20,
+    4
+   ],
+   "area": 5600,
+   "volume": 9600
+  },
+  "Surface 2": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    44.00000191533944,
+    -5.999998084660518,
+    0,
+    56,
+    6.000000000000043,
+    0
+   ],
+   "area": 113.0972994259404,
+   "volume": 0
+  },
+  "Solid 2": {
+   "kind": "solid",
+   "faces": 4,
+   "edges": 4,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    44.00000191533944,
+    -5.999998084660518,
+    0,
+    56,
+    6.000000000000043,
+    12
+   ],
+   "area": 678.5838687622236,
+   "volume": 1357.1675931112838
+  }
+ }
+}

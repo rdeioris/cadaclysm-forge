@@ -1,0 +1,913 @@
+{
+ "source": "examples/kinds-sketches.json",
+ "start": "examples/kinds-sketches.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Box 1",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 2,
+   "name": "Sketch 1",
+   "kind": "sketch",
+   "mode": "offset",
+   "base": "front",
+   "offset": 5,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": null,
+   "mid": null,
+   "points": null,
+   "hidden": false
+  },
+  {
+   "id": 3,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": 2,
+   "shape": {
+    "cx": 5,
+    "cy": 5,
+    "r": 3
+   },
+   "hidden": false
+  },
+  {
+   "id": 4,
+   "name": "Line 1",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 30,
+    "y0": 0,
+    "x1": 50,
+    "y1": 0
+   },
+   "hidden": false
+  },
+  {
+   "id": 5,
+   "name": "Sketch 2",
+   "kind": "sketch",
+   "mode": "angle",
+   "base": "top",
+   "offset": 0,
+   "hinge": 4,
+   "tilt": 45,
+   "path": null,
+   "face": null,
+   "mid": null,
+   "points": null,
+   "hidden": true
+  },
+  {
+   "id": 6,
+   "name": "Circle 2",
+   "kind": "circle",
+   "plane": 5,
+   "shape": {
+    "cx": 10,
+    "cy": 8,
+    "r": 4
+   },
+   "hidden": true
+  },
+  {
+   "id": 7,
+   "name": "Surface 1",
+   "kind": "surface",
+   "plane": 5,
+   "loops": [
+    [
+     6
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    10,
+    8
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 8,
+   "name": "Solid 1",
+   "kind": "solid",
+   "plane": 5,
+   "loops": [
+    [
+     6
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    10,
+    8
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 6,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 7
+  },
+  {
+   "id": 9,
+   "name": "Line 2",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 60,
+    "y0": 0,
+    "x1": 60,
+    "y1": 30
+   },
+   "hidden": false
+  },
+  {
+   "id": 10,
+   "name": "Sketch 3",
+   "kind": "sketch",
+   "mode": "path",
+   "base": "top",
+   "offset": 0,
+   "hinge": null,
+   "tilt": 30,
+   "path": 9,
+   "face": null,
+   "mid": null,
+   "points": null,
+   "hidden": true
+  },
+  {
+   "id": 11,
+   "name": "Rectangle 1",
+   "kind": "rect",
+   "plane": 10,
+   "shape": {
+    "x0": -5,
+    "y0": -4,
+    "x1": 5,
+    "y1": 4
+   },
+   "hidden": true
+  },
+  {
+   "id": 12,
+   "name": "Surface 2",
+   "kind": "surface",
+   "plane": 10,
+   "loops": [
+    [
+     11
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 13,
+   "name": "Solid 2",
+   "kind": "solid",
+   "plane": 10,
+   "loops": [
+    [
+     11
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 5,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 12
+  },
+  {
+   "id": 14,
+   "name": "Sketch 4",
+   "kind": "sketch",
+   "mode": "face",
+   "base": "top",
+   "offset": 0,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": {
+    "body": 1,
+    "index": 0
+   },
+   "mid": null,
+   "points": null,
+   "hidden": true,
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "extent": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 15,
+   "name": "Circle 3",
+   "kind": "circle",
+   "plane": 14,
+   "shape": {
+    "cx": 0,
+    "cy": 0,
+    "r": 4
+   },
+   "hidden": true
+  },
+  {
+   "id": 16,
+   "name": "Surface 3",
+   "kind": "surface",
+   "plane": 14,
+   "loops": [
+    [
+     15
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 17,
+   "name": "Solid 3",
+   "kind": "solid",
+   "plane": 14,
+   "loops": [
+    [
+     15
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 6,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 16
+  },
+  {
+   "id": 18,
+   "name": "Sketch 5",
+   "kind": "sketch",
+   "mode": "offset",
+   "base": "top",
+   "offset": 40,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": null,
+   "mid": null,
+   "points": null,
+   "hidden": false
+  },
+  {
+   "id": 19,
+   "name": "Sketch 6",
+   "kind": "sketch",
+   "mode": "mid",
+   "base": "top",
+   "offset": 0,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": null,
+   "mid": [
+    "top",
+    18
+   ],
+   "points": null,
+   "hidden": true
+  },
+  {
+   "id": 20,
+   "name": "Circle 4",
+   "kind": "circle",
+   "plane": 19,
+   "shape": {
+    "cx": 70,
+    "cy": 0,
+    "r": 5
+   },
+   "hidden": true
+  },
+  {
+   "id": 21,
+   "name": "Surface 4",
+   "kind": "surface",
+   "plane": 19,
+   "loops": [
+    [
+     20
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    70,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 22,
+   "name": "Solid 4",
+   "kind": "solid",
+   "plane": 19,
+   "loops": [
+    [
+     20
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    70,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 4,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 21
+  },
+  {
+   "id": 23,
+   "name": "Line 3",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 0,
+    "y0": 60,
+    "x1": 20,
+    "y1": 60
+   },
+   "hidden": false
+  },
+  {
+   "id": 24,
+   "name": "Line 4",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 20,
+    "y0": 60,
+    "x1": 20,
+    "y1": 80
+   },
+   "hidden": false
+  },
+  {
+   "id": 25,
+   "name": "Line 5",
+   "kind": "line",
+   "plane": "front",
+   "shape": {
+    "x0": 0,
+    "y0": 0,
+    "x1": 0,
+    "y1": 25
+   },
+   "hidden": false
+  },
+  {
+   "id": 26,
+   "name": "Sketch 7",
+   "kind": "sketch",
+   "mode": "points",
+   "base": "top",
+   "offset": 0,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": null,
+   "mid": null,
+   "points": [
+    {
+     "curve": 23,
+     "end": 0
+    },
+    {
+     "curve": 24,
+     "end": 1
+    },
+    {
+     "curve": 25,
+     "end": 1
+    }
+   ],
+   "hidden": true
+  },
+  {
+   "id": 27,
+   "name": "Circle 5",
+   "kind": "circle",
+   "plane": 26,
+   "shape": {
+    "cx": 8,
+    "cy": 8,
+    "r": 3
+   },
+   "hidden": true
+  },
+  {
+   "id": 28,
+   "name": "Surface 5",
+   "kind": "surface",
+   "plane": 26,
+   "loops": [
+    [
+     27
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    8,
+    8
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 29,
+   "name": "Solid 5",
+   "kind": "solid",
+   "plane": 26,
+   "loops": [
+    [
+     27
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    8,
+    8
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 4,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 28
+  }
+ ],
+ "bodies": {
+  "Box 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -10,
+    -10,
+    0,
+    10,
+    10,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999999
+  },
+  "Surface 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    35.999999106835936,
+    2.8284264931838274,
+    2.828426493183827,
+    44,
+    8.485281374238573,
+    8.485281374238571
+   ],
+   "area": 50.265493681268595,
+   "volume": 0
+  },
+  "Solid 1": {
+   "kind": "solid",
+   "faces": 4,
+   "edges": 4,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    35.999999106835936,
+    -1.4142141939354573,
+    2.828426493183827,
+    44,
+    8.485281374238573,
+    12.727922061357857
+   ],
+   "area": 251.32745157059412,
+   "volume": 301.5929620876113
+  },
+  "Surface 2": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    56,
+    0,
+    -5,
+    64,
+    0,
+    5
+   ],
+   "area": 79.99999999999997,
+   "volume": 0
+  },
+  "Solid 2": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    56,
+    0,
+    -5,
+    64,
+    5,
+    5
+   ],
+   "area": 339.99999999999994,
+   "volume": 399.99999999999994
+  },
+  "Surface 3": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    -4.0000002580227845,
+    -4.000000258022785,
+    0,
+    4.000000000000001,
+    4,
+    0
+   ],
+   "area": 50.26548569984672,
+   "volume": 0
+  },
+  "Solid 3": {
+   "kind": "solid",
+   "faces": 4,
+   "edges": 4,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    -4.0000002580227845,
+    -4.000000258022785,
+    -6,
+    4.000000000000001,
+    4,
+    0
+   ],
+   "area": 251.3274236356183,
+   "volume": 301.59291419908106
+  },
+  "Surface 4": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    64.99999996526864,
+    -5.000000034731584,
+    20,
+    75,
+    4.9999999999997735,
+    20
+   ],
+   "area": 78.53981688530375,
+   "volume": 0
+  },
+  "Solid 4": {
+   "kind": "solid",
+   "faces": 4,
+   "edges": 4,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    64.99999996526864,
+    -5.000000034731584,
+    20,
+    75,
+    4.9999999999997735,
+    24
+   ],
+   "area": 282.7433403506459,
+   "volume": 314.15926754121386
+  },
+  "Surface 5": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    7.730587662098653,
+    57.983264187543284,
+    2.5383656571840754,
+    13.330444655729087,
+    63.58312117327892,
+    5.584403908234901
+   ],
+   "area": 28.274329346033326,
+   "volume": 0
+  },
+  "Solid 5": {
+   "kind": "solid",
+   "faces": 4,
+   "edges": 4,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    7.730587662098655,
+    56.5473478703078,
+    -0.9078335041810672,
+    14.766360972964565,
+    63.58312117327891,
+    5.5844039082349015
+   ],
+   "area": 131.94687632985512,
+   "volume": 113.09731738413345
+  }
+ }
+}

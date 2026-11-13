@@ -1,0 +1,123 @@
+{
+ "source": "two lines rounded",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "kind": "line",
+     "plane": "top",
+     "shape": {
+      "x0": 0,
+      "y0": 0,
+      "x1": 10,
+      "y1": 0
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 2,
+     "kind": "line",
+     "plane": "top",
+     "shape": {
+      "x0": 10,
+      "y0": 0,
+      "x1": 10,
+      "y1": 10
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 4,
+     "kind": "polyline",
+     "plane": "top",
+     "shape": {
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        5,
+        5
+       ]
+      ]
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "surface",
+     "id": 5,
+     "loops": [
+      [
+       1,
+       2
+      ]
+     ],
+     "plane": "top"
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "error": "blocked by i5_src"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "round",
+     "ids": [
+      1,
+      2
+     ],
+     "radius": 3,
+     "arc": 3
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "error": "blocked by i5_src"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "round",
+     "ids": [
+      1,
+      2
+     ],
+     "radius": 30,
+     "arc": 6
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "error": "blocked by i5_src"
+    }
+   }
+  }
+ ]
+}

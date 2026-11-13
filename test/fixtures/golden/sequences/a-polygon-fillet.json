@@ -1,0 +1,40 @@
+{
+ "source": "a polygon fillet",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "plane": "top",
+     "kind": "polygon",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 10,
+      "sides": 6,
+      "angle": 0
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "round",
+     "ids": [
+      1
+     ],
+     "radius": 2
+    }
+   },
+   "bodies": {}
+  }
+ ]
+}

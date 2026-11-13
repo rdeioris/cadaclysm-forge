@@ -1,0 +1,218 @@
+{
+ "source": "examples/extrusions.json",
+ "start": "examples/extrusions.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Rectangle 1",
+   "kind": "rect",
+   "plane": "top",
+   "shape": {
+    "x0": -30,
+    "y0": -20,
+    "x1": 30,
+    "y1": 20
+   },
+   "hidden": true
+  },
+  {
+   "id": 2,
+   "name": "Extrusion 1",
+   "kind": "extrusion",
+   "plane": "top",
+   "loops": [
+    [
+     1
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 20,
+   "axis": null,
+   "angle": 0,
+   "taper": 0
+  },
+  {
+   "id": 3,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": "top",
+   "shape": {
+    "cx": 0,
+    "cy": 0,
+    "r": 20
+   },
+   "hidden": true
+  },
+  {
+   "id": 4,
+   "name": "Extrusion 2",
+   "kind": "extrusion",
+   "plane": "top",
+   "loops": [
+    [
+     3
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 40,
+   "axis": null,
+   "angle": 0,
+   "taper": 0
+  },
+  {
+   "id": 5,
+   "name": "Polygon 1",
+   "kind": "polygon",
+   "plane": "top",
+   "shape": {
+    "cx": 0,
+    "cy": 0,
+    "r": 20,
+    "sides": 6,
+    "angle": 0
+   },
+   "hidden": true
+  },
+  {
+   "id": 6,
+   "name": "Extrusion 3",
+   "kind": "extrusion",
+   "plane": "top",
+   "loops": [
+    [
+     5
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 15,
+   "axis": null,
+   "angle": 0,
+   "taper": 0
+  }
+ ],
+ "bodies": {
+  "Extrusion 1": {
+   "kind": "sheet",
+   "faces": 4,
+   "edges": 12,
+   "vertices": 8,
+   "closed": false,
+   "bounds": [
+    -30,
+    -20,
+    0,
+    30,
+    20,
+    20
+   ],
+   "area": 4000,
+   "volume": 0
+  },
+  "Extrusion 2": {
+   "kind": "sheet",
+   "faces": 2,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    -19.999999861072766,
+    -19.999999861072762,
+    0,
+    20,
+    20.000000000000004,
+    40
+   ],
+   "area": 5026.5482282855455,
+   "volume": 0
+  },
+  "Extrusion 3": {
+   "kind": "sheet",
+   "faces": 6,
+   "edges": 18,
+   "vertices": 12,
+   "closed": false,
+   "bounds": [
+    -20,
+    -17.32050895690918,
+    0,
+    20,
+    17.32050895690918,
+    15
+   ],
+   "area": 1800.0000457895558,
+   "volume": 0
+  }
+ }
+}

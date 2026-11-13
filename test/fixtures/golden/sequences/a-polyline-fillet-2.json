@@ -1,0 +1,54 @@
+{
+ "source": "a polyline fillet",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "plane": "top",
+     "kind": "polyline",
+     "shape": {
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        20,
+        0
+       ],
+       [
+        20,
+        20
+       ],
+       [
+        0,
+        20
+       ]
+      ],
+      "closed": true
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "round",
+     "ids": [
+      1
+     ],
+     "radius": 2
+    }
+   },
+   "bodies": {}
+  }
+ ]
+}

@@ -1,0 +1,459 @@
+{
+ "source": "examples/kinds-curves.json",
+ "start": "examples/kinds-curves.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Line 1",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 0,
+    "y0": 0,
+    "x1": 30,
+    "y1": 10
+   },
+   "hidden": false
+  },
+  {
+   "id": 2,
+   "name": "Polyline 1",
+   "kind": "polyline",
+   "plane": "top",
+   "shape": {
+    "points": [
+     [
+      40,
+      0
+     ],
+     [
+      50,
+      10
+     ],
+     [
+      60,
+      0
+     ],
+     [
+      70,
+      12
+     ]
+    ],
+    "closed": false
+   },
+   "hidden": false
+  },
+  {
+   "id": 3,
+   "name": "Rectangle 1",
+   "kind": "rect",
+   "plane": "top",
+   "shape": {
+    "x0": 0,
+    "y0": 20,
+    "x1": 20,
+    "y1": 35
+   },
+   "hidden": false
+  },
+  {
+   "id": 4,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": "top",
+   "shape": {
+    "cx": 40,
+    "cy": 28,
+    "r": 7
+   },
+   "hidden": false
+  },
+  {
+   "id": 5,
+   "name": "Arc 1",
+   "kind": "arc",
+   "plane": "top",
+   "shape": {
+    "x0": 60,
+    "y0": 20,
+    "xm": 70,
+    "ym": 32,
+    "x1": 80,
+    "y1": 20
+   },
+   "hidden": false
+  },
+  {
+   "id": 6,
+   "name": "Ellipse 1",
+   "kind": "ellipse",
+   "plane": "top",
+   "shape": {
+    "cx": 20,
+    "cy": 55,
+    "rx": 12,
+    "ry": 6
+   },
+   "hidden": false
+  },
+  {
+   "id": 7,
+   "name": "Polygon 1",
+   "kind": "polygon",
+   "plane": "top",
+   "shape": {
+    "cx": 50,
+    "cy": 55,
+    "r": 9,
+    "sides": 6,
+    "angle": 15
+   },
+   "hidden": false
+  },
+  {
+   "id": 8,
+   "name": "NURBS 1",
+   "kind": "nurbs",
+   "plane": "top",
+   "shape": {
+    "points": [
+     [
+      70,
+      45
+     ],
+     [
+      75,
+      62
+     ],
+     [
+      85,
+      50
+     ],
+     [
+      92,
+      65
+     ],
+     [
+      100,
+      48
+     ]
+    ],
+    "degree": 3,
+    "weights": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "closed": false
+   },
+   "hidden": false
+  },
+  {
+   "id": 12,
+   "name": "Polycurve 1",
+   "kind": "polycurve",
+   "plane": "top",
+   "shape": {
+    "pieces": [
+     {
+      "kind": "line",
+      "shape": {
+       "x0": 0,
+       "y0": 80,
+       "x1": 10,
+       "y1": 80
+      }
+     },
+     {
+      "kind": "line",
+      "shape": {
+       "x0": 10,
+       "y0": 80,
+       "x1": 10,
+       "y1": 90
+      }
+     },
+     {
+      "kind": "line",
+      "shape": {
+       "x0": 10,
+       "y0": 90,
+       "x1": 0,
+       "y1": 90
+      }
+     }
+    ],
+    "closed": false,
+    "ends": [
+     [
+      0,
+      80
+     ],
+     [
+      0,
+      90
+     ]
+    ]
+   },
+   "hidden": false
+  },
+  {
+   "id": 16,
+   "name": "Line 6",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 20,
+    "y0": 80,
+    "x1": 30,
+    "y1": 80
+   },
+   "hidden": false
+  },
+  {
+   "id": 17,
+   "name": "Arc 3",
+   "kind": "arc",
+   "plane": "top",
+   "shape": {
+    "x0": 30,
+    "y0": 80,
+    "xm": 35,
+    "ym": 85,
+    "x1": 30,
+    "y1": 90
+   },
+   "hidden": false
+  },
+  {
+   "id": 18,
+   "name": "Line 7",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 50,
+    "y0": 80,
+    "x1": 57,
+    "y1": 80
+   },
+   "hidden": false
+  },
+  {
+   "id": 19,
+   "name": "Line 8",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 60,
+    "y0": 83,
+    "x1": 60,
+    "y1": 90
+   },
+   "hidden": false
+  },
+  {
+   "id": 20,
+   "name": "Arc 4",
+   "kind": "arc",
+   "plane": "top",
+   "shape": {
+    "x0": 57,
+    "y0": 80,
+    "xm": 59.121320343559645,
+    "ym": 80.87867965644035,
+    "x1": 60,
+    "y1": 83
+   },
+   "hidden": false
+  },
+  {
+   "id": 21,
+   "name": "Rectangle 2",
+   "kind": "polycurve",
+   "plane": "top",
+   "shape": {
+    "pieces": [
+     {
+      "kind": "line",
+      "shape": {
+       "x0": 73,
+       "y0": 80,
+       "x1": 87,
+       "y1": 80
+      }
+     },
+     {
+      "kind": "arc",
+      "shape": {
+       "x0": 87,
+       "y0": 80,
+       "xm": 89.12132034355965,
+       "ym": 80.87867965644035,
+       "x1": 90,
+       "y1": 83
+      }
+     },
+     {
+      "kind": "line",
+      "shape": {
+       "x0": 90,
+       "y0": 83,
+       "x1": 90,
+       "y1": 92
+      }
+     },
+     {
+      "kind": "arc",
+      "shape": {
+       "x0": 90,
+       "y0": 92,
+       "xm": 89.12132034355965,
+       "ym": 94.12132034355965,
+       "x1": 87,
+       "y1": 95
+      }
+     },
+     {
+      "kind": "line",
+      "shape": {
+       "x0": 87,
+       "y0": 95,
+       "x1": 73,
+       "y1": 95
+      }
+     },
+     {
+      "kind": "arc",
+      "shape": {
+       "x0": 73,
+       "y0": 95,
+       "xm": 70.87867965644035,
+       "ym": 94.12132034355965,
+       "x1": 70,
+       "y1": 92
+      }
+     },
+     {
+      "kind": "line",
+      "shape": {
+       "x0": 70,
+       "y0": 92,
+       "x1": 70,
+       "y1": 83
+      }
+     },
+     {
+      "kind": "arc",
+      "shape": {
+       "x0": 70,
+       "y0": 83,
+       "xm": 70.87867965644035,
+       "ym": 80.87867965644035,
+       "x1": 73,
+       "y1": 80
+      }
+     }
+    ],
+    "closed": true,
+    "ends": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      0
+     ]
+    ]
+   },
+   "hidden": true
+  },
+  {
+   "id": 23,
+   "name": "Line 10",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 0,
+    "y0": 100,
+    "x1": 6,
+    "y1": 100
+   },
+   "hidden": false
+  },
+  {
+   "id": 24,
+   "name": "Line 11",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": 14,
+    "y0": 100,
+    "x1": 20,
+    "y1": 100
+   },
+   "hidden": false
+  },
+  {
+   "id": 25,
+   "name": "Extrusion 1",
+   "kind": "extrusion",
+   "plane": "top",
+   "loops": [
+    [
+     21
+    ]
+   ],
+   "source": null,
+   "hidden": false,
+   "pivot": [
+    80,
+    87.5
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 5,
+   "axis": null,
+   "angle": 0,
+   "taper": 0
+  }
+ ],
+ "bodies": {
+  "Extrusion 1": {
+   "kind": "sheet",
+   "faces": 8,
+   "edges": 24,
+   "vertices": 16,
+   "closed": false,
+   "bounds": [
+    70,
+    80,
+    0,
+    90,
+    95,
+    5
+   ],
+   "area": 324.2478628753955,
+   "volume": 0
+  }
+ }
+}

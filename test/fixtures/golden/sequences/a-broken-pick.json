@@ -1,0 +1,649 @@
+{
+ "source": "a broken pick",
+ "start": "inline",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -30,
+      -30,
+      -20,
+      30,
+      30,
+      40
+     ],
+     "area": 21599.999999999996,
+     "volume": 216000
+    },
+    "Cut 1": {
+     "error": "blocked by i3_inner"
+    },
+    "Fillet 1": {
+     "error": "i3 does not build: cut: the cut leaves nothing"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Fillet 2": {
+     "kind": "solid",
+     "faces": 10,
+     "edges": 24,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2329.0619297918497,
+     "volume": 7934.395263004545
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 6,
+     "radius": 3
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -30,
+      -30,
+      -20,
+      30,
+      30,
+      40
+     ],
+     "area": 21599.999999999996,
+     "volume": 216000
+    },
+    "Cut 1": {
+     "error": "blocked by i3_inner"
+    },
+    "Fillet 1": {
+     "error": "i3 does not build: cut: the cut leaves nothing"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Fillet 2": {
+     "kind": "solid",
+     "faces": 10,
+     "edges": 24,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2291.8937828766693,
+     "volume": 7855.840674246765
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 7,
+     "source": 3,
+     "radius": 2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -30,
+      -30,
+      -20,
+      30,
+      30,
+      40
+     ],
+     "area": 21599.999999999996,
+     "volume": 216000
+    },
+    "Cut 1": {
+     "error": "blocked by i3_inner"
+    },
+    "Fillet 1": {
+     "error": "i3 does not build: cut: the cut leaves nothing"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Fillet 2": {
+     "kind": "solid",
+     "faces": 10,
+     "edges": 24,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2291.8937828766693,
+     "volume": 7855.840674246765
+    },
+    "Fillet 3": {
+     "error": "blocked by i3_inner"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 7,
+     "edges": [
+      0
+     ]
+    }
+   },
+   "refused": "i3 does not build: cut: the cut leaves nothing"
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 2,
+     "place": {
+      "offset": [
+       0,
+       0,
+       100
+      ],
+      "turn": [
+       0,
+       0,
+       0
+      ]
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -30,
+      -30,
+      100,
+      30,
+      30,
+      160
+     ],
+     "area": 21600,
+     "volume": 216000
+    },
+    "Cut 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Fillet 1": {
+     "error": "make this pick again on the page: it could not be resolved when the file was opened"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Fillet 2": {
+     "kind": "solid",
+     "faces": 10,
+     "edges": 24,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2291.8937828766693,
+     "volume": 7855.840674246765
+    },
+    "Fillet 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 6,
+     "radius": 2
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -30,
+      -30,
+      100,
+      30,
+      30,
+      160
+     ],
+     "area": 21600,
+     "volume": 216000
+    },
+    "Cut 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Fillet 1": {
+     "error": "make this pick again on the page: it could not be resolved when the file was opened"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Fillet 2": {
+     "kind": "solid",
+     "faces": 10,
+     "edges": 24,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2329.0619297918497,
+     "volume": 7934.395263004545
+    },
+    "Fillet 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 4,
+     "edges": [
+      0,
+      1
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -30,
+      -30,
+      100,
+      30,
+      30,
+      160
+     ],
+     "area": 21600,
+     "volume": 216000
+    },
+    "Cut 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 18,
+     "vertices": 11,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4146.212373812701,
+     "volume": 17949.2625214159
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Fillet 2": {
+     "kind": "solid",
+     "faces": 10,
+     "edges": 24,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2329.0619297918497,
+     "volume": 7934.395263004545
+    },
+    "Fillet 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -15,
+      -15,
+      0,
+      15,
+      15,
+      20
+     ],
+     "area": 4200,
+     "volume": 18000
+    }
+   }
+  }
+ ],
+ "startText": "{\n  \"format\": \"cadaclysm-blacksmith\",\n  \"version\": 1,\n  \"units\": \"mm\",\n  \"params\": {},\n  \"nodes\": [\n    {\"id\": \"forge\", \"kind\": \"forge.counters\", \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 2, \"sketch\": 0, \"face\": 0, \"box\": 3, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 7},\n    {\"id\": \"i1\", \"kind\": \"forge.primitive\", \"name\": \"Box 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"shape\": \"box\", \"dims\": [30, 30, 20], \"frame\": \"xy\"},\n    {\"id\": \"i2_inner\", \"kind\": \"forge.primitive\", \"shape\": \"box\", \"dims\": [60, 60, 60], \"frame\": \"xy\"},\n    {\"id\": \"i2_placed\", \"kind\": \"forge.placed\", \"solid\": \"i2_inner\", \"frame\": \"xy\", \"pivot\": [0, 0], \"tx\": 0, \"ty\": 0, \"offset\": [0, 0, -20], \"turn\": [0, 0, 0]},\n    {\"id\": \"i2\", \"kind\": \"forge.solid\", \"name\": \"Box 2\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": \"@node\", \"turn\": \"@node\"}}}, \"body\": \"i2_placed\"},\n    {\"id\": \"i3_inner\", \"kind\": \"solid.cut\", \"target\": \"i1\", \"tool\": \"i2\"},\n    {\"id\": \"i3_flush\", \"kind\": \"solid.merge_flush\", \"solid\": \"i3_inner\"},\n    {\"id\": \"i3\", \"kind\": \"forge.solid\", \"name\": \"Cut 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"cut\", \"plane\": \"top\", \"parts\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"flush\": \"@node\"}}, \"body\": \"i3_flush\"},\n    {\"id\": \"i4\", \"kind\": \"forge.broken_solid\", \"name\": \"Fillet 1\", \"meta\": {\"forge\": {\"id\": 4, \"name\": \"Fillet 1\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": [3], \"edges\": [0, 1], \"radius\": 2, \"tool\": 3, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": false, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"why\": \"i3 does not build: cut: the cut leaves nothing\"},\n    {\"id\": \"i5\", \"kind\": \"forge.primitive\", \"name\": \"Box 3\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"shape\": \"box\", \"dims\": [20, 20, 20], \"frame\": \"xy\"},\n    {\"id\": \"i6\", \"kind\": \"solid.fillet\", \"name\": \"Fillet 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": \"@node\", \"edges\": [0, 1, 2, 3], \"radius\": \"@node\", \"tool\": 5, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"edgeRefs\": \"@node\"}}, \"solid\": \"i5\", \"edges\": [{\"curve\": 0, \"mid\": [-10, 0, 0], \"tangent\": [0, 1, 0], \"length\": 20, \"faces\": [[0, 0, -1], [-1, 0, 0]], \"span\": 28.284271247461902}, {\"curve\": 0, \"mid\": [0, 10, 0], \"tangent\": [1, 0, 0], \"length\": 20, \"faces\": [[0, 0, -1], [0, 1, 0]], \"span\": 28.284271247461902}, {\"curve\": 0, \"mid\": [10, 0, 0], \"tangent\": [0, -1, 0], \"length\": 20, \"faces\": [[0, 0, -1], [1, 0, 0]], \"span\": 28.284271247461902}, {\"curve\": 0, \"mid\": [0, -10, 0], \"tangent\": [-1, 0, 0], \"length\": 20, \"faces\": [[0, 0, -1], [0, -1, 0]], \"span\": 28.284271247461902}], \"radius\": 2}\n  ],\n  \"commits\": [\n    {\"id\": \"c0\", \"parents\": [], \"ops\": [], \"inverses\": []},\n    {\"id\": \"c1\", \"parents\": [\"c0\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"forge\", \"kind\": \"forge.counters\", \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 1, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 2}, \"at\": 0}, {\"op\": \"add\", \"node\": {\"id\": \"i1\", \"kind\": \"forge.primitive\", \"name\": \"Box 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"shape\": \"box\", \"dims\": [30, 30, 20], \"frame\": \"xy\"}, \"at\": 1}], \"message\": \"forge: primitive\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i1\"}, {\"op\": \"remove\", \"id\": \"forge\"}]}], \"message\": \"forge: primitive\"},\n    {\"id\": \"c2\", \"parents\": [\"c1\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 2, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 3}}, {\"op\": \"add\", \"node\": {\"id\": \"i2\", \"kind\": \"forge.primitive\", \"name\": \"Box 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"shape\": \"box\", \"dims\": [60, 60, 60], \"frame\": \"xy\"}, \"at\": 2}], \"message\": \"forge: primitive\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i2\"}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 2, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 1, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: primitive\"},\n    {\"id\": \"c3\", \"parents\": [\"c2\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i2\"}, {\"op\": \"add\", \"node\": {\"id\": \"i2_inner\", \"kind\": \"forge.primitive\", \"shape\": \"box\", \"dims\": [60, 60, 60], \"frame\": \"xy\"}, \"at\": 2}, {\"op\": \"add\", \"node\": {\"id\": \"i2_placed\", \"kind\": \"forge.placed\", \"solid\": \"i2_inner\", \"frame\": \"xy\", \"pivot\": [0, 0], \"tx\": 0, \"ty\": 0, \"offset\": [0, 0, -20], \"turn\": [0, 0, 0]}, \"at\": 3}, {\"op\": \"add\", \"node\": {\"id\": \"i2\", \"kind\": \"forge.solid\", \"name\": \"Box 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": \"@node\", \"turn\": \"@node\"}}}, \"body\": \"i2_placed\"}, \"at\": 4}], \"message\": \"forge: set\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i2\"}, {\"op\": \"remove\", \"id\": \"i2_placed\"}, {\"op\": \"remove\", \"id\": \"i2_inner\"}, {\"op\": \"batch\", \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"i2\", \"kind\": \"forge.primitive\", \"name\": \"Box 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"shape\": \"box\", \"dims\": [60, 60, 60], \"frame\": \"xy\"}, \"at\": 2}]}]}], \"message\": \"forge: set\"},\n    {\"id\": \"c4\", \"parents\": [\"c3\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 2, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 4}}, {\"op\": \"set\", \"id\": \"i1\", \"fields\": {\"hidden\": true}}, {\"op\": \"set\", \"id\": \"i2\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i3_inner\", \"kind\": \"solid.cut\", \"target\": \"i1\", \"tool\": \"i2\"}, \"at\": 5}, {\"op\": \"add\", \"node\": {\"id\": \"i3_flush\", \"kind\": \"solid.merge_flush\", \"solid\": \"i3_inner\"}, \"at\": 6}, {\"op\": \"add\", \"node\": {\"id\": \"i3\", \"kind\": \"forge.solid\", \"name\": \"Cut 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"cut\", \"plane\": \"top\", \"parts\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"flush\": \"@node\"}}, \"body\": \"i3_flush\"}, \"at\": 7}], \"message\": \"forge: cut\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i3\"}, {\"op\": \"remove\", \"id\": \"i3_flush\"}, {\"op\": \"remove\", \"id\": \"i3_inner\"}, {\"op\": \"set\", \"id\": \"i2\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"i1\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 3, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 2, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: cut\"},\n    {\"id\": \"c5\", \"parents\": [\"c4\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 1, \"sketch\": 0, \"face\": 0, \"box\": 2, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 5}}, {\"op\": \"set\", \"id\": \"i3\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i4\", \"kind\": \"solid.fillet\", \"name\": \"Fillet 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": \"@node\", \"edges\": [], \"radius\": \"@node\", \"tool\": 3, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"edgeRefs\": \"@node\"}}, \"solid\": \"i3\", \"edges\": [], \"radius\": 2}, \"at\": 8}], \"message\": \"forge: fillet\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i4\"}, {\"op\": \"set\", \"id\": \"i3\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 4, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 2, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: fillet\"},\n    {\"id\": \"c6\", \"parents\": [\"c5\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i4\"}, {\"op\": \"add\", \"node\": {\"id\": \"i4\", \"kind\": \"forge.broken_solid\", \"name\": \"Fillet 1\", \"meta\": {\"forge\": {\"id\": 4, \"name\": \"Fillet 1\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": [3], \"edges\": [0, 1], \"radius\": 2, \"tool\": 3, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": false, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"why\": \"i3 does not build: cut: the cut leaves nothing\"}, \"at\": 8}], \"message\": \"forge: set\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i4\"}, {\"op\": \"batch\", \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"i4\", \"kind\": \"solid.fillet\", \"name\": \"Fillet 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": \"@node\", \"edges\": [], \"radius\": \"@node\", \"tool\": 3, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"edgeRefs\": \"@node\"}}, \"solid\": \"i3\", \"edges\": [], \"radius\": 2}, \"at\": 8}]}]}], \"message\": \"forge: set\"},\n    {\"id\": \"c7\", \"parents\": [\"c6\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 1, \"sketch\": 0, \"face\": 0, \"box\": 3, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 6}}, {\"op\": \"add\", \"node\": {\"id\": \"i5\", \"kind\": \"forge.primitive\", \"name\": \"Box 3\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"box\", \"plane\": \"@node\", \"parts\": [], \"dims\": \"@node\", \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}}}, \"shape\": \"box\", \"dims\": [20, 20, 20], \"frame\": \"xy\"}, \"at\": 9}], \"message\": \"forge: primitive\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i5\"}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 5, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 1, \"sketch\": 0, \"face\": 0, \"box\": 2, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: primitive\"},\n    {\"id\": \"c8\", \"parents\": [\"c7\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 2, \"sketch\": 0, \"face\": 0, \"box\": 3, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 7}}, {\"op\": \"set\", \"id\": \"i5\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i6\", \"kind\": \"solid.fillet\", \"name\": \"Fillet 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": \"@node\", \"edges\": [], \"radius\": \"@node\", \"tool\": 5, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"edgeRefs\": \"@node\"}}, \"solid\": \"i5\", \"edges\": [], \"radius\": 2}, \"at\": 10}], \"message\": \"forge: fillet\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i6\"}, {\"op\": \"set\", \"id\": \"i5\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 6, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 0, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 1, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 1, \"sketch\": 0, \"face\": 0, \"box\": 3, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: fillet\"},\n    {\"id\": \"c9\", \"parents\": [\"c8\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"i6\", \"fields\": {\"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": \"@node\", \"edges\": [0, 1, 2, 3], \"radius\": \"@node\", \"tool\": 5, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"edgeRefs\": \"@node\"}}, \"edges\": [{\"curve\": 0, \"mid\": [-10, 0, 0], \"tangent\": [0, 1, 0], \"length\": 20, \"faces\": [[0, 0, -1], [-1, 0, 0]], \"span\": 28.284271247461902}, {\"curve\": 0, \"mid\": [0, 10, 0], \"tangent\": [1, 0, 0], \"length\": 20, \"faces\": [[0, 0, -1], [0, 1, 0]], \"span\": 28.284271247461902}, {\"curve\": 0, \"mid\": [10, 0, 0], \"tangent\": [0, -1, 0], \"length\": 20, \"faces\": [[0, 0, -1], [1, 0, 0]], \"span\": 28.284271247461902}, {\"curve\": 0, \"mid\": [0, -10, 0], \"tangent\": [-1, 0, 0], \"length\": 20, \"faces\": [[0, 0, -1], [0, -1, 0]], \"span\": 28.284271247461902}]}}], \"message\": \"forge: set\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"i6\", \"fields\": {\"edges\": [], \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"fillet\", \"style\": \"round\", \"plane\": \"top\", \"parts\": \"@node\", \"edges\": [], \"radius\": \"@node\", \"tool\": 5, \"pivot\": [0, 0], \"transform\": {\"tx\": 0, \"ty\": 0, \"angle\": 0, \"scale\": 1}, \"holes\": 0, \"height\": 0, \"axis\": null, \"angle\": 0, \"source\": null, \"hidden\": \"@node\", \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"edgeRefs\": \"@node\"}}}}]}], \"message\": \"forge: set\"}\n  ],\n  \"branches\": {\"main\": \"c9\"},\n  \"branch\": \"main\",\n  \"head\": \"c9\"\n}\n"
+}

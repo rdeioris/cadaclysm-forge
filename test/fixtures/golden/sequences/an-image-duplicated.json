@@ -1,0 +1,50 @@
+{
+ "source": "an image duplicated",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "image",
+     "id": 1
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "duplicate",
+     "ids": [
+      1
+     ],
+     "copies": [
+      5
+     ]
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 6,
+     "kind": "line",
+     "plane": "top",
+     "shape": {
+      "x0": 0,
+      "y0": 0,
+      "x1": 1,
+      "y1": 0
+     }
+    }
+   },
+   "bodies": {}
+  }
+ ]
+}

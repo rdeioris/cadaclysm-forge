@@ -1,0 +1,10 @@
+{
+ "source": "test/fixtures/forge-tilted.json",
+ "start": "test/fixtures/forge-tilted.json",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  }
+ ]
+}

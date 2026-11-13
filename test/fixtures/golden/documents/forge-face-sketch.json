@@ -1,0 +1,281 @@
+{
+ "source": "examples/face-sketch.json",
+ "start": "examples/face-sketch.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Box 1",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 2,
+   "name": "Sketch 1",
+   "kind": "sketch",
+   "mode": "face",
+   "base": "top",
+   "offset": 0,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": {
+    "body": 1,
+    "index": 0
+   },
+   "mid": null,
+   "points": null,
+   "hidden": true,
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "extent": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": 2,
+   "shape": {
+    "cx": 0,
+    "cy": 0,
+    "r": 4
+   },
+   "hidden": true
+  },
+  {
+   "id": 4,
+   "name": "Surface 1",
+   "kind": "surface",
+   "plane": 2,
+   "loops": [
+    [
+     3
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 5,
+   "name": "Solid 1",
+   "kind": "solid",
+   "plane": 2,
+   "loops": [
+    [
+     3
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 6,
+   "axis": null,
+   "angle": 0,
+   "taper": 0,
+   "from": 4
+  },
+  {
+   "id": 6,
+   "name": "Join 1",
+   "kind": "join",
+   "plane": "top",
+   "parts": [
+    1,
+    5
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "flush": true
+  }
+ ],
+ "bodies": {
+  "Box 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -10,
+    -10,
+    0,
+    10,
+    10,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999999
+  },
+  "Surface 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    -4.0000002580227845,
+    -4.000000258022785,
+    0,
+    4.000000000000001,
+    4,
+    0
+   ],
+   "area": 50.26548569984672,
+   "volume": 0
+  },
+  "Solid 1": {
+   "kind": "solid",
+   "faces": 4,
+   "edges": 4,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    -4.0000002580227845,
+    -4.000000258022785,
+    -6,
+    4.000000000000001,
+    4,
+    0
+   ],
+   "area": 251.3274236356183,
+   "volume": 301.59291419908106
+  },
+  "Join 1": {
+   "kind": "solid",
+   "faces": 8,
+   "edges": 15,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    -10,
+    -10,
+    -6,
+    10,
+    10,
+    20
+   ],
+   "area": 2550.796452235925,
+   "volume": 8301.59291419908
+  }
+ }
+}

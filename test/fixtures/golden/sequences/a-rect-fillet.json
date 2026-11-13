@@ -1,0 +1,39 @@
+{
+ "source": "a rect fillet",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "plane": "top",
+     "kind": "rect",
+     "shape": {
+      "x0": 0,
+      "y0": 0,
+      "x1": 20,
+      "y1": 10
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "round",
+     "ids": [
+      1
+     ],
+     "radius": 2
+    }
+   },
+   "bodies": {}
+  }
+ ]
+}

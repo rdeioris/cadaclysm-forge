@@ -1,0 +1,106 @@
+{
+ "source": "a shown node",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "op": {
+     "op": "add",
+     "node": {
+      "id": "r",
+      "kind": "profile.rect",
+      "w": 10,
+      "h": 10
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "op": {
+     "op": "add",
+     "node": {
+      "id": "left",
+      "kind": "sheet.face",
+      "profile": "r",
+      "frame": "xy"
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "op": {
+     "op": "add",
+     "node": {
+      "id": "right",
+      "kind": "sheet.face",
+      "profile": "r",
+      "frame": {
+       "origin": [
+        10,
+        0,
+        0
+       ],
+       "x": [
+        1,
+        0,
+        0
+       ],
+       "y": [
+        0,
+        1,
+        0
+       ]
+      }
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "op": {
+     "op": "add",
+     "node": {
+      "id": "sewn",
+      "kind": "sheet.join_sheets",
+      "name": "Sewn",
+      "meta": {
+       "show": true
+      },
+      "sheets": [
+       "left",
+       "right"
+      ]
+     }
+    }
+   },
+   "bodies": {
+    "Sewn": {
+     "kind": "sheet",
+     "faces": 2,
+     "edges": 5,
+     "vertices": 6,
+     "closed": false,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      15,
+      5,
+      0
+     ],
+     "area": 199.99999999999997,
+     "volume": 0
+    }
+   }
+  }
+ ]
+}
