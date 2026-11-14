@@ -45,10 +45,19 @@ assert.deepStrictEqual(KINDS, ["vertex", "midpoint", "centre", "quadrant", "edge
     assert.strictEqual(bodyAnswer(vertex), vertex);
     assert.strictEqual(bodyAnswer({ kind: "vertex", point: [1, 2, 3], item: 9, body: null }), null);
     assert.strictEqual(bodyAnswer({ kind: "edge", point: [1, 2, 3], item: 9 }), null);
-    // Measure measures curves too.
-    const onCurve = { kind: "vertex", point: [1, 2, 0], item: 9, body: null };
+    // A page curve's snaps with `curves` (sketching and Measure): its middle, its centre, a
+    // point along it -- any curve's, another sketch's too -- but not one `skip` turns away
+    // (a drag's own plane), and nothing the worker named neither body nor curve (a ghost, an image).
+    const onCurve = { kind: "midpoint", point: [1, 2, 0], item: 9, body: null, curve: 5 };
+    assert.strictEqual(bodyAnswer(onCurve), null);
+    assert.strictEqual(bodyAnswer(onCurve, { curves: true }), onCurve);
     assert.strictEqual(bodyAnswer(onCurve, { grid: false, curves: true }), onCurve);
-    assert.strictEqual(bodyAnswer({ kind: "grid", point: [5, 5, 0], body: null }, { grid: false, curves: true }), null);
+    assert.strictEqual(bodyAnswer(onCurve, { curves: true, skip: (id) => id === 5 }), null);
+    assert.strictEqual(bodyAnswer(onCurve, { curves: true, skip: (id) => id === 6 }), onCurve);
+    assert.strictEqual(bodyAnswer({ kind: "vertex", point: [1, 2, 0], item: 12, body: null, curve: null }, { curves: true }), null);
+    assert.strictEqual(bodyAnswer({ kind: "grid", point: [5, 5, 0], body: null, curve: null }, { grid: false, curves: true }), null);
+    // A body's snap never asks `skip`: only curves move under a drag.
+    assert.strictEqual(bodyAnswer(vertex, { curves: true, skip: () => true }), vertex);
     const grid = { kind: "grid", point: [5, 5, 0], item: 0, body: null };
     assert.strictEqual(bodyAnswer(grid), grid);
     assert.strictEqual(bodyAnswer(grid, { grid: false }), null);

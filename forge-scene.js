@@ -67,7 +67,7 @@
 //                                               a solid is its own -- and id its item) or a
 //                                               resync; no `failed` follows
 //     resync()                                  show the kept wanted list again (the worker's view just appeared)
-//     bodyOfItem(item)                          a shown View item id -> { body, ghost } or null
+//     bodyOfItem(item)                          a shown View item id -> { body, ghost }, a page curve's { curve }, or null
 //
 // Ops, previews, undo, redo and switches are applied as they come; the evaluation runs once the
 // messages sent meanwhile are in (a drag's ops are one evaluation). A preview ends only on
@@ -566,7 +566,9 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
                     out.push({ key: item.key, deps: [...item.deps, body.version], colour: item.colour, show: () => v.showCurves(wasm.cadaclysm_blacksmith_isocurve_beziers(body.solid, ISOCURVE_DENSITY, EDGE_TOLERANCE), item.colour) });
                 } else if (item.kind === "curves") {
                     if (!kept.beziers) continue;
-                    out.push({ key: item.key, deps: item.deps, colour: item.colour, show: () => v.showCurves(kept.beziers, item.colour) });
+                    // A page curve's item says which curve it is (a snap on it names it, forge-worker.js).
+                    const value = item.key.startsWith("curve:") ? { curve: +item.key.slice(6) } : undefined;
+                    out.push({ key: item.key, deps: item.deps, colour: item.colour, value, show: () => v.showCurves(kept.beziers, item.colour) });
                 } else if (item.kind === "image") {
                     const held = bitmaps.get(item.image);
                     if (!held || !kept.corners) continue;   // still decoding, or its corners not yet here

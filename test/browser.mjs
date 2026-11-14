@@ -5,7 +5,8 @@
 // built -- downloads a STEP file with at least one solid in it, and nothing is logged as an
 // error by the page or its worker. Then the snap check: in box-fillet's Top view, with real
 // pointer events, a line drawn onto two of the box's corners lands on them exactly, grid
-// snaps land on the step, Alt snaps nothing, and Measure reads a box edge's length.
+// snaps land on the step, Alt snaps nothing, a rectangle snaps onto another line's middle
+// and the grid, a dragged corner follows the pointer, and Measure reads a box edge's length.
 //
 //     npm run test:browser                          # examples/box-fillet.json, the default backend
 //     node test/browser.mjs --webgl2                # the WebGL2 fallback (?backend=webgl2)
@@ -269,18 +270,23 @@ async function checkSnap(cdp, base, { webgl2, out }) {
     }
     const near = ([x, y]) => [x + 3, y - 2];   // a few pixels off: inside the snap's 10
     const lines = async () => (await evaluate("window.__forgeTest.items()")).filter((c) => c.kind === "line");
-    async function drawLine(a, b, alt = false) {
-        const before = (await lines()).length;
-        await evaluate(`document.querySelector("#ribbon-sketch [data-kind=line]").click()`);
+    // A two-click curve (a line, a rectangle) drawn with the tool's button: its shape.
+    async function draw(kind, a, b, alt = false) {
+        const ofKind = async () => (await evaluate("window.__forgeTest.items()")).filter((c) => c.kind === kind);
+        const before = (await ofKind()).length;
+        await evaluate(`document.querySelector("#ribbon-sketch [data-kind=${kind}]").click()`);
         await frame(); await sleep(300); await frame();
         await click(await a(), alt);
         await click(await b(), alt);
         await evaluate("window.__forgeTest.settled()");
         // Done, not still in hand: both clicks were the page's (a click off the view never reaches it).
-        if (await evaluate(`document.querySelector("#ribbon-sketch [data-kind=line]").getAttribute("aria-pressed")`) === "true") throw new Error("the line is still being drawn after its second click");
-        const now = await lines();
-        if (now.length !== before + 1) throw new Error(`${now.length - before} lines drawn, not one`);
-        const s = now[now.length - 1].shape;
+        if (await evaluate(`document.querySelector("#ribbon-sketch [data-kind=${kind}]").getAttribute("aria-pressed")`) === "true") throw new Error(`the ${kind} is still being drawn after its second click`);
+        const now = await ofKind();
+        if (now.length !== before + 1) throw new Error(`${now.length - before} ${kind}s drawn, not one`);
+        return now[now.length - 1].shape;
+    }
+    async function drawLine(a, b, alt = false) {
+        const s = await draw("line", a, b, alt);
         return [[s.x0, s.y0], [s.x1, s.y1]];
     }
     const same = (p, q) => Math.abs(p[0] - q[0]) < 1e-6 && Math.abs(p[1] - q[1]) < 1e-6;
@@ -323,7 +329,7 @@ async function checkSnap(cdp, base, { webgl2, out }) {
         if (!same(a, [10, 10]) || !same(b, [-10, 10])) throw new Error(`the line onto the corners is ${text(a)} -> ${text(b)}, not (10, 10) -> (-10, 10)`);
 
         // 3. A curve end still wins: a line begun at the first line's end starts there exactly.
-        const [c] = await drawLine(async () => near(await at([-10, 10, 10])), async () => at([-22, 18, 0]));
+        const [c, cEnd] = await drawLine(async () => near(await at([-10, 10, 10])), async () => at([-22, 18, 0]));
         if (!same(c, b)) throw new Error(`a line begun at another's end starts at ${text(c)}, not ${text(b)}`);
 
         // 4. The grid alone, every 5 mm: clicks a hair off its crossings, away from the box, land on them.
@@ -337,6 +343,35 @@ async function checkSnap(cdp, base, { webgl2, out }) {
         const [h] = await drawLine(async () => near(await at([10, -10, 10])), async () => at([22, -18, 0]), true);
         if (same(h, [10, -10])) throw new Error("a click with Alt held snapped onto the corner");
 
+        // 6. Onto another curve and the grid: a rectangle from the middle of the line drawn in 3
+        // (-10, 10) -> about (-22, 18), off every grid crossing, to a crossing of a 5 mm grid.
+        // The middle is the line's own, to the last digits (the View's float32 point is not).
+        await evaluate(`window.__forgeTest.snap({ kinds: { vertex: false, midpoint: true, centre: false, quadrant: false, edge: false, grid: true }, step: 5 })`);
+        const r = await draw("rect", async () => near(await at([-16, 14, 0])), async () => at([-30.12, 25.09, 0]));
+        const mid = [(c[0] + cEnd[0]) / 2, (c[1] + cEnd[1]) / 2];
+        const exact = (p, q) => Math.abs(p[0] - q[0]) < 1e-9 && Math.abs(p[1] - q[1]) < 1e-9;
+        if (!exact([r.x0, r.y0], mid) || !exact([r.x1, r.y1], [-30, 25])) throw new Error(`the rectangle is ${text([r.x0, r.y0])} -> ${text([r.x1, r.y1])}, not ${text(mid)} -> (-30, 25)`);
+
+        // 7. A dragged corner follows the pointer, a few pixels at a time, and lets go on the
+        // middle of the grid line drawn in 4, (25, -15) -> (35, -25): exactly (30, -20).
+        await evaluate(`window.__forgeTest.snap({ kinds: { vertex: true, midpoint: true, centre: true, quadrant: true, edge: true, grid: false } })`);
+        const from = await at([-30, 25, 0]), to = near(await at([30, -20, 0]));
+        await mouse("mouseMoved", from);
+        await sleep(150);
+        await send("Input.dispatchMouseEvent", { type: "mousePressed", x: from[0], y: from[1], button: "left", buttons: 1, clickCount: 1, pointerType: "mouse" });
+        const steps = Math.ceil(Math.hypot(to[0] - from[0], to[1] - from[1]) / 2);   // 2 px: inside the snap's 10, as a hand moves
+        for (let k = 1; k <= steps; k++) {
+            const q = [from[0] + (to[0] - from[0]) * k / steps, from[1] + (to[1] - from[1]) * k / steps];
+            await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: q[0], y: q[1], button: "left", buttons: 1, pointerType: "mouse" });
+            await sleep(16);
+        }
+        await sleep(300);
+        await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: to[0], y: to[1], button: "left", buttons: 0, clickCount: 1, pointerType: "mouse" });
+        await evaluate("window.__forgeTest.settled()");
+        const rects = (await evaluate("window.__forgeTest.items()")).filter((c) => c.kind === "rect");
+        const d = rects[rects.length - 1].shape;
+        if (!exact([d.x1, d.y1], [30, -20])) throw new Error(`the dragged corner is at ${text([d.x1, d.y1])}, not (30, -20)`);
+
         await sleep(300);
         if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
         if (out) {
@@ -344,7 +379,7 @@ async function checkSnap(cdp, base, { webgl2, out }) {
             const shot = await send("Page.captureScreenshot", { format: "png" });
             writeFileSync(join(out, `snap${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
         }
-        console.log(`ok - snap: corners ${text(a)} ${text(b)}, a curve end first, grid ${text(g0)} ${text(g1)}, Alt off, ${status.text}`);
+        console.log(`ok - snap: corners ${text(a)} ${text(b)}, a curve end first, grid ${text(g0)} ${text(g1)}, Alt off, rectangle ${text([r.x0, r.y0])} ${text([r.x1, r.y1])}, dragged to ${text([d.x1, d.y1])}, ${status.text}`);
     } catch (e) {
         if (out) {
             mkdirSync(out, { recursive: true });

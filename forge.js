@@ -4330,7 +4330,7 @@ function drawOverlay() {
         }
         // The revolve tool's axis while it is armed.
         if (axisMode) inView(axisMode.plane, (top) => drawAxis(axisMode.plane, axisMode.axis, top, ACCENT));
-        if (drawing?.id !== null && drawing) drawRubberBand(byId(drawing.id));
+        { const c = inHand(); if (c) drawRubberBand(c, drawing ? OUTLINE_COLOUR : ACCENT); }
         // The snap: a ring round the end the drag has landed on.
         if (snapped) inView(snapped.plane, (top) => {
             const [sx, sy] = sketchToPx(snapped.plane, snapped.at, top);
@@ -4898,6 +4898,11 @@ function moveHandle(c, h, w) {
         // A held end drags its coincident partners along: their ends, under it, are no target.
         const target = choose(snapTarget(c, h, w, held ? handlesOf(c)[h.index] : null), bodySnapHere(c.plane));
         if (target) { w = target.at; snapped = { plane: c.plane, ...target }; }
+    } else {
+        // Any other handle -- a rectangle's corner, a centre, a rim, a polyline's inner point --
+        // lands on a body, another curve or the grid: coordinates only.
+        const onBody = bodySnapHere(c.plane);
+        if (onBody) { w = onBody.at; snapped = { plane: c.plane, ...onBody }; }
     }
     if (held) { dragHeld(c, h, w, sketch); return; }
     setHandle(c, h, w);
@@ -5158,7 +5163,11 @@ function snapTarget(c, h, w, skip = null) {
 // The View finds what lies under the pointer (`client.snap`); forge-snap.js says which
 // answers count. A curve end the page finds itself (`snapSpot`, `snapTarget`) wins, being
 // the only snap that makes a constraint; a body's or the grid's lands its point and is
-// coordinates only. The View's answer comes back after the move that asked it, so the last
+// coordinates only -- and so is one on a curve that is not an end the page found (a line's
+// middle, a circle's centre or quadrant, a point along a curve, any curve of another
+// sketch, dropped onto this one's plane). The curve in hand -- being drawn, or a handle of it
+// dragged -- is not in the View but on the overlay (`inHand`, `drawRubberBand`): there it
+// would be the nearest thing under the pointer, a step behind it. The View's answer comes back after the move that asked it, so the last
 // one is cached (`snapCache`), counted for the pixel it was asked at, and the move run again
 // when it arrives (`again`) -- a click whose pixel has no answer yet asks for its own.
 let snapSettings = readSettings(null);
@@ -5192,7 +5201,7 @@ function askSnap(i, px, context, again = null) {
     snapAsks++;
     return asked.snap(x * asked.ratio, y * asked.ratio, i).then((answer) => {
         if (client !== asked) return null;
-        const kept = bodyAnswer(answer, context === "measure" ? { grid: false, curves: true } : { grid: true });
+        const kept = exactOnCurve(bodyAnswer(answer, context === "measure" ? { grid: false, curves: true } : { grid: true, curves: true }));
         snapCache = { px, view: i, context, answer: kept };
         if (again && pointerAt && freshSnap(snapCache, pointerAt.px, pointerAt.view) === kept) again();
         overlayDirty();
@@ -5202,6 +5211,41 @@ function askSnap(i, px, context, again = null) {
 // Whether the View has answered for pixel `px` of view `i` in `context` -- nothing there
 // included: what is asked again only once the pointer moves.
 const snapAnswered = (i, px, context) => !!snapCache && snapCache.context === context && snapCache.view === i && Math.hypot(px[0] - snapCache.px[0], px[1] - snapCache.px[1]) <= 1;
+// A snap on a page curve exactly: the View holds the page's curves as float32 Béziers, so
+// its point on one is micrometres off. Where it is one of the curve's own points -- an end,
+// a corner, a vertex, a segment's middle, a centre, a quadrant -- that point is taken from
+// the curve's shape instead (in the world, through its plane); a point along it stays the
+// View's.
+function exactOnCurve(answer) {
+    const c = answer?.curve !== null && answer?.curve !== undefined ? byId(answer.curve) : null;
+    if (!c || !isCurve(c) || viewOf(c.plane) === undefined) return answer;
+    let best = null, bestD = 1e-4 * Math.max(1, Math.hypot(...answer.point));
+    for (const p of specialPoints(c)) {
+        const w = embed3(c.plane, p), d = Math.hypot(w[0] - answer.point[0], w[1] - answer.point[1], w[2] - answer.point[2]);
+        if (d < bestD) { bestD = d; best = w; }
+    }
+    return best ? { ...answer, point: best } : answer;
+}
+// A curve's own points, in its sketch: what a snap on it may land on.
+function specialPoints(c) {
+    const s = c.shape, out = [];
+    const chain = (pts, closed) => {
+        out.push(...pts);
+        const n = closed ? pts.length : pts.length - 1;
+        for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; out.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); }
+    };
+    const round = (cx, cy, rx, ry) => out.push([cx, cy], [cx + rx, cy], [cx - rx, cy], [cx, cy + ry], [cx, cy - ry]);
+    if (c.kind === "line") chain([[s.x0, s.y0], [s.x1, s.y1]], false);
+    else if (c.kind === "rect") chain([[s.x0, s.y0], [s.x1, s.y0], [s.x1, s.y1], [s.x0, s.y1]], true);
+    else if (c.kind === "polyline") chain(s.points, s.closed);
+    else if (c.kind === "polygon") { chain(polygonPoints(s), true); out.push([s.cx, s.cy]); }
+    else if (c.kind === "circle") round(s.cx, s.cy, s.r, s.r);
+    else if (c.kind === "ellipse") round(s.cx, s.cy, s.rx, s.ry);
+    else if (c.kind === "arc") { out.push([s.x0, s.y0], [s.x1, s.y1], [s.xm, s.ym]); const o = circumcentreOf([s.x0, s.y0], [s.xm, s.ym], [s.x1, s.y1]); if (o) out.push(o); }
+    else if (c.kind === "nurbs") out.push(...s.points);
+    else { const ends = endsOf(c); if (ends) out.push(...ends); }
+    return out;
+}
 // The cached answer for pixel `px` of view `i` in `context`, or null.
 function viewSnapAt(i, px, context) {
     if (snapHeld || !snapCache || snapCache.context !== context) return null;
@@ -5299,9 +5343,16 @@ function measureHover() {
     const w = camOf(h.view)?.pxToWorld(local(h.px, h.view), sizeOf(h.view));
     return w ? { point: w, kind: null } : null;
 }
-// The curve being drawn, in its view, off its sketch Béziers (sixteen floats each: four
-// points of x, y, z, weight), in the outline's grey the View draws curves in.
-function drawRubberBand(c) {
+// The curve in hand: the one being drawn, or the one whose handle is dragged -- or null.
+function inHand() {
+    if (drawing) return drawing.id !== null ? byId(drawing.id) ?? null : null;
+    if (drag?.kind === "handle" && !drag.handle?.gizmo && drag.curve && isCurve(drag.curve)) return drag.curve;
+    return null;
+}
+// The curve in hand, in its view, off its sketch Béziers (sixteen floats each: four points
+// of x, y, z, weight), in `colour` -- the outline's grey the View draws curves in, or the
+// selection's accent for a dragged one.
+function drawRubberBand(c, colour) {
     const b = c?.sketch;
     const view = viewOf(c?.plane);
     if (!b?.length || view === null) return;
@@ -5310,7 +5361,7 @@ function drawRubberBand(c) {
     {
         ctx.save();
         ctx.beginPath(); ctx.rect(top[0], top[1], top[2], top[3]); ctx.clip();
-        ctx.strokeStyle = OUTLINE_COLOUR; ctx.lineWidth = 1.5;
+        ctx.strokeStyle = colour; ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let k = 0; k + 16 <= b.length; k += 16) {
             for (let n = 0; n <= 24; n++) {
@@ -8140,9 +8191,9 @@ function show() {
     const lit = hoverConstraintCurves();
     for (const c of sketch) {
         if (!c.beziers?.length) continue;
-        // The curve being drawn is the overlay's (`drawRubberBand`) till it is done: in the View,
-        // its end under the pointer would be the nearest thing a snap could land on.
-        if (drawing && c.id === drawing.id) continue;
+        // The curve in hand is the overlay's (`drawRubberBand`) till it is let go: in the View,
+        // its point under the pointer would be the nearest thing a snap could land on.
+        if (c === inHand()) continue;
         const free = diagnoses.get(c.plane)?.freeCurves.has(c.id);
         const colour = encoded((c === hoverCurve || lit.has(c.id)) && !isSelected(c) ? HOVER_CURVE : isSelected(c) ? SELECTED_CURVE : free ? FREE_CURVE : isClosed(c) ? CLOSED_CURVE : CURVE);
         out.push({ key: `curve:${c.id}`, deps: [c.rev], kind: "curves", colour, ref: c });

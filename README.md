@@ -172,22 +172,25 @@ runs the click where the press landed. A click on a body asks the View for a pic
 
 ### Snapping and Measure
 
-A sketch point snaps onto what is under the pointer. While a curve is drawn or a handle
-dragged, each move also asks the View for its snap (`client.snap`, `view.snap`), and the
-answer comes back a moment later as `view.snapped`.
-- The worker marks a snap with the body it lies on, or none.
-- `forge-snap.js` keeps a body's snaps (vertex, edge midpoint, circle centre, quadrant, a point
-  on an edge or a face) and the grid's.
+A sketch point snaps onto what is under the pointer. While a curve is drawn or any of its
+handles dragged, each move also asks the View for its snap (`client.snap`, `view.snap`), and
+the answer comes back a moment later as `view.snapped`.
+- The worker marks a snap with the body or the page curve it lies on, or neither.
+- `forge-snap.js` keeps the snaps on bodies and on curves, from any sketch, and the grid's.
+  Those are a vertex, an edge's or a segment's midpoint, a circle's centre, a quadrant, and
+  a point on an edge or a face.
+- On one of a curve's own points (an end, a corner, a midpoint, a centre, a quadrant), the page
+  takes the point from the curve's shape, since the View's float32 copy is micrometres off.
 - The page drops the 3D point onto the sketch plane along its normal.
-- A curve end the page finds itself wins. It is the only snap that adds a coincident
-  constraint.
-- A snap onto a body is coordinates only: nothing in the document names the body.
+- A curve end in the same sketch that the page finds itself wins. It is the only snap that
+  adds a coincident constraint.
+- Every other snap is coordinates only: nothing in the document names what it lies on.
 
 The grid snap lies on the sketch plane (`setWorkPlane`) at the step set under **snap ▾** in
 the top bar, beside a switch for each kind. The drawn grid follows the step, and the
-settings are kept in `localStorage`. Alt held snaps nothing. The curve being drawn is drawn
-on the overlay until it is done, so the View's snap never lands on its own end under the
-pointer.
+settings are kept in `localStorage`. Alt held snaps nothing. The curve in hand, being drawn
+or with a handle dragged, is drawn on the overlay until it is let go. The View would otherwise
+show it a step behind the pointer, nearer than anything a snap is aimed at.
 
 **Inspect › measure** takes two clicks in any view, snapped onto bodies and curves. It draws
 the segment over the views and says its length and dx, dy, dz in the status line, with the
@@ -269,7 +272,9 @@ snap check in box-fillet's Top view with real pointer events:
 - A line drawn onto two corners lands on them exactly.
 - A line begun at another line's end starts there.
 - Grid snaps land on the step.
-- With Alt held, nothing snaps. Chrome is found in the usual places. Pass
+- With Alt held, nothing snaps.
+- A rectangle runs from another line's exact middle to a grid crossing.
+- A rectangle corner dragged in 2 px steps lets go exactly on a third line's middle. Chrome is found in the usual places. Pass
 `--chrome <path>` or set `CHROME` to use another browser.
 
 ## Files

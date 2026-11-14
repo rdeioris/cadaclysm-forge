@@ -1,9 +1,10 @@
 // forge-snap.js
 // Snapping onto bodies and the grid, the part with no page and no View in it. The View
 // (pkg/viewer-client.js `client.snap`) finds what lies under the pointer; the page snaps
-// onto its own curves (forge.js `snapSpot`), and that wins: only a curve end makes a
-// coincident constraint. A snap onto a body or the grid is coordinates only -- the point
-// lands there, nothing in the document names the body.
+// onto its own curves' ends (forge.js `snapSpot`), and that wins: only a curve end makes a
+// coincident constraint. A snap onto a body, the grid or any other point of a curve (its
+// middle, centre, quadrant, a point along it, another sketch's) is coordinates only -- the
+// point lands there, nothing in the document names what it lies on.
 
 // The kinds the toolbar offers, in its order. The View's "plane" (anywhere on the work
 // plane) is left out: a sketch click lands on its plane already.
@@ -42,13 +43,16 @@ export function viewKinds(s, { grid }) {
 }
 
 // A View answer the forge uses, or null: a snap on a body (the worker marks it with the
-// body's id, `body`) or on the grid (with `grid`). One on a curve item only with `curves`
-// (Measure): a sketch snaps onto its curves itself, with the constraints that makes.
-export function bodyAnswer(answer, { grid = true, curves = false } = {}) {
+// body's id, `body`), on the grid (with `grid`), or on a page curve (`curve`, its id; with
+// `curves`, and not one `skip(id)` turns away). Anything else the View shows (a ghost, an
+// image, an item already replaced when the answer came) is no snap.
+export function bodyAnswer(answer, { grid = true, curves = false, skip = null } = {}) {
     if (!answer || !Array.isArray(answer.point) || !answer.point.every(Number.isFinite)) return null;
     if (answer.kind === "grid") return grid ? answer : null;
     if (answer.kind === "plane") return null;
-    return curves || (answer.body !== null && answer.body !== undefined) ? answer : null;
+    if (answer.body !== null && answer.body !== undefined) return answer;
+    const curve = answer.curve;
+    return curves && curve !== null && curve !== undefined && !skip?.(curve) ? answer : null;
 }
 
 // The page's curve-end snap wins whenever there is one.
