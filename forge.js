@@ -8242,14 +8242,19 @@ function loadDocument(text) {
     });
 }
 // Save and load go through the browser's file pickers (the File System Access API,
-// Chrome and Edge): the first save asks where, and the file's handle is kept so the next
-// saves write the same file back, as "load" keeps the handle of what it opened. Where the
-// API is missing (Firefox, Safari) a save is a download and a load the file input. Where
+// Chrome and Edge). Every save asks for the file's name and place, offering the name the
+// document was last opened or saved as, in that file's folder. Where the API is missing
+// (Firefox, Safari) a save asks for the name and downloads the file under it, and a load
+// is the file input. Where
 // no dialog can open at all -- the page in a sandboxed cross-origin frame, as an artifact
 // is, which forbids the pickers and swallows downloads -- the document goes through a
 // text box: copied out on a save, pasted in on a load.
 const PICKER = { types: [{ description: "forge document", accept: { "application/json": [".json"] } }] };
 let fileHandle = null;
+// The name the document was last opened or saved as: what the next save offers.
+let fileName = "forge.json";
+// A name as a save takes it: trimmed, ".json" added when it has no extension of its own.
+const savedName = (name) => { const n = name.trim(); return /\.[A-Za-z0-9]+$/.test(n) ? n : `${n}.json`; };
 const framed = window.self !== window.top;
 const textFileEl = document.getElementById("text-file");
 const textFileTitle = document.getElementById("text-file-title");
@@ -8335,23 +8340,30 @@ stlEl.addEventListener("click", () => exportAs("stl", "model/stl", "ASCII STL"))
 glbEl.addEventListener("click", () => exportAs("glb", "model/gltf-binary", ".gltf"));
 objEl.addEventListener("click", () => exportAs("obj", "model/obj", "OBJ"));
 stepEl.addEventListener("click", () => exportAs("step", "model/step", "STEP"));
-async function saveDocument(asNew = false) {
+async function saveDocument() {
     const text = await userAct(() => documentJson());   // in the order's turn: a pending run's commit is a command
     if (framed) { textFile("save", text); return; }
     try {
         if (window.showSaveFilePicker) {
-            if (!fileHandle || asNew) fileHandle = await window.showSaveFilePicker({ suggestedName: fileHandle?.name ?? "forge.json", ...PICKER });
-            const stream = await fileHandle.createWritable();
+            // Asked every time: the last name offered, in the last file's folder.
+            const handle = await window.showSaveFilePicker({ suggestedName: fileName, ...(fileHandle ? { startIn: fileHandle } : {}), ...PICKER });
+            const stream = await handle.createWritable();
             await stream.write(text);
             await stream.close();
-            say(`${fileHandle.name}: ${curves.length} item${curves.length === 1 ? "" : "s"} saved`);
+            fileHandle = handle;
+            fileName = handle.name;
+            say(`${handle.name}: ${curves.length} item${curves.length === 1 ? "" : "s"} saved`);
             return;
         }
+        const asked = window.prompt("Save the document as", fileName);
+        if (asked === null || !asked.trim()) return;   // cancelled
+        const name = savedName(asked);
         const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
         const a = document.createElement("a");
-        a.href = url; a.download = "forge.json"; a.click();
+        a.href = url; a.download = name; a.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);   // Firefox starts the download after `click` returns
-        say(`forge.json: ${curves.length} item${curves.length === 1 ? "" : "s"}`);
+        fileName = name;
+        say(`${name}: ${curves.length} item${curves.length === 1 ? "" : "s"}`);
     } catch (error) {
         if (error?.name === "AbortError") return;   // the picker was cancelled
         say(`save: ${error.message || error}`, true);
@@ -8372,17 +8384,18 @@ async function openDocument() {
             if (!file) return;
         }
         await loadDocument(await file.text());
+        fileName = file.name;
         say(`${file.name}: ${curves.length} item${curves.length === 1 ? "" : "s"}`);
     } catch (error) {
         if (error?.name === "AbortError") return;
         say(`load: ${error.message || error}`, true);
     }
 }
-saveEl.addEventListener("click", () => saveDocument(false));
+saveEl.addEventListener("click", () => saveDocument());
 loadEl.addEventListener("click", openDocument);
-// Save-as: ctrl/cmd-shift-S asks where again; ctrl/cmd-S saves back to the file.
+// Ctrl/cmd-S saves, asking for the name as the save button does.
 addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.code === "KeyS") { e.preventDefault(); saveDocument(e.shiftKey); }
+    if ((e.ctrlKey || e.metaKey) && e.code === "KeyS") { e.preventDefault(); saveDocument(); }
     if ((e.ctrlKey || e.metaKey) && e.code === "KeyO") { e.preventDefault(); openDocument(); }
     // Undo and redo, from anywhere but a field being typed in (that undo is the field's).
     const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;

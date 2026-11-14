@@ -29,7 +29,8 @@ solid when nothing is selected:
 The STEP file is written from the same solids the view draws, straight off the document
 (`cadaclysm_blacksmith_document_result_solid`). It contains no mesh. The headless check
 (below) downloads it for every example and counts the `MANIFOLD_SOLID_BREP`s in it.
-**save** writes the document itself (`forge.json`), and **load** opens one.
+**save** (or Ctrl+S) writes the document itself, asking for its name each time (it offers the
+name last opened or saved, `forge.json` at first), and **load** opens one.
 
 ## Architecture
 
