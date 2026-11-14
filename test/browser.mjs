@@ -304,6 +304,20 @@ async function checkSnap(cdp, base, { webgl2, out }) {
         await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
         await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
 
+        // A pointer held still over a view while a curve tool is in hand asks the View once,
+        // not again with every answer (a loop that froze the page on a real GPU).
+        await evaluate(`document.querySelector("#ribbon-sketch [data-kind=line]").click()`);
+        await frame(); await sleep(300);
+        await mouse("mouseMoved", await at([30, 30, 0]));
+        await sleep(200);
+        const asks0 = await evaluate("window.__forgeTest.snapAsks()");
+        await sleep(1000);
+        const asks = (await evaluate("window.__forgeTest.snapAsks()")) - asks0;
+        if (asks > 1) throw new Error(`a pointer held still asked the View for ${asks} snaps in a second`);
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+        await frame();
+
         // 2. Onto two corners: the ends are the corners' x and y.
         const [a, b] = await drawLine(async () => near(await at([10, 10, 10])), async () => near(await at([-10, 10, 10])));
         if (!same(a, [10, 10]) || !same(b, [-10, 10])) throw new Error(`the line onto the corners is ${text(a)} -> ${text(b)}, not (10, 10) -> (-10, 10)`);

@@ -5167,6 +5167,7 @@ let snapCache = null;    // { px, view, context, answer }: the last answer, `bod
 let snapSent = null;     // the View's snap settings and work plane as last set, as text
 let snapHeld = false;    // Alt is down: no snap of any kind
 let pointerAt = null;    // { px, view }: where the pointer last was over a view
+let snapAsks = 0;        // snaps asked of the View so far (the browser check's count)
 // The View's snapping for `context` -- a plane key (a sketch: the grid lies on it) or
 // "measure" (no grid) -- set when it changes.
 function syncSnap(context) {
@@ -5188,6 +5189,7 @@ function askSnap(i, px, context, again = null) {
     const asked = client;
     if (!asked || snapHeld || !syncSnap(context)) { snapCache = null; return Promise.resolve(null); }
     const [x, y] = local(px, i);
+    snapAsks++;
     return asked.snap(x * asked.ratio, y * asked.ratio, i).then((answer) => {
         if (client !== asked) return null;
         const kept = bodyAnswer(answer, context === "measure" ? { grid: false, curves: true } : { grid: true });
@@ -5197,6 +5199,9 @@ function askSnap(i, px, context, again = null) {
         return kept;
     }, () => null);
 }
+// Whether the View has answered for pixel `px` of view `i` in `context` -- nothing there
+// included: what is asked again only once the pointer moves.
+const snapAnswered = (i, px, context) => !!snapCache && snapCache.context === context && snapCache.view === i && Math.hypot(px[0] - snapCache.px[0], px[1] - snapCache.px[1]) <= 1;
 // The cached answer for pixel `px` of view `i` in `context`, or null.
 function viewSnapAt(i, px, context) {
     if (snapHeld || !snapCache || snapCache.context !== context) return null;
@@ -5609,7 +5614,8 @@ function drawHover() {
     const target = choose(page, bodySnapAt(plane, i, px));
     if (target) { w = target.at; snapped = { plane, ...target }; }
     if (c) drawMove(w);
-    if (!page) askSnap(i, px, plane, () => { if (drawing) { drawHover(); overlayDirty(); } });
+    // Asked once per pixel: the answer runs this again, which must not ask again.
+    if (!page && !snapAnswered(i, px, plane)) askSnap(i, px, plane, () => { if (drawing) { drawHover(); overlayDirty(); } });
 }
 overlay.addEventListener("pointerleave", () => { pointerAt = null; snapCache = null; if (measure) measure.hover = null; setHover(null); hoverSpot = null; hoverConstraintAt(null); if (hoverCurve) { hoverCurve = null; schedule(); } });
 overlay.addEventListener("pointermove", (e) => {
@@ -8614,6 +8620,7 @@ function installTestHook() {
         },
         order: () => curves.map((c) => c.id),
         rects: () => layout(),
+        snapAsks: () => snapAsks,
         // Snapping's settings, merged into the current ones (forge-snap.js `defaultSettings`'s shape).
         snap: (s) => { if (s) { snapSettings = { ...snapSettings, ...s, kinds: { ...snapSettings.kinds, ...(s.kinds ?? {}) } }; applySnapSettings(); } return JSON.parse(writeSettings(snapSettings)); },
         // Where world point `p` shows in view `i`, in overlay CSS pixels, or null.
