@@ -24,6 +24,15 @@
 import { cadaclysm_blacksmith_version as version, cadaclysm_blacksmith_frame_midplane, cadaclysm_blacksmith_frame_through } from "./pkg/index.js";
 // The same module instance as a namespace: what forge-constraints.js calls the kernel through.
 import * as wasm from "./pkg/index.js";
+// The cadaclysm the page runs on, as the status line names it: the version, and the branch,
+// commit and time the package was built from (`cadaclysm_blacksmith_build`; a package older than
+// that call has only its version).
+let cadaclysmLine = null;
+const cadaclysm = () => cadaclysmLine ??= (() => {
+    if (typeof wasm.cadaclysm_blacksmith_build !== "function") return `cadaclysm ${version()}`;
+    const b = JSON.parse(wasm.cadaclysm_blacksmith_build());
+    return `cadaclysm ${b.version} · ${b.branch} ${b.commit} · ${b.time.replace("T", " ").replace(/Z$/, " UTC")}`;
+})();
 import * as forgeDoc from "./forge-doc-convert.js";
 import { detectLoops, embedBeziers, closeCurve } from "./forge-doc-curves.js";
 import { itemsOf, UNITS } from "./forge-doc-nodes.js";
@@ -7637,7 +7646,7 @@ function afterViewReady() {
     // The empty page: every camera placed about the origin once, so the Top view has a centre
     // for the first curve to land on.
     frameAll();
-    if (!announced) { announced = true; say(`add a curve from the panel — cadaclysm ${version()}`); }
+    if (!announced) { announced = true; say(`add a curve from the panel — ${cadaclysm()}`); }
     if (testMode) installTestHook();
     resolveFirstView();
     schedule();
@@ -7804,7 +7813,7 @@ function onWorkerMessage({ data }) {
     renderProgress();   // again, now the body holds its answer: the card goes with the last body out
     if (data.kind === "built") {
         statusCurve = null;
-        say(`built ${c.name} in ${data.elapsed < 1000 ? `${data.elapsed} ms` : `${(data.elapsed / 1000).toFixed(1)} s`} — cadaclysm ${version()}`);
+        say(`built ${c.name} in ${data.elapsed < 1000 ? `${data.elapsed} ms` : `${(data.elapsed / 1000).toFixed(1)} s`} — ${cadaclysm()}`);
     } else {
         statusCurve = c.id;
         say(`${c.name}: ${c.error}`, true);
@@ -7928,7 +7937,7 @@ function rebuild() {
     if (failed) { statusCurve = failed.id; say(`${failed.name}: ${failed.error}`, true); }
     else if (built.length) {
         statusCurve = null;
-        sayDof(`built ${built.map((c) => c.name).join(", ")} in ${(performance.now() - started).toFixed(1)} ms — cadaclysm ${version()}`);
+        sayDof(`built ${built.map((c) => c.name).join(", ")} in ${(performance.now() - started).toFixed(1)} ms — ${cadaclysm()}`);
     } else sayDof(null);
     overlayDirty();
     wakeSettled();
@@ -8474,7 +8483,7 @@ function killNow() { worker.terminate(); restartWorker("killed by the test", { b
 function installTestHook() {
     if (window.__forgeTest) return;
     window.__forgeTest = {
-        radius: () => radius, cameras: () => testOp("cameras"), backend: () => viewBackend, version: () => version(),
+        radius: () => radius, cameras: () => testOp("cameras"), backend: () => viewBackend, version: () => version(), cadaclysm: () => cadaclysm(),
         flying: () => testOp("flying"),
         // What the worker's View says it lights with (its `lighting` getter, across the bridge).
         lighting: () => viewer.lighting(),
