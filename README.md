@@ -169,6 +169,29 @@ be a tap comes back as `view.tapped` with the press's sequence number, and the p
 runs the click where the press landed. A click on a body asks the View for a pick
 (`view.pick`). The worker maps the hit to the body and its B-rep face (`view.picked`).
 
+### Snapping and Measure
+
+A sketch point snaps onto what is under the pointer. While a curve is drawn or a handle
+dragged, each move also asks the View for its snap (`client.snap`, `view.snap`), and the
+answer comes back a moment later as `view.snapped`.
+- The worker marks a snap with the body it lies on, or none.
+- `forge-snap.js` keeps a body's snaps (vertex, edge midpoint, circle centre, quadrant, a point
+  on an edge or a face) and the grid's.
+- The page drops the 3D point onto the sketch plane along its normal.
+- A curve end the page finds itself wins. It is the only snap that adds a coincident
+  constraint.
+- A snap onto a body is coordinates only: nothing in the document names the body.
+
+The grid snap lies on the sketch plane (`setWorkPlane`) at the step set under **snap ▾** in
+the top bar, beside a switch for each kind. The drawn grid follows the step, and the
+settings are kept in `localStorage`. Alt held snaps nothing. The curve being drawn is drawn
+on the overlay until it is done, so the View's snap never lands on its own end under the
+pointer.
+
+**Inspect › measure** takes two clicks in any view, snapped onto bodies and curves. It draws
+the segment over the views and says its length and dx, dy, dz in the status line, with the
+radius where a point snapped to a circle's centre. Nothing goes into the document.
+
 ## Setup
 
 You need Node.js 20 or later.
@@ -222,7 +245,8 @@ npm test
 - `forge-input.mjs`, `forge-cameras.mjs`, `forge-order.mjs`, `forge-items.mjs`,
   `forge-wanted.mjs`, `projection.mjs`, `view-cube.mjs`, `manipulator.mjs` and
   `worker-crash.mjs` test the input routing, the cameras, the command order, the shown-item
-  sync, the overlay and the worker's trap handling.
+  sync, the overlay and the worker's trap handling. `forge-snap.mjs` tests the snap settings
+  and which of the View's snaps the page takes.
 
 The headless check loads the real page in an installed Chrome or Edge, over the DevTools
 protocol, with no extra dependency:
@@ -238,7 +262,13 @@ For each example, the check serves the page with `scripts/serve.mjs` and opens t
 document. It checks that every body builds with the pinned errors (none in the examples) and
 that the bodies are drawn, by picking faces under a grid of points in the views. It clicks
 **step** and checks that the download is a STEP file with at least one solid. Any error the
-page or its worker logs fails the check. Chrome is found in the usual places. Pass
+page or its worker logs fails the check. Then, unless `--no-snap` is passed, it runs the
+snap check in box-fillet's Top view with real pointer events:
+- Measure reads one box edge as 20 mm.
+- A line drawn onto two corners lands on them exactly.
+- A line begun at another line's end starts there.
+- Grid snaps land on the step.
+- With Alt held, nothing snaps. Chrome is found in the usual places. Pass
 `--chrome <path>` or set `CHROME` to use another browser.
 
 ## Files
@@ -251,6 +281,7 @@ page or its worker logs fails the check. Chrome is found in the usual places. Pa
 | `forge-worker.js`, `forge-scene.js` | the module worker: the full evaluation, bodies, export, quarantine |
 | `forge-items.js`, `forge-wanted.js` | what the View shows, synced by key |
 | `forge-input.js`, `forge-cameras.js`, `forge-order.js` | input routing, camera moves in the worker, command order |
+| `forge-snap.js` | snapping onto bodies and the grid: the settings, which View answers count |
 | `projection.js`, `view-cube.js`, `manipulator.js` | the overlay's maths, the view cube, the move/turn/scale gizmo |
 | `examples/` | example documents |
 | `scripts/setup.mjs`, `scripts/serve.mjs` | fetch the package; a static server |

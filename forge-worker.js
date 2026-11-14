@@ -61,6 +61,12 @@ function post(message, transfer) {
         const face = owner?.faces ? owner.faces.indexOf(message.hit.face) : message.hit.face;
         message = { ...message, hit: owner ? { ...message.hit, face: face < 0 ? null : face, body: owner.body, ghost: owner.ghost } : null };
     }
+    // A snap says which body it lies on (`body`, the body's id), or null: on a curve, a
+    // trim's ghost, the grid -- what forge-snap.js `bodyAnswer` sorts by.
+    if (message.kind === "view.snapped" && message.snap) {
+        const owner = scene?.bodyOfItem(message.snap.item) ?? null;
+        message = { ...message, snap: { ...message.snap, body: owner && !owner.ghost ? owner.body : null } };
+    }
     self.postMessage(message, transfer);
     // The view just appeared: show the wanted list the page sent before it did.
     if (message.kind === "view.ready" && message.id === VIEW_ID) scene?.resync();

@@ -38,6 +38,7 @@ import { cubeFaces, cubeFaceAt, aimAt } from "./view-cube.js";
 import { AXES3, RINGS3, layoutManipulator as layoutShared, drawManipulator as drawShared, hitManipulator as hitShared, manipulatorPoint as pointShared, dragDelta, segmentDistance } from "./manipulator.js";
 import { createRouter } from "./forge-input.js";
 import { createOrder, deferWhileBusy, createUndoOrder } from "./forge-order.js";
+import { KINDS as SNAP_KINDS, readSettings, writeSettings, viewKinds, bodyAnswer, choose, fresh as freshSnap, glyphOf } from "./forge-snap.js";
 
 const statusEl = document.getElementById("status");
 const statsEl = document.getElementById("stats");
@@ -86,6 +87,7 @@ const pickPathEl = document.getElementById("pick-path");
 const pickFaceEl = document.getElementById("pick-face");
 const pickMidEl = document.getElementById("pick-mid"), pickPointsEl = document.getElementById("pick-points"), midOriginEl = document.getElementById("mid-origin");
 const tabConstructEl = document.getElementById("tab-construct"), ribbonConstructEl = document.getElementById("ribbon-construct");
+const tabInspectEl = document.getElementById("tab-inspect"), ribbonInspectEl = document.getElementById("ribbon-inspect"), measureEl = document.getElementById("measure");
 const baseField = document.getElementById("base-field"), offsetField = document.getElementById("offset-field"), tiltField = document.getElementById("tilt-field");
 const listEl = document.getElementById("curves");
 const propsEl = document.getElementById("props");
@@ -1355,6 +1357,7 @@ function startDrawing(kind) {
     if (drawing?.kind === kind && drawing.id === null) { cancelDrawing(); return; }
     if (drawing) cancelDrawing();
     if (tool) commitTool();
+    if (measure) setMeasure(false);
     drawing = { kind, id: null, stage: 0, openedAt: headNow(), snaps: [] };
     // A view to draw in: the one filling the area, or the sketch plane's when that is
     // Perspective.
@@ -1370,7 +1373,7 @@ function drawingHint() {
     const view = drawing.id !== null ? NAMES[viewOf(byId(drawing.id).plane) ?? 0] : "a view";
     const first = { line: "the start", rect: "the first corner", circle: "the centre", polygon: "the centre", ellipse: "the centre", arc: "the start", polyline: "the first point", nurbs: "the first point" }[kind];
     if (stage === 0) return `click ${first} in ${view} · Esc cancels`;
-    if (kind === "line") return "click the end · ends snap onto other ends · Esc cancels";
+    if (kind === "line") return "click the end · ends snap onto other ends and bodies (Alt: no snap) · Esc cancels";
     if (kind === "rect") return "click the opposite corner · Esc cancels";
     if (kind === "circle") return "click a point on the rim · Esc cancels";
     if (kind === "polygon") return "click a vertex: its distance is the size, its direction the turn · sides in the dialog · Esc cancels";
@@ -1438,7 +1441,8 @@ function pendingSpot() {
 async function drawClick(w, plane, target = null) {
     const { kind } = drawing;
     const placing = placingSpot();
-    if (target && placing) drawing.snaps.push({ at: placing, target: { curve: target.curve, at: target.spot } });
+    // A snap onto a body or the grid (no `curve`) lands the point and is no fact: coordinates only.
+    if (target?.curve !== undefined && placing) drawing.snaps.push({ at: placing, target: { curve: target.curve, at: target.spot } });
     if (drawing.id === null) {
         // The curve is the page's alone until it is done (`local`): its `add` is committed then,
         // with its last shape, as one undo step.
@@ -3104,13 +3108,17 @@ function showTab(which) {
     tabSketchEl.setAttribute("aria-selected", String(which === "sketch"));
     tabSolidEl.setAttribute("aria-selected", String(which === "solid"));
     tabConstructEl.setAttribute("aria-selected", String(which === "construct"));
+    tabInspectEl.setAttribute("aria-selected", String(which === "inspect"));
     ribbonSketchEl.classList.toggle("open", which === "sketch");
     ribbonSolidEl.classList.toggle("open", which === "solid");
     ribbonConstructEl.classList.toggle("open", which === "construct");
+    ribbonInspectEl.classList.toggle("open", which === "inspect");
 }
 tabSketchEl.addEventListener("click", () => showTab("sketch"));
 tabSolidEl.addEventListener("click", () => showTab("solid"));
 tabConstructEl.addEventListener("click", () => showTab("construct"));
+tabInspectEl.addEventListener("click", () => showTab("inspect"));
+measureEl.addEventListener("click", () => setMeasure(!measure));
 // Finish sketch: over to the bodies, the selection dropped.
 sketchFilletEl.addEventListener("click", () => armSketchPick("fillet"));
 pickHingeEl.addEventListener("click", () => setPicking(picking === "hinge" ? null : "hinge"));
@@ -4313,13 +4321,13 @@ function drawOverlay() {
         }
         // The revolve tool's axis while it is armed.
         if (axisMode) inView(axisMode.plane, (top) => drawAxis(axisMode.plane, axisMode.axis, top, ACCENT));
+        if (drawing?.id !== null && drawing) drawRubberBand(byId(drawing.id));
         // The snap: a ring round the end the drag has landed on.
         if (snapped) inView(snapped.plane, (top) => {
             const [sx, sy] = sketchToPx(snapped.plane, snapped.at, top);
-            ctx.strokeStyle = HANDLE_COLOUR; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.stroke();
-            ctx.lineWidth = 1;
+            drawSnapMark(sx, sy, snapped.kind);
         });
+        if (measure) drawMeasure(rects);
         // A constraint tool's picked points, filled in the accent, and the point its next
         // click would take, ringed.
         if (sketchPick?.spots) {
@@ -4865,7 +4873,9 @@ function moveHandle(c, h, w) {
         snapped = null;
         const plane = c === null ? axisMode.plane : c.plane;
         const target = snapPoint(w, plane);
+        const onBody = target ? null : bodySnapHere(plane);
         if (target) { w = target; snapped = { plane, at: target }; }
+        else if (onBody) { w = onBody.at; snapped = { plane, ...onBody }; }
         if (c === null) { axisMode.axis[h.index] = [w[0], w[1]]; return; }
         c.axis[h.index] = unmapPoint(c, w);
         c.dirty = true;
@@ -4877,7 +4887,7 @@ function moveHandle(c, h, w) {
     const held = constrained(sketch);
     if (isEnd(c, h)) {
         // A held end drags its coincident partners along: their ends, under it, are no target.
-        const target = snapTarget(c, h, w, held ? handlesOf(c)[h.index] : null);
+        const target = choose(snapTarget(c, h, w, held ? handlesOf(c)[h.index] : null), bodySnapHere(c.plane));
         if (target) { w = target.at; snapped = { plane: c.plane, ...target }; }
     }
     if (held) { dragHeld(c, h, w, sketch); return; }
@@ -5088,7 +5098,7 @@ const snapPoint = (w, plane, skip = null) => snapSpot(w, plane, false, skip)?.at
 // (`{ curve, spot }`) is a spot never snapped onto: the point of a curve being drawn
 // that follows the pointer (`pendingSpot`).
 function snapSpot(w, plane, centres = false, skip = null) {
-    if (viewOf(plane) === null) return null;
+    if (viewOf(plane) === null || snapHeld) return null;
     const size = sizeOf(viewOf(plane));
     const [wx, wy] = sketchToLocal(plane, w, size);
     let best = null, bestD = SNAP_PX;
@@ -5114,7 +5124,7 @@ function snapSpot(w, plane, centres = false, skip = null) {
 // handle `h` of `c` dragged to `w` snaps onto, as `snapSpot` finds one -- `skip` the point
 // the dragged end is at (its held partners lie there) -- or null.
 function snapTarget(c, h, w, skip = null) {
-    if (viewOf(c.plane) === null) return null;
+    if (viewOf(c.plane) === null || snapHeld) return null;
     const size = sizeOf(viewOf(c.plane));
     const [wx, wy] = sketchToLocal(c.plane, w, size);
     let best = null, bestD = SNAP_PX;
@@ -5133,6 +5143,219 @@ function snapTarget(c, h, w, skip = null) {
         if (pointed(c) && c.shape.points.length > 2) consider(h.index === 0 ? ends[1] : ends[0], c, h.index === 0 ? "end" : "start");
     }
     return best;
+}
+
+// ------------------------------------------------------------------ snapping onto bodies
+// The View finds what lies under the pointer (`client.snap`); forge-snap.js says which
+// answers count. A curve end the page finds itself (`snapSpot`, `snapTarget`) wins, being
+// the only snap that makes a constraint; a body's or the grid's lands its point and is
+// coordinates only. The View's answer comes back after the move that asked it, so the last
+// one is cached (`snapCache`), counted for the pixel it was asked at, and the move run again
+// when it arrives (`again`) -- a click whose pixel has no answer yet asks for its own.
+let snapSettings = readSettings(null);
+try { snapSettings = readSettings(localStorage.getItem("forge.snap")); } catch { /* no storage: the defaults */ }
+let snapCache = null;    // { px, view, context, answer }: the last answer, `bodyAnswer`'s
+let snapSent = null;     // the View's snap settings and work plane as last set, as text
+let snapHeld = false;    // Alt is down: no snap of any kind
+let pointerAt = null;    // { px, view }: where the pointer last was over a view
+// The View's snapping for `context` -- a plane key (a sketch: the grid lies on it) or
+// "measure" (no grid) -- set when it changes.
+function syncSnap(context) {
+    const info = context !== null && context !== "measure" ? planeInfo(context) : null;
+    const plane = info && !info.broken ? info.frame : null;
+    const kinds = context === null ? null : viewKinds(snapSettings, { grid: plane !== null });
+    const work = kinds && plane ? { origin: plane.origin, xAxis: plane.x, normal: plane.z, step: snapSettings.step } : null;
+    const sent = JSON.stringify([kinds, work]);
+    if (sent === snapSent || !viewer) return kinds !== null;
+    snapSent = sent;
+    viewerCall(() => viewer.setSnap(kinds ? { kinds, marker: false } : null));
+    viewerCall(() => viewer.setWorkPlane(work));
+    return kinds !== null;
+}
+// Asks the View for the snap at overlay pixel `px` of view `i`, for `context`; resolves the
+// answer the forge uses (or null) and caches it. `again` runs when it arrives with the
+// pointer still there: the move it was asked for, done again with the snap.
+function askSnap(i, px, context, again = null) {
+    const asked = client;
+    if (!asked || snapHeld || !syncSnap(context)) { snapCache = null; return Promise.resolve(null); }
+    const [x, y] = local(px, i);
+    return asked.snap(x * asked.ratio, y * asked.ratio, i).then((answer) => {
+        if (client !== asked) return null;
+        const kept = bodyAnswer(answer, context === "measure" ? { grid: false, curves: true } : { grid: true });
+        snapCache = { px, view: i, context, answer: kept };
+        if (again && pointerAt && freshSnap(snapCache, pointerAt.px, pointerAt.view) === kept) again();
+        overlayDirty();
+        return kept;
+    }, () => null);
+}
+// The cached answer for pixel `px` of view `i` in `context`, or null.
+function viewSnapAt(i, px, context) {
+    if (snapHeld || !snapCache || snapCache.context !== context) return null;
+    return freshSnap(snapCache, px, i);
+}
+// A snap onto a body or the grid as the page's snaps are, `{ at, kind }` in `plane`'s
+// sketch coordinates -- the View's point dropped square onto the plane -- or null.
+function bodySnapAt(plane, i, px) {
+    const a = viewSnapAt(i, px, plane);
+    return a ? { at: flatten2(plane, a.point), kind: a.kind } : null;
+}
+const bodySnapHere = (plane) => (pointerAt && viewOf(plane) === pointerAt.view ? bodySnapAt(plane, pointerAt.view, pointerAt.px) : null);
+// The settings changed: kept, the View told, the controls and the grid made to match.
+function applySnapSettings() {
+    try { localStorage.setItem("forge.snap", writeSettings(snapSettings)); } catch { /* not remembered */ }
+    snapCache = null;
+    syncSnapControls();
+    if (viewReady) viewerCall(() => viewer.setGrid({ axes: true, step: gridStep(), extent: 100 }));
+    overlayDirty();
+}
+// The grid drawn: the snap step, or a multiple of it ten times over where the step is too
+// fine to draw across the grid's extent.
+function gridStep() {
+    let step = snapSettings.step;
+    while (100 / step > 200) step *= 10;
+    return step;
+}
+const snapOnEl = document.getElementById("snap-on"), snapMoreEl = document.getElementById("snap-more"), snapPopEl = document.getElementById("snap-pop"), snapStepEl = document.getElementById("snap-step");
+function syncSnapControls() {
+    snapOnEl.checked = snapSettings.on;
+    for (const box of snapPopEl.querySelectorAll("[data-snap]")) box.checked = !!snapSettings.kinds[box.dataset.snap];
+    if (document.activeElement !== snapStepEl) snapStepEl.value = String(snapSettings.step);
+}
+syncSnapControls();
+snapOnEl.addEventListener("change", () => { snapSettings.on = snapOnEl.checked; applySnapSettings(); });
+for (const box of snapPopEl.querySelectorAll("[data-snap]")) box.addEventListener("change", () => { if (SNAP_KINDS.includes(box.dataset.snap)) snapSettings.kinds[box.dataset.snap] = box.checked; applySnapSettings(); });
+snapStepEl.addEventListener("change", () => { const v = +snapStepEl.value; if (Number.isFinite(v) && v > 0) snapSettings.step = v; applySnapSettings(); });
+snapStepEl.addEventListener("keydown", (e) => e.stopPropagation());   // typing a step is not the page's keys
+const showSnapPop = (on) => { snapPopEl.hidden = !on; snapMoreEl.setAttribute("aria-expanded", String(on)); };
+snapMoreEl.addEventListener("click", () => showSnapPop(snapPopEl.hidden));
+addEventListener("pointerdown", (e) => { if (!snapPopEl.hidden && !e.target.closest?.("#snap-tools")) showSnapPop(false); }, true);
+
+// Measure: two clicks in any view, each snapped onto a body or a curve (no grid), give the segment
+// between them and its length -- drawn over the views, said in the status line. Nothing
+// goes into the document. A third click starts again.
+let measure = null;   // { a, b, hover: { px, view } | null }, a and b `{ point, kind, radius }` or null
+function setMeasure(on) {
+    if (on) {
+        if (drawing) cancelDrawing();
+        if (tool) commitTool();
+        if (sketchPick) disarmSketchPick(true);
+        if (sketchTrim) setSketchTrim(false);
+        measure = { a: null, b: null, hover: null };
+        showTab("inspect");
+    } else measure = null;
+    snapCache = null;
+    measureEl.setAttribute("aria-pressed", String(!!measure));
+    overlay.style.cursor = measure ? "crosshair" : "default";
+    hintEl.textContent = measure ? measureHint() : hintFor(current()?.kind);
+    overlayDirty();
+}
+const measureHint = () => (!measure.a || measure.b ? "click the first point in any view -- it snaps onto bodies (Alt: no snap) · Esc ends" : "click the second point · Esc ends");
+// The world point a Measure click at `px` in view `i` takes: the snap there, else the
+// point under the pointer on the orthographic view's plane through the origin (none in
+// Perspective, where only geometry gives a depth).
+async function measurePoint(i, px) {
+    let a = viewSnapAt(i, px, "measure");
+    if (!a && !snapHeld) a = await askSnap(i, px, "measure");
+    if (a) return { point: [...a.point], kind: a.kind, radius: a.kind === "centre" ? a.radius : 0 };
+    const w = camOf(i)?.pxToWorld(local(px, i), sizeOf(i));
+    return w ? { point: w, kind: null, radius: 0 } : null;
+}
+function measureClick(i, px) {
+    return measurePoint(i, px).then((p) => {
+        if (!measure) return;
+        if (!p) { say("click on a body in Perspective -- or in Top, Front or Right, anywhere", true); return; }
+        if (!measure.a || measure.b) { measure.a = p; measure.b = null; }
+        else { measure.b = p; say(measureText(measure.a, measure.b)); }
+        hintEl.textContent = measureHint();
+        overlayDirty();
+    });
+}
+function measureText(a, b) {
+    const d = V.sub(b.point, a.point);
+    const radii = [a, b].filter((p) => p.radius > 0).map((p) => ` · R ${fmt(p.radius)}`).join("");
+    return `L ${fmt(Math.hypot(...d))} mm · dx ${fmt(d[0])} dy ${fmt(d[1])} dz ${fmt(d[2])}${radii}`;
+}
+// The point the rubber band follows: the snap under the pointer, else its point on an
+// orthographic view's plane.
+function measureHover() {
+    const h = measure?.hover;
+    if (!h) return null;
+    const a = viewSnapAt(h.view, h.px, "measure");
+    if (a) return { point: a.point, kind: a.kind };
+    const w = camOf(h.view)?.pxToWorld(local(h.px, h.view), sizeOf(h.view));
+    return w ? { point: w, kind: null } : null;
+}
+// The curve being drawn, in its view, off its sketch Béziers (sixteen floats each: four
+// points of x, y, z, weight), in the outline's grey the View draws curves in.
+function drawRubberBand(c) {
+    const b = c?.sketch;
+    const view = viewOf(c?.plane);
+    if (!b?.length || view === null) return;
+    const top = layout()[view];
+    if (top[2] <= 0 || top[3] <= 0) return;
+    {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(top[0], top[1], top[2], top[3]); ctx.clip();
+        ctx.strokeStyle = OUTLINE_COLOUR; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let k = 0; k + 16 <= b.length; k += 16) {
+            for (let n = 0; n <= 24; n++) {
+                const u = n / 24, s = 1 - u, w = [s * s * s, 3 * s * s * u, 3 * s * u * u, u * u * u];
+                let x = 0, y = 0, d = 0;
+                for (let i = 0; i < 4; i++) { const ww = w[i] * b[k + 4 * i + 3]; x += ww * b[k + 4 * i]; y += ww * b[k + 4 * i + 1]; d += ww; }
+                const [sx, sy] = sketchToPx(c.plane, [x / d, y / d], top);
+                if (n === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+            }
+        }
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.restore();
+    }
+}
+// A snap's mark at overlay pixel (sx, sy): the ring, and inside it the kind's glyph.
+function drawSnapMark(sx, sy, kind) {
+    ctx.strokeStyle = HANDLE_COLOUR; ctx.fillStyle = HANDLE_COLOUR; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    switch (glyphOf(kind)) {
+    case "square": ctx.rect(sx - 3.5, sy - 3.5, 7, 7); ctx.stroke(); break;
+    case "triangle": ctx.moveTo(sx, sy - 4); ctx.lineTo(sx + 4, sy + 3); ctx.lineTo(sx - 4, sy + 3); ctx.closePath(); ctx.stroke(); break;
+    case "dot-ring": ctx.arc(sx, sy, 4, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(sx, sy, 1.2, 0, Math.PI * 2); ctx.fill(); break;
+    case "diamond": ctx.moveTo(sx, sy - 4.5); ctx.lineTo(sx + 4.5, sy); ctx.lineTo(sx, sy + 4.5); ctx.lineTo(sx - 4.5, sy); ctx.closePath(); ctx.stroke(); break;
+    case "cross": ctx.moveTo(sx - 3.5, sy - 3.5); ctx.lineTo(sx + 3.5, sy + 3.5); ctx.moveTo(sx + 3.5, sy - 3.5); ctx.lineTo(sx - 3.5, sy + 3.5); ctx.stroke(); break;
+    case "dot": ctx.arc(sx, sy, 2.5, 0, Math.PI * 2); ctx.fill(); break;
+    case "plus": ctx.moveTo(sx - 4, sy); ctx.lineTo(sx + 4, sy); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.stroke(); break;
+    default: break;
+    }
+    ctx.lineWidth = 1;
+}
+// Measure's segment in every view it shows in, its length at its middle; the hover's mark.
+function drawMeasure(rects) {
+    const hover = measureHover();
+    const a = measure.a, b = measure.b ?? (a ? hover : null);
+    for (let v = 0; v < 4; v++) {
+        const r = rects[v];
+        if (r[2] <= 0 || r[3] <= 0) continue;
+        const cam = camOf(v);
+        if (!cam) continue;
+        const at = (p) => { const q = cam.worldToPx(p, [r[2], r[3]]); return q ? [r[0] + q[0], r[1] + q[1]] : null; };
+        ctx.save();
+        ctx.beginPath(); ctx.rect(r[0], r[1], r[2], r[3]); ctx.clip();
+        const pa = a ? at(a.point) : null, pb = b ? at(b.point) : null;
+        if (pa && pb) {
+            ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke();
+            ctx.lineWidth = 1;
+            const len = fmt(Math.hypot(...V.sub(b.point, a.point)));
+            ctx.font = "12px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+            ctx.fillStyle = HANDLE_COLOUR;
+            ctx.fillText(`${len} mm`, (pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2 - 6);
+        }
+        for (const [p, q] of [[a, pa], [measure.b, pb]]) if (p && q) drawSnapMark(q[0], q[1], p.kind ?? "dot");
+        if (hover?.kind && measure.hover.view === v) { const q = at(hover.point); if (q) drawSnapMark(q[0], q[1], hover.kind); }
+        ctx.restore();
+    }
 }
 
 // ------------------------------------------------------------------ the mouse
@@ -5174,6 +5397,10 @@ overlay.addEventListener("pointerdown", (e) => {
     if (i < 0 || lastReport === null) return;
     active = i;
     overlay.setPointerCapture(e.pointerId);
+    snapHeld = e.altKey;
+    pointerAt = { px, view: i };
+    // Measure takes a left click anywhere but a view's name and the cube.
+    if (measure && e.button === 0 && nameAt(px) < 0 && !onViewCube(px)) { userAct(() => measureClick(i, px)); return; }
     // A curve being drawn takes the click: its next point, in the view's plane (the
     // curve's own, once begun), snapped onto curve ends; a right click ends a polyline.
     if (drawing && i !== 1 && nameAt(px) < 0 && !onViewCube(px)) {
@@ -5181,11 +5408,16 @@ overlay.addEventListener("pointerdown", (e) => {
         if (e.button !== 0) return;
         const plane = drawing.id !== null ? byId(drawing.id)?.plane : viewPlane[i];
         if (plane === undefined || viewOf(plane) !== i) return;   // begun in another view: that one's plane
-        let w = pxToSketch(plane, local(px, i), sizeOf(i));
-        // A centre being placed snaps onto other centres too.
-        const target = snapSpot(w, plane, placingSpot() === "centre", pendingSpot());
-        if (target) w = target.at;
-        userAct(() => drawClick(w, plane, target));
+        // A centre being placed snaps onto other centres too; with no curve's spot near, onto a
+        // body or the grid (the View's answer for this pixel, asked for if the move had none).
+        const held = snapHeld;
+        userAct(async () => {
+            snapHeld = held;
+            const page = snapSpot(pxToSketch(plane, local(px, i), sizeOf(i)), plane, placingSpot() === "centre", pendingSpot());
+            if (!page && !held && !viewSnapAt(i, px, plane)) await askSnap(i, px, plane);
+            const target = choose(snapSpot(pxToSketch(plane, local(px, i), sizeOf(i)), plane, placingSpot() === "centre", pendingSpot()), bodySnapAt(plane, i, px));
+            return drawClick(target ? target.at : pxToSketch(plane, local(px, i), sizeOf(i)), plane, target);
+        });
         return;
     }
     // A press on the view cube is the page's: a click on a face aims the camera square at
@@ -5353,22 +5585,37 @@ function pressAt(i, px, e) {
     // Empty space deselects the point; the curve stays selected.
     if (pointed(c)) selectPoint(null);
 }
-overlay.addEventListener("pointerleave", () => { setHover(null); hoverSpot = null; hoverConstraintAt(null); if (hoverCurve) { hoverCurve = null; schedule(); } });
+// The pointer over the views while a curve tool is in hand: the curve being drawn follows it
+// in its view, snapped as a click would be; before the first click, the snap a click would
+// take is ringed. The View's snap is asked for here and this runs again when it comes.
+function drawHover() {
+    snapped = null;
+    if (!drawing || !pointerAt) return;
+    const { px, view: i } = pointerAt;
+    const c = drawing.id !== null ? byId(drawing.id) : null;
+    const plane = c ? c.plane : viewPlane[i];
+    if (plane === undefined || viewOf(plane) !== i || (drawing.id !== null && !c)) return;
+    let w = pxToSketch(plane, local(px, i), sizeOf(i));
+    const page = c ? snapSpot(w, plane, false, pendingSpot()) : snapSpot(w, plane, placingSpot() === "centre");
+    const target = choose(page, bodySnapAt(plane, i, px));
+    if (target) { w = target.at; snapped = { plane, ...target }; }
+    if (c) drawMove(w);
+    if (!page) askSnap(i, px, plane, () => { if (drawing) { drawHover(); overlayDirty(); } });
+}
+overlay.addEventListener("pointerleave", () => { pointerAt = null; snapCache = null; if (measure) measure.hover = null; setHover(null); hoverSpot = null; hoverConstraintAt(null); if (hoverCurve) { hoverCurve = null; schedule(); } });
 overlay.addEventListener("pointermove", (e) => {
     if (lastReport === null) return;
     overlayDirty();   // what the page alone draws (a cursor, a snap, a hover) rides no frame of the View's
-    if (router !== null && router.move(e)) return;   // the view's drag
-    if (!drag && drawing?.id !== null && drawing) {
-        // The curve being drawn follows the pointer in its view; snapped as a click would be.
-        const c = byId(drawing.id);
+    {
         const px = [e.offsetX, e.offsetY], i = viewportAt(px);
-        if (c && i === viewOf(c.plane)) {
-            let w = pxToSketch(c.plane, local(px, i), sizeOf(i));
-            const target = snapPoint(w, c.plane, pendingSpot());
-            snapped = target ? { plane: c.plane, at: target } : null;
-            if (target) w = target;
-            drawMove(w);
-        }
+        pointerAt = i >= 0 ? { px, view: i } : null;
+        snapHeld = e.altKey;
+    }
+    if (router !== null && router.move(e)) return;   // the view's drag
+    if (!drag && drawing) { drawHover(); return; }
+    if (!drag && measure) {
+        measure.hover = pointerAt;
+        if (pointerAt) askSnap(pointerAt.view, pointerAt.px, "measure", () => overlayDirty());
         return;
     }
     if (!drag) {
@@ -5408,7 +5655,10 @@ overlay.addEventListener("pointermove", (e) => {
         // A curve on a sketch: what the drag starts from (and the sketch migrated, if it
         // was saved before constraints), for `endDrag`'s one edit.
         if (!("held" in drag)) { const sketch = sketchOf(drag.curve); drag.held = sketch ? constrainedStart(sketch) : null; }
-        moveHandle(drag.curve, drag.handle, pxToSketch(plane, local(px, drag.view), sizeOf(drag.view)));
+        const handleTo = (q) => moveHandle(drag.curve, drag.handle, pxToSketch(plane, local(q, drag.view), sizeOf(drag.view)));
+        handleTo(px);
+        const dragged = drag;
+        if (viewportAt(px) === drag.view) askSnap(drag.view, px, plane, () => { if (drag === dragged && pointerAt) { handleTo(pointerAt.px); overlayDirty(); } });
     } else if (drag.kind === "cube") {
         if (drag.cube && Math.hypot(px[0] - drag.last[0], px[1] - drag.last[1]) > 3) drag.cube = null;   // a drag, not a click on a face
         if (!drag.cube) { const r = drawRatio(); viewerCall(() => viewer.orbit((px[0] - drag.last[0]) * r, (px[1] - drag.last[1]) * r, 1)); drag.last = px; }
@@ -6981,7 +7231,7 @@ const MOVE_CODES = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "Shi
 addEventListener("keydown", (e) => { entry(() => onKeydown(e)); overlayDirty(); });
 function onKeydown(e) {
     if (e.key === "Alt") e.preventDefault();   // held for an orbit; on its own it would take the browser's menu
-    if (e.key === "Escape") { if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
+    if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
     const inDialog = e.target instanceof HTMLElement && e.target.closest("#dialog");
     if (e.key === "Enter" && drawing && !inDialog) { e.preventDefault(); finishDrawing(); return; }
     if (e.key === "Enter" && tool && (e.target === document.body || inDialog || e.target instanceof HTMLButtonElement)) { e.preventDefault(); commitTool(); return; }
@@ -7372,7 +7622,8 @@ let announced = false;
 function afterViewReady() {
     viewReady = true;
     cameraRadius = null; lastRefusal = null;
-    viewerCall(() => viewer.setGrid({ axes: true, step: 10, extent: 100 }));
+    viewerCall(() => viewer.setGrid({ axes: true, step: gridStep(), extent: 100 }));
+    snapSent = null; snapCache = null;   // a new View snaps nothing till told
     // The pointer's presses the page does not claim go to the view's handler; its taps come
     // back as the page's click (`pressAt`), with no GPU pick of the View's own -- the page
     // hit-tests where the press landed. A tap is three CSS pixels with no time limit, as the
@@ -7874,6 +8125,9 @@ function show() {
     const lit = hoverConstraintCurves();
     for (const c of sketch) {
         if (!c.beziers?.length) continue;
+        // The curve being drawn is the overlay's (`drawRubberBand`) till it is done: in the View,
+        // its end under the pointer would be the nearest thing a snap could land on.
+        if (drawing && c.id === drawing.id) continue;
         const free = diagnoses.get(c.plane)?.freeCurves.has(c.id);
         const colour = encoded((c === hoverCurve || lit.has(c.id)) && !isSelected(c) ? HOVER_CURVE : isSelected(c) ? SELECTED_CURVE : free ? FREE_CURVE : isClosed(c) ? CLOSED_CURVE : CURVE);
         out.push({ key: `curve:${c.id}`, deps: [c.rev], kind: "curves", colour, ref: c });
@@ -8338,6 +8592,10 @@ function installTestHook() {
         },
         order: () => curves.map((c) => c.id),
         rects: () => layout(),
+        // Snapping's settings, merged into the current ones (forge-snap.js `defaultSettings`'s shape).
+        snap: (s) => { if (s) { snapSettings = { ...snapSettings, ...s, kinds: { ...snapSettings.kinds, ...(s.kinds ?? {}) } }; applySnapSettings(); } return JSON.parse(writeSettings(snapSettings)); },
+        // Where world point `p` shows in view `i`, in overlay CSS pixels, or null.
+        screenOf: (i, p) => { const r = layout()[i], q = camOf(i)?.worldToPx(p, [r[2], r[3]]); return q ? [r[0] + q[0], r[1] + q[1]] : null; },
     };
 }
 

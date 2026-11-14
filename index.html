@@ -47,6 +47,11 @@
     #tabs #file-tools button:disabled { color: var(--dim); }
     #tabs #file-tools select { border: 1px solid var(--edge); border-radius: 0; background: var(--raised); color: var(--fg); font: inherit; font-size: 12px; padding: 1px 4px; }
     #tabs label { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+    #snap-tools { position: relative; display: flex; align-items: center; gap: 2px; }
+    #tabs #file-tools #snap-more { padding: 2px 4px; }
+    #snap-pop { position: absolute; top: 100%; right: 0; z-index: 20; margin-top: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; background: var(--raised); border: 1px solid var(--edge); }
+    #snap-pop[hidden] { display: none; }
+    #snap-pop input[type=number] { width: 64px; border: 1px solid var(--edge); background: var(--bg); color: var(--fg); font: inherit; font-size: 12px; padding: 1px 4px; }
     .ribbon { display: none; padding: 6px 10px; gap: 18px; align-items: stretch; overflow-x: auto; }
     .ribbon.open { display: flex; }
     .ribbon .group { display: flex; flex-direction: column; gap: 3px; }
@@ -251,6 +256,7 @@
     <symbol id="i-fillet" viewBox="0 0 24 24"><path d="M20 20 H4 V10 Q4 4 10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-chamfer" viewBox="0 0 24 24"><path d="M20 20 H4 V10 L10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6 H10 L12 8 H21 V19 H3 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-measure" viewBox="0 0 24 24"><path d="M4 18 L20 6"/><path d="M4 14 L4 22 M20 2 L20 10"/><path d="M8 15 L9.5 17 M12 12 L13.5 14 M16 9 L17.5 11"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14"/><path d="M3 16 L9 10 L14 15 L17 12 L21 16"/><circle cx="16" cy="9" r="1.5"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12 C6 5 18 5 22 12 C18 19 6 19 2 12 Z"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol>
     <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M2 12 C6 5 18 5 22 12 C18 19 6 19 2 12 Z"/><path d="M4 20 L20 4"/></symbol>
@@ -275,6 +281,7 @@
         <button id="tab-sketch" aria-selected="true">Sketch</button>
         <button id="tab-solid" aria-selected="false">Solid</button>
         <button id="tab-construct" aria-selected="false">Construct</button>
+        <button id="tab-inspect" aria-selected="false">Inspect</button>
         <span class="spacer"></span>
         <span id="file-tools">
             <label><input type="checkbox" id="layer-mesh" checked> surfaces</label>
@@ -282,6 +289,20 @@
             <label><input type="checkbox" id="layer-isocurves"> isocurves</label>
             <label><input type="checkbox" id="layer-measures"> measures</label>
             <label><input type="checkbox" id="layer-images" checked> images</label>
+            <span id="snap-tools">
+                <label title="sketch points and measure clicks snap onto bodies' corners, midpoints, centres, quadrants and edges, and onto the grid where it is on -- hold Alt for a point that does not snap"><input type="checkbox" id="snap-on" checked> snap</label>
+                <button id="snap-more" title="what snaps, and the grid's step" aria-expanded="false">&#9662;</button>
+                <div id="snap-pop" hidden>
+                    <label><input type="checkbox" data-snap="vertex"> vertex</label>
+                    <label><input type="checkbox" data-snap="midpoint"> midpoint</label>
+                    <label><input type="checkbox" data-snap="centre"> centre</label>
+                    <label><input type="checkbox" data-snap="quadrant"> quadrant</label>
+                    <label><input type="checkbox" data-snap="edge"> edge</label>
+                    <label><input type="checkbox" data-snap="face"> face</label>
+                    <label><input type="checkbox" data-snap="grid"> grid</label>
+                    <label>step <input type="number" id="snap-step" min="0.001" step="any"> mm</label>
+                </div>
+            </span>
             <label title="how bodies with no look of their own are lit -- the showroom shows only on those; a body given a material in its dialog keeps that material's own lamps">light <select id="lighting"><option value="headlight">headlight</option><option value="studio">studio</option><option value="showroom">showroom</option></select></label>
             <button id="stl" disabled>stl</button>
             <button id="glb" disabled>glb</button>
@@ -399,6 +420,14 @@
                 <input type="file" id="image-file" accept="image/*" hidden>
             </div>
             <span>reference</span>
+        </div>
+    </div>
+    <div class="ribbon" id="ribbon-inspect">
+        <div class="group">
+            <div>
+                <button id="measure" aria-pressed="false" title="the distance between two points -- click them in any view; they snap onto bodies' corners, midpoints, centres and edges"><svg class="g"><use href="#i-measure"/></svg>measure</button>
+            </div>
+            <span>measure</span>
         </div>
     </div>
 </div>

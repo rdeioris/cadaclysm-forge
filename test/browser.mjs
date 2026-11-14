@@ -3,7 +3,9 @@
 // For each example asked: the page opens it, every body builds with no error, the bodies
 // draw (a pick in the views lands on one), the STEP button -- offered once a closed solid is
 // built -- downloads a STEP file with at least one solid in it, and nothing is logged as an
-// error by the page or its worker.
+// error by the page or its worker. Then the snap check: in box-fillet's Top view, with real
+// pointer events, a line drawn onto two of the box's corners lands on them exactly, grid
+// snaps land on the step, Alt snaps nothing, and Measure reads a box edge's length.
 //
 //     npm run test:browser                          # examples/box-fillet.json, the default backend
 //     node test/browser.mjs --webgl2                # the WebGL2 fallback (?backend=webgl2)
@@ -12,6 +14,7 @@
 //     node test/browser.mjs --out test/out          # also a screenshot of each, and the STEP files
 //     node test/browser.mjs --chrome <path to chrome or msedge>   (or the CHROME variable)
 //     node test/browser.mjs --headed                # watch it
+//     node test/browser.mjs --no-snap               # the examples alone, no snap check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
 import { spawn } from "node:child_process";
@@ -96,8 +99,10 @@ async function launch(chrome, profile) {
     return { child, url: `ws://127.0.0.1:${port}${path}` };
 }
 
-// ---- one example in a fresh tab ----------------------------------------------------------
-async function checkExample(cdp, base, name, { webgl2, out, pins }) {
+// ---- the forge in a fresh tab, an example loaded ------------------------------------------
+// `{ send, evaluate, errors, done, downloads, backend, close }`: the tab's own DevTools calls,
+// what its page and worker logged as errors, the downloads' states and folder.
+async function openForge(cdp, base, name, { webgl2 }) {
     const errors = [];
     const downloads = mkdtempSync(join(tmpdir(), "forge-step-"));
     const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank" });
@@ -130,6 +135,12 @@ async function checkExample(cdp, base, name, { webgl2, out, pins }) {
         if (r.exceptionDetails) throw new Error(`${expression.slice(0, 60)}: ${r.exceptionDetails.exception?.description ?? r.exceptionDetails.text}`);
         return r.result.value;
     }
+    async function close() {
+        await cdp.send("Target.closeTarget", { targetId }).catch(() => {});
+        // Chrome can hold the download folder a moment after the tab closes (EBUSY on Windows):
+        // retried, and a folder left in the temp folder is no failure.
+        try { rmSync(downloads, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch { /* left behind */ }
+    }
     try {
         await send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
         await send("Runtime.enable");
@@ -145,6 +156,17 @@ async function checkExample(cdp, base, name, { webgl2, out, pins }) {
         await until("the page's View", () => evaluate("!!window.__forgeTest"), 60000);
         const backend = await evaluate("window.__forgeTest.backend()");
         await evaluate(`(async () => { const text = await (await fetch("examples/${name}.json")).text(); await window.__forgeTest.load(text); })()`);
+        return { send, evaluate, errors, done, downloads, backend, close };
+    } catch (e) {
+        await close();
+        throw e;
+    }
+}
+
+// ---- one example in a fresh tab ----------------------------------------------------------
+async function checkExample(cdp, base, name, { webgl2, out, pins }) {
+    const { send, evaluate, errors, done, downloads, backend, close } = await openForge(cdp, base, name, { webgl2 });
+    try {
         const bodies = await evaluate("window.__forgeTest.bodies()");
         const status = await evaluate("window.__forgeTest.status()");
         if (status.error) throw new Error(`the status line says: ${status.text}`);
@@ -217,10 +239,107 @@ async function checkExample(cdp, base, name, { webgl2, out, pins }) {
         }
         throw e;
     } finally {
-        await cdp.send("Target.closeTarget", { targetId }).catch(() => {});
-        // Chrome can hold the download folder a moment after the tab closes (EBUSY on Windows):
-        // retried, and a folder left in the temp folder is no failure.
-        try { rmSync(downloads, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch { /* left behind */ }
+        await close();
+    }
+}
+
+// ---- snapping, with real pointer events ------------------------------------------------
+// box-fillet: a 20 mm box about the origin, its bottom edges filleted, so its top corners
+// (+-10, +-10, 10) are sharp vertices -- what Top looks down on.
+async function checkSnap(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    // Overlay CSS pixels to the page's, for Input.dispatchMouseEvent.
+    const origin = await evaluate(`(() => { const r = document.getElementById("overlay").getBoundingClientRect(); return [r.left, r.top]; })()`);
+    const at = async (p) => {
+        const q = await evaluate(`window.__forgeTest.screenOf(0, ${JSON.stringify(p)})`);
+        if (!q) throw new Error(`no pixel for ${JSON.stringify(p)} in Top`);
+        return [origin[0] + q[0], origin[1] + q[1]];
+    };
+    const mouse = (type, [x, y], alt = false) => send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left",
+        buttons: type === "mousePressed" ? 1 : 0, clickCount: type === "mouseMoved" ? 0 : 1, modifiers: alt ? 1 : 0, pointerType: "mouse" });
+    // A hover, a pause for the View's answer, a click: as a user aims and clicks.
+    async function click(px, alt = false) {
+        await mouse("mouseMoved", [px[0] - 6, px[1] - 6], alt);
+        await mouse("mouseMoved", px, alt);
+        await sleep(250);
+        await mouse("mousePressed", px, alt);
+        await mouse("mouseReleased", px, alt);
+        await sleep(100);
+    }
+    const near = ([x, y]) => [x + 3, y - 2];   // a few pixels off: inside the snap's 10
+    const lines = async () => (await evaluate("window.__forgeTest.items()")).filter((c) => c.kind === "line");
+    async function drawLine(a, b, alt = false) {
+        const before = (await lines()).length;
+        await evaluate(`document.querySelector("#ribbon-sketch [data-kind=line]").click()`);
+        await frame(); await sleep(300); await frame();
+        await click(await a(), alt);
+        await click(await b(), alt);
+        await evaluate("window.__forgeTest.settled()");
+        // Done, not still in hand: both clicks were the page's (a click off the view never reaches it).
+        if (await evaluate(`document.querySelector("#ribbon-sketch [data-kind=line]").getAttribute("aria-pressed")`) === "true") throw new Error("the line is still being drawn after its second click");
+        const now = await lines();
+        if (now.length !== before + 1) throw new Error(`${now.length - before} lines drawn, not one`);
+        const s = now[now.length - 1].shape;
+        return [[s.x0, s.y0], [s.x1, s.y1]];
+    }
+    const same = (p, q) => Math.abs(p[0] - q[0]) < 1e-6 && Math.abs(p[1] - q[1]) < 1e-6;
+    const text = (p) => `(${p.map((v) => +v.toFixed(9)).join(", ")})`;
+    try {
+        // Top filling the area, framed.
+        await evaluate(`document.querySelector('#viewbar [data-view="0"]').click()`);
+        await frame(); await sleep(300);
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: "f", code: "KeyF", windowsVirtualKeyCode: 70, text: "f" });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: "f", code: "KeyF", windowsVirtualKeyCode: 70 });
+        await frame(); await sleep(500); await frame();
+        await evaluate(`window.__forgeTest.snap({ on: true, kinds: { vertex: true, midpoint: true, centre: true, quadrant: true, edge: true, face: false, grid: false }, step: 10 })`);
+
+        // 1. Measure: two corners of one top edge, 20 mm apart.
+        await evaluate(`document.getElementById("measure").click()`);
+        await frame();
+        await click(near(await at([10, 10, 10])));
+        await click(near(await at([10, -10, 10])));
+        const status = await evaluate("window.__forgeTest.status()");
+        if (status.error || !/^L 20 mm/.test(status.text)) throw new Error(`Measure says "${status.text}", not L 20 mm`);
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+
+        // 2. Onto two corners: the ends are the corners' x and y.
+        const [a, b] = await drawLine(async () => near(await at([10, 10, 10])), async () => near(await at([-10, 10, 10])));
+        if (!same(a, [10, 10]) || !same(b, [-10, 10])) throw new Error(`the line onto the corners is ${text(a)} -> ${text(b)}, not (10, 10) -> (-10, 10)`);
+
+        // 3. A curve end still wins: a line begun at the first line's end starts there exactly.
+        const [c] = await drawLine(async () => near(await at([-10, 10, 10])), async () => at([-22, 18, 0]));
+        if (!same(c, b)) throw new Error(`a line begun at another's end starts at ${text(c)}, not ${text(b)}`);
+
+        // 4. The grid alone, every 5 mm: clicks a hair off its crossings, away from the box, land on them.
+        await evaluate(`window.__forgeTest.snap({ kinds: { vertex: false, midpoint: false, centre: false, quadrant: false, edge: false, face: false, grid: true }, step: 5 })`);
+        const onGrid = (v) => Math.abs(v / 5 - Math.round(v / 5)) < 1e-6;
+        const [g0, g1] = await drawLine(async () => at([25.12, -14.91, 0]), async () => at([34.9, -25.08, 0]));
+        if (![...g0, ...g1].every(onGrid)) throw new Error(`grid snaps at ${text(g0)} -> ${text(g1)}, not on the 5 mm grid`);
+
+        // 5. Alt: no snap -- a click by a corner stays off it.
+        await evaluate(`window.__forgeTest.snap({ kinds: { vertex: true, midpoint: true, centre: true, quadrant: true, edge: true, grid: false } })`);
+        const [h] = await drawLine(async () => near(await at([10, -10, 10])), async () => at([22, -18, 0]), true);
+        if (same(h, [10, -10])) throw new Error("a click with Alt held snapped onto the corner");
+
+        await sleep(300);
+        if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `snap${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        }
+        console.log(`ok - snap: corners ${text(a)} ${text(b)}, a curve end first, grid ${text(g0)} ${text(g1)}, Alt off, ${status.text}`);
+    } catch (e) {
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+            if (shot) writeFileSync(join(out, `snap${webgl2 ? "-webgl2" : ""}-failed.png`), Buffer.from(shot.data, "base64"));
+        }
+        throw e;
+    } finally {
+        await close();
     }
 }
 
@@ -249,6 +368,14 @@ async function main() {
                 failed++;
                 console.error(`not ok - ${name}: ${e.message}`);
                 break;
+            }
+        }
+        if (!failed && !flag("--no-snap")) {
+            try {
+                await checkSnap(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - snap: ${e.message}`);
             }
         }
     } finally {
