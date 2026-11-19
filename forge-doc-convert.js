@@ -78,6 +78,7 @@ import { get, put, remove, clone, litEq, isMap, idOf, kindOf, isBody, isSketch, 
 import { itemsOf, nodesOf, registryOf, facePlaceholder, isPlaceholder, isFacePlaneId, nodeFromLit } from "./forge-doc-nodes.js";
 import { applyCommand } from "./forge-doc-commands.js";
 import { sourcePivot, loopsCurves } from "./forge-doc-curves.js";
+import { faceRefLit, edgeRefLit, faceRefOf, edgeRefOf, pickRefs, documentPickRefs, docPicks as picksOf } from "./forge-picks.js";
 
 /// How far a reference may be from the face or edge it names, as a node looks it up (the
 /// Rust `kind::REF_TOLERANCE`).
@@ -176,75 +177,15 @@ function withSolid(kernel, doc, id, f, none) {
 }
 
 // ---------------------------------------------------------------------------------
-// References.
+// References: forge-picks.js's, re-exported for this layer's callers until it goes.
 
-const vec = (a, at) => [a[at], a[at + 1], a[at + 2]];
+export { faceRefLit, edgeRefLit, pickRefs, documentPickRefs };
 
-/// A face reference (the kernel's eight doubles: kind, at, normal, extent) as a node's
-/// field holds it (the Rust `refs::face_ref_lit`).
-export const faceRefLit = (a) => ({ surface: a[0], at: vec(a, 1), normal: vec(a, 4), extent: a[7] });
-
-/// An edge reference (fifteen doubles: kind, mid, tangent, length, the two faces' normals,
-/// span) as a node's field holds it (`refs::edge_ref_lit`).
-export const edgeRefLit = (a) => ({ curve: a[0], mid: vec(a, 1), tangent: vec(a, 4), length: a[7], faces: [vec(a, 8), vec(a, 11)], span: a[14] });
-
-/// Face `f`'s reference -- one that finds `f` again, as a node will look it up.
-function faceRefOf(kernel, solid, f) {
-    const gone = `face ${f} is not on the solid`;
-    if (!(f < call(kernel, "cadaclysm_blacksmith_face_count", solid))) fail(gone);
-    let a;
-    try {
-        a = call(kernel, "cadaclysm_blacksmith_face_ref", solid, f);
-    } catch {
-        fail(gone);
-    }
-    const k = call(kernel, "cadaclysm_blacksmith_find_face", solid, a, -1, REF_TOLERANCE);
-    if (k !== f) fail(`face ${f} cannot be told apart by its reference (it finds ${k < 0 ? "none" : `face ${k}`})`);
-    return faceRefLit(Array.from(a));
-}
-
-/// Edge `e`'s reference -- one that finds `e` again (edges as `cadaclysm_blacksmith::edges`
-/// numbers them, which `edge_count` / `edge_ref` index).
-function edgeRefOf(kernel, solid, e) {
-    const gone = `edge ${e} is not on the solid`;
-    if (!(e < call(kernel, "cadaclysm_blacksmith_edge_count", solid))) fail(gone);
-    let a;
-    try {
-        a = call(kernel, "cadaclysm_blacksmith_edge_ref", solid, e);
-    } catch {
-        fail(gone);
-    }
-    const k = call(kernel, "cadaclysm_blacksmith_find_edge", solid, a, REF_TOLERANCE);
-    if (k !== e) fail(`edge ${e} cannot be told apart by its reference (it finds ${k < 0 ? "none" : `edge ${k}`})`);
-    return edgeRefLit(Array.from(a));
-}
-
-/// References (as `faceRefs` / `edgeRefs` hold them) to faces (`faces`: B-rep face
-/// indices) or edges (`cadaclysm_blacksmith::edges` numbers) of a solid handle. Each finds
-/// its face or edge again, or the pick is refused.
-export function pickRefs(kernel, solid, faces, indices) {
-    return Array.from(indices, (k) => (faces ? faceRefOf(kernel, solid, k) : edgeRefOf(kernel, solid, k)));
-}
-
-/// `pickRefs` off node `id`'s solid, the document evaluated first (`kind` "edges" or
-/// "faces"): what the worker answers a pick with.
-export function documentPickRefs(kernel, doc, id, kind, indices) {
-    if (kind !== "faces" && kind !== "edges") fail(`kind \`${kind}\` is not \`edges\` or \`faces\``);
-    call(kernel, "cadaclysm_blacksmith_document_evaluate", doc, false);
-    return withSolid(kernel, doc, id, (s) => pickRefs(kernel, s, kind === "faces", indices), () => fail(`\`${id}\` has no solid (not a node, or it failed to build)`));
-}
-
-/// The geometry `applyCommand` may ask of a document: item `n`'s solid is node `i<n>`'s,
-/// as the document last evaluated it.
+/// The geometry `applyCommand` may ask of a document: forge-picks.js's `docPicks` (item
+/// `n`'s solid is node `i<n>`'s, as the document last evaluated it), with the pivot this
+/// layer's items give.
 export function docPicks(kernel, doc) {
-    const body = (n, f) => withSolid(kernel, doc, `i${n}`, f, () => fail(`#${n} has not been built`));
-    return {
-        kernel,
-        sourcePivot: (items, loops) => sourcePivot(kernel, loopsCurves(items, loops)),
-        faceFrame: (n) => fail(`the frame of a face of #${n} is its \`frame.on_face\` node's`),
-        edgeRef: (n, index) => body(n, (s) => edgeRefOf(kernel, s, index)),
-        faceRef: (n, index) => body(n, (s) => faceRefOf(kernel, s, index)),
-    };
+    return { ...picksOf(kernel, doc), sourcePivot: (items, loops) => sourcePivot(kernel, loopsCurves(items, loops)) };
 }
 
 // ---------------------------------------------------------------------------------
