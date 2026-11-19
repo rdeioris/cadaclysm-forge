@@ -215,8 +215,13 @@ WebAssembly module (the kernel and the View), its loader (`index.js`) and `view.
 holds the page modules that go with the View, which the forge imports from there instead of
 keeping copies: `viewer-host.js` and `viewer-client.js` (a View in a worker, drawing a
 canvas the page hands over) and `view-canvas.js` (the canvas's capped drawing size). The
-forge needs the web package from 0.14 on, which has `View.showSolid`'s face subsets,
-`mesh_file` and `document_evaluate_with`.
+forge needs the SDK's web package 0.15 or later (setup fetches 0.15.0), which has the
+document calls the node layer reads with (`document_nodes`, `document_revision`,
+`document_probe`, `document_meta`, ...), the profile calls the sketch tools use
+(`profile_from_pieces`, `profile_fillet_corner`, ...) and the `solid.transform` and
+`value.unresolved` kinds. The examples are in the 0.15 node layout. A file saved by the
+forge on the 0.14 package holds `forge.*` nodes, which this forge does not write; a kernel
+without those kinds refuses such a file, and the page shows the kernel's words.
 
 ## Run
 
