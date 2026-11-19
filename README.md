@@ -40,7 +40,7 @@ flowchart LR
         UI["ribbon, browser, history bar,<br/>2D overlay, sketch tools,<br/>constraint solver"]
         PR["page replica<br/>blacksmith document"]
         PW["kernel wasm<br/>(page instance)"]
-        UI -- "forge-doc-*.js: command → batch op" --> PR
+        UI -- "forge-commands.js: command → batch op" --> PR
         PR -- "document_apply, cheap evaluate,<br/>preview, undo / redo" --> PW
     end
     subgraph Worker["module worker (forge-worker.js)"]
@@ -61,10 +61,13 @@ flowchart LR
 The page and a module worker each hold a replica of one document, in their own instance
 of the wasm module.
 
-- **The page** (`forge.js`) turns every tool into a forge command. `forge-doc-convert.js`'s
+- **The page** (`forge.js`) turns every tool into a forge command. `forge-commands.js`'s
   `command` writes the command into the document as one batch op, applies it to the page's
   replica (`cadaclysm_blacksmith_document_apply`), and posts the same op to the worker. Both
-  replicas therefore save the same bytes. The page evaluates its replica cheaply
+  replicas therefore save the same bytes. The page's items are read straight off the
+  document's nodes (`forge-model.js`), kept up to date from the set of nodes each commit,
+  undo or redo changed, so a command costs what its own batch costs, however long the
+  document is. The page evaluates its replica cheaply
   (`cadaclysm_blacksmith_document_evaluate(doc, true)`). That pass covers curves, sketches
   and frames. The bodies stay pending, so the kernel's heavy work never blocks the page's
   thread. From that pass the page learns the key each body must come back with and any
@@ -80,7 +83,7 @@ of the wasm module.
   draws it.
 - **Commands that need built geometry**, such as a sketch on a new face or a pick that has
   no reference yet, go to the worker as `resolve`. The worker works out the op on its
-  evaluated replica (`commandOp`) and answers `resolved`. The page then applies that op and
+  evaluated replica (`commandBatch`) and answers `resolved`. The page then applies that op and
   sends it back like any other. `pick` asks for the references of picked faces or edges.
 - **Crash quarantine.** If the wasm traps, the instance is poisoned. The worker posts
   `crashed` with the node that was running (every heavy node reports `start` before it
@@ -96,16 +99,18 @@ of the wasm module.
 ### How blacksmith calls make exact solids
 
 A forge document is a *blacksmith document*, the kernel's own node-graph document format
-(see the [SDK](https://github.com/rdeioris/cadaclysm-sdk)). `forge-doc-nodes.js` writes
-each forge item as the nodes that build it, and reads the items back off those nodes. The
-nodes are of kinds in the kernel's standard registry. There are curves (`curve.line`,
+(see the [SDK](https://github.com/rdeioris/cadaclysm-sdk)). Each forge item is the nodes
+that build it: a head node `i<n>` that what reads the item names, and helper nodes
+`i<n>_<role>` before it (a body's profile, its in-plane move, ...). The page's own fields,
+such as an item's kind or a fillet's edge numbers, sit in the head node's `meta.forge`, and
+the counters and the next free id in the document's `forge` meta. `forge-model.js`'s header
+is the whole layout. `forge-commands.js` writes a command's nodes, and `forge-picks.js`
+turns picks into references. The nodes are all of kinds in the kernel's standard registry. There are curves (`curve.line`,
 `curve.spline`, `curve.polycurve`, ...), sketches and frames (`sketch`, `frame.on_face`,
 `frame.tilted`, ...), and solids (`solid.extrude`, `solid.revolve_in_plane`,
 `solid.sweep`, `solid.loft_through`, `solid.cut`, `solid.fillet`, `solid.shell`, ...).
-A few `forge.*` kinds are also in the registry for the forge's own items (`forge.primitive`,
-`forge.solid`, `forge.placed`, `forge.counters`, ...). The kinds come from
-`cadaclysm_blacksmith_document_kinds()`, which `forge-doc-nodes.js` checks every node
-against. The kernel evaluates the graph into exact B-rep solids made of NURBS and analytic
+The kinds come from `cadaclysm_blacksmith_document_kinds()`, which `forge-commands.js`
+checks every node against. The kernel evaluates the graph into exact B-rep solids made of NURBS and analytic
 surfaces.
 
 Picks are references into the B-rep. Faces carry the solid's own B-rep face index, and
@@ -243,8 +248,13 @@ npm test
 - `forge-scene.mjs` and `forge-step.mjs` open the pinned documents (the examples and a few
   fixtures), build every body in the worker's scene and compare it with the figures in
   `test/fixtures/forge-pins.json` (volume, area, faces, edges, bounds). `forge-document.mjs`
-  covers the document layer: commands, the items read back, old files. They also cover
+  covers the document layer: commands, the items read back, old files, and the time an
+  extrude takes on the longest example (at most 6.5 ms, a median of 9: a loaded machine can
+  miss it, so rerun that file alone). They also cover
   STEP and mesh export, picks, undo, redo, branches, drags and the crash quarantine.
+- `forge-model.mjs`, `forge-commands.mjs` and `forge-picks.mjs` test the node layout, each
+  command's nodes and the picks. `golden.mjs` replays the recorded sequences in
+  `test/fixtures/golden/` and checks every step's items and bodies.
 - `forge-constraints.mjs` tests the sketch solver layer on a real wasm sketch session.
 - `forge-input.mjs`, `forge-cameras.mjs`, `forge-order.mjs`, `forge-items.mjs`,
   `forge-wanted.mjs`, `projection.mjs`, `view-cube.mjs`, `manipulator.mjs` and
@@ -282,8 +292,8 @@ snap check in box-fillet's Top view with real pointer events:
 | | |
 |---|---|
 | `index.html`, `forge.js` | the page: tools, panels, the overlay, the page replica |
-| `forge-doc-items.js`, `forge-doc-nodes.js`, `forge-doc-commands.js`, `forge-doc-convert.js`, `forge-doc-curves.js` | the document layer: items ↔ blacksmith nodes, commands → batch ops, picks → references |
-| `forge-constraints.js`, `forge-curves.js` | sketch constraints, and curve helpers on the kernel's profile calls |
+| `forge-model.js`, `forge-commands.js`, `forge-picks.js` | the document layer: the items read off the blacksmith nodes, commands → batch ops, picks → references |
+| `forge-constraints.js`, `forge-sketch.js`, `forge-curves.js` | sketch constraints, the sketch geometry on the kernel's profile calls, and edge-list and closure text |
 | `forge-worker.js`, `forge-scene.js` | the module worker: the full evaluation, bodies, export, quarantine |
 | `forge-items.js`, `forge-wanted.js` | what the View shows, synced by key |
 | `forge-input.js`, `forge-cameras.js`, `forge-order.js` | input routing, camera moves in the worker, command order |

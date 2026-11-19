@@ -272,6 +272,29 @@ const itemsOf = (doc) => pageItems(new Model(wasm, doc));
     assert.strictEqual(refusal("solid box"), "not a cadaclysm-blacksmith document (it is not JSON)");
 }
 
+// A blacksmith document the kernel cannot load is refused in the kernel's own words, as the
+// page's error line shows them (`load: <message>`, forge.js `loadDocument`'s callers): a node
+// of a kind the kernel has not, the message as `document_load` throws it (less the call's
+// name). A forge file of 0.14 (test/fixtures/v014-sample.json) is such a document once the
+// kernel has no `forge.*` kinds: refused naming one.
+{
+    const refusal = (text) => { try { openDocument(wasm, text); } catch (e) { return String(e?.message ?? e); } return null; };
+    const kernelSays = (text) => { try { wasm.cadaclysm_blacksmith_document_load(text); } catch (e) { return String(e?.message ?? e); } return null; };
+    const text = JSON.stringify({ format: "cadaclysm-blacksmith", version: 1, units: "mm", nodes: [{ id: "i1", kind: "forge.no_such_kind" }] });
+    const said = kernelSays(text);
+    assert.ok(said !== null, "the kernel refuses a kind it has not");
+    assert.strictEqual(refusal(text), said.replace(/^document_load: /, ""), "the kernel's message, unchanged");
+    assert.match(refusal(text), /forge\.no_such_kind/);
+    const v014 = fixture("v014-sample.json");
+    const old = refusal(v014);
+    if (old === null) {
+        console.log("forge-document.mjs: the 0.14-file refusal skipped -- this kernel still has the `forge.*` kinds, so it loads a 0.14 forge file");
+    } else {
+        assert.match(old, /forge\./, `a 0.14 file is refused naming a forge.* kind: ${old}`);
+        assert.strictEqual(old, kernelSays(v014).replace(/^document_load: /, ""));
+    }
+}
+
 // Another app's document (a notebook's: a held box, named and red, and a held profile) opens
 // in forge untouched: the held box is an item forge's tools take -- joined with a box of
 // forge's, the first command giving the held items heads of their own under the numbers they
@@ -316,6 +339,30 @@ const itemsOf = (doc) => pageItems(new Model(wasm, doc));
     assert.deepStrictEqual(itemsOf(again).map((it) => it.id), [1, 2, 3, 4]);
     wasm.cadaclysm_blacksmith_document_free(again);
     wasm.cadaclysm_blacksmith_document_free(doc);
+}
+
+// The extrude on the 110-step document (examples/kinds-made.json: 110 nodes, the document the
+// 0.14 layer's ~48 ms commit was measured on) costs what its own batch costs: the page's
+// `command()` (forge-commands.js) for a solid off a new rect, a median of 9 (after one
+// warm-up), each on the document freshly opened, at most 6.5 ms -- the Rust command layer's
+// figure. A loaded machine can miss it: rerun this file alone before blaming a change.
+{
+    const text = repoFile("examples/kinds-made.json");
+    const times = [];
+    for (let run = 0; run < 10; run++) {
+        const doc = openDocument(wasm, text);
+        const model = new Model(wasm, doc);
+        const id = model.forgeMeta().nextId;
+        commandOn(wasm, model, doc, { op: "add", id, kind: "rect", plane: "top", shape: { x0: 100, y0: 100, x1: 120, y1: 110 } });
+        const t = performance.now();
+        commandOn(wasm, model, doc, { op: "solid", id: id + 1, from: id, height: 15, taper: 0 });
+        if (run > 0) times.push(performance.now() - t);
+        assert.strictEqual(model.node(`i${id + 1}`)?.kind, "solid.extrude", "the extrude is a node of its own");
+        wasm.cadaclysm_blacksmith_document_free(doc);
+    }
+    times.sort((a, b) => a - b);
+    const median = times[4];
+    assert.ok(median <= 6.5, `the extrude took ${median.toFixed(2)} ms (median of 9: ${times.map((x) => x.toFixed(2)).join(" ")}), over 6.5 ms`);
 }
 
 console.log("forge-document.mjs: ok");

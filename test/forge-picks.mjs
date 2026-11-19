@@ -2,17 +2,20 @@
 // to a body's faces and edges that find them again, a pick off a document node, the geometry
 // env a command asks (item `n`'s body through the model, a held body its own node), and the
 // frames faces take as planes -- off ONE `document_probe` of `frame.on_face` nodes
-// `f<b>_<k>`, the same frames the 0.14 layer's preview gave, the document's revision and
-// save text untouched, the probe ended also when a read throws.
+// `f<b>_<k>`, the same frames the 0.14 layer's preview gave (recorded in
+// test/fixtures/layer-0.14-answers.json), the document's revision and save text untouched,
+// the probe ended also when a read throws.
 //
 // Run: node test/forge-picks.mjs   (after npm run setup)
 import assert from "node:assert";
 import { loadWasm } from "./package.mjs";
 import { Model } from "../forge-model.js";
 import { faceRefOf, edgeRefOf, pickRefs, documentPickRefs, docPicks, bodyNode, faceFrames } from "../forge-picks.js";
-import { faceFrames as oldFaceFrames, docPicks as oldDocPicks } from "../forge-doc-convert.js";
+import { readFileSync } from "node:fs";
 
 const wasm = await loadWasm();
+// The 0.14 layer's face frames, recorded before it went (test/fixtures/layer-0.14-answers.json).
+const answers = JSON.parse(readFileSync(new URL("./fixtures/layer-0.14-answers.json", import.meta.url), "utf8")).picks;
 
 const apply = (doc, op) => JSON.parse(wasm.cadaclysm_blacksmith_document_apply(doc, JSON.stringify(op), undefined));
 const evaluate = (doc) => JSON.parse(wasm.cadaclysm_blacksmith_document_evaluate(doc, false));
@@ -82,11 +85,6 @@ function sample() {
     assert.deepStrictEqual(documentPickRefs(wasm, doc, "i3", "edges", [0, 1]), withSolid(doc, "i3", (s) => pickRefs(wasm, s, false, [0, 1])));
     assert.throws(() => documentPickRefs(wasm, doc, "i1", "vertices", [0]), /kind `vertices` is not `edges` or `faces`/);
     assert.throws(() => documentPickRefs(wasm, doc, "i9", "faces", [0]), /`i9` has no solid/);
-    // forge-doc-convert.js hands out the very same functions.
-    const old = oldDocPicks(wasm, doc);
-    assert.strictEqual(typeof old.sourcePivot, "function", "the 0.14 env keeps its pivot");
-    assert.deepStrictEqual(old.edgeRef(3, 2), docPicks(wasm, doc).edgeRef(3, 2));
-    assert.throws(() => old.faceFrame(1, 0), /frame\.on_face/);
     wasm.cadaclysm_blacksmith_document_free(doc);
 }
 
@@ -125,7 +123,8 @@ function sample() {
     for (const [b, id] of bodies) {
         withSolid(doc, id, (s) => {
             const faces = [...Array(faceCount(s)).keys()];
-            const old = oldFaceFrames(wasm, doc, id, s, faces);
+            const old = answers.frames[id];
+            assert.strictEqual(old.length, faces.length, `${id}: the recorded faces`);
             faces.forEach((k) => { wanted.push({ body: b, face: k }); expected.push(old[k]); });
         });
     }
@@ -166,7 +165,7 @@ function sample() {
     evaluate(doc);
     const model = new Model(wasm, doc);
     const before = JSON.stringify(model.node("f1_2")), text = save(doc);
-    const old = withSolid(doc, "i1", (s) => oldFaceFrames(wasm, doc, "i1", s, [2, 0]));
+    const old = answers.setFrames;
     let probed;
     const c = counted({ cadaclysm_blacksmith_document_probe: (d, op, ids) => { probed = [JSON.parse(op), JSON.parse(ids)]; return wasm.cadaclysm_blacksmith_document_probe(d, op, ids); } });
     const frames = faceFrames(c.k, doc, model, [{ body: 1, face: 2 }, { body: 1, face: 0 }, { body: 1, face: 2 }, { body: 1, face: 40 }]);

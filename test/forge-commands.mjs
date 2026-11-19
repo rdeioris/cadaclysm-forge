@@ -1,7 +1,8 @@
 // The page's sketch and curve commands as document batches (forge-commands.js) over the
 // kernel's public exports: what each writes in the node layout (forge-model.js's header),
 // the counters through the `forge` meta, the sketch fillet and trim through the kernel's
-// profile calls (checked against the 0.14 layer's own answers), the readers of what a
+// profile calls (checked against the 0.14 layer's own answers, recorded in
+// test/fixtures/layer-0.14-answers.json), the readers of what a
 // command removes, and the stand-in for a node the kernel refuses.
 //
 // Run: node test/forge-commands.mjs   (after npm run setup)
@@ -10,11 +11,12 @@ import { loadWasm } from "./package.mjs";
 import { Model, UNITS } from "../forge-model.js";
 import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves } from "../forge-commands.js";
 import { isBody } from "../forge-model.js";
-import { sketchFillet as oldFillet, sourcePivot as oldPivot } from "../forge-doc-curves.js";
-import { command as oldCommand, documentItems } from "../forge-doc-convert.js";
+import { readFileSync } from "node:fs";
 
 const wasm = await loadWasm();
 const K = "cadaclysm_blacksmith_";
+// What the 0.14 layer answered for the same commands, recorded before it went.
+const answers = JSON.parse(readFileSync(new URL("./fixtures/layer-0.14-answers.json", import.meta.url), "utf8")).commands;
 
 function fresh() {
     const doc = wasm[K + "document_new"](UNITS);
@@ -142,18 +144,18 @@ const close = (a, b, tol = 1e-5) => {
 
 // The sketch fillet through the kernel: one curve rounded into a polycurve, as the 0.14
 // layer rounded it (its own f32 Béziers: the digits move in the sixth place).
-for (const c of [
+for (const [k, c] of [
     { kind: "rect", shape: { x0: 0, y0: 0, x1: 20, y1: 10 } },
     { kind: "polygon", shape: { cx: 0, cy: 0, r: 10, sides: 6, angle: 0 } },
     { kind: "polyline", shape: { points: [[0, 0], [10, 0], [10, 10], [20, 10]], closed: false } },
     { kind: "polyline", shape: { points: [[0, 0], [10, 0], [10, 10]], closed: true } },
     { kind: "polycurve", shape: { pieces: [{ kind: "line", shape: { x0: 0, y0: 0, x1: 10, y1: 0 } }, { kind: "arc", shape: { x0: 10, y0: 0, xm: 12, ym: 5, x1: 10, y1: 10 } }, { kind: "line", shape: { x0: 10, y0: 10, x1: 0, y1: 10 } }], closed: false } },
-]) {
+].entries()) {
     const t = fresh();
     t.run({ op: "add", id: 1, kind: c.kind, plane: "top", shape: c.shape });
     t.run({ op: "round", ids: [1], radius: 2 });
     const now = t.item(1);
-    const was = oldFillet(wasm, [c], 2).one.shape;
+    const was = answers.fillets[k];
     assert.strictEqual(now.kind, "polycurve", c.kind);
     assert.strictEqual(t.node("i1").kind, "curve.polycurve");
     assert.strictEqual(now.shape.pieces.length, was.pieces.length, `${c.kind}: pieces`);
@@ -176,7 +178,7 @@ for (const c of [
     assert.throws(() => t.run({ op: "round", ids: [1, 2], radius: 30, arc: 3 }), /the radius does not fit/);
     assert.strictEqual(t.revision(), rev);
     t.run({ op: "round", ids: [1, 2], radius: 3, arc: 3 });
-    const was = oldFillet(wasm, [{ kind: "line", shape: { x0: 0, y0: 0, x1: 10, y1: 0 } }, { kind: "line", shape: { x0: 10, y0: 0, x1: 10, y1: 10 } }], 3).two;
+    const was = answers.twoLines;
     assert.ok(close(t.item(1).shape, { x0: 0, y0: 0, x1: 7, y1: 0 }));
     assert.ok(close({ x1: t.item(1).shape.x1, y1: t.item(1).shape.y1 }, was.a), JSON.stringify(was));
     assert.ok(close({ x0: t.item(2).shape.x0, y0: t.item(2).shape.y0 }, was.b));
@@ -389,14 +391,13 @@ for (const c of [
     t.free();
 }
 
-// Every made body against the 0.14 layer (forge-doc-convert.js, still on this package):
-// the same commands on both, each item read back off the nodes as the old layer has it,
+// Every made body against the 0.14 layer (its answers recorded off the 0.15.0 package):
+// the same commands, each item read back off the nodes as the old layer has it,
 // each body the same solid (counts exact; volume, area, bounds to 1e-6). The quick solids
 // on a tilted sketch, against `forge.primitive`. Where they differ by decision: the pivot
 // is the exact bounds' centre (a circle's to an ulp), a revolution says it is a sheet.
 {
     const t = fresh();
-    const od = wasm[K + "document_new"](UNITS);
     const seq = [
         { op: "add", id: 1, kind: "line", plane: "top", shape: { x0: 0, y0: 0, x1: 6, y1: 0 } },
         { op: "sketch", id: 2, mode: "angle", hinge: 1, tilt: 35 },
@@ -437,15 +438,10 @@ for (const c of [
         { op: "set", id: 36, transform: { tx: 5, ty: 1, angle: 0.5, scale: 1 }, place: { offset: [0, 0, 7], turn: [0, 45, 0] } },
         { op: "set", id: 33, place: { offset: [1, 0, 0], turn: [90, 0, 0] } },
     ];
-    for (const cmd of seq) {
-        t.run(cmd);
-        wasm[K + "document_evaluate"](od, false);
-        oldCommand(wasm, od, cmd);
-    }
-    wasm[K + "document_evaluate"](od, false);
+    for (const cmd of seq) t.run(cmd);
     const statuses = JSON.parse(wasm[K + "document_evaluate"](t.doc, false));
     let bodies = 0;
-    for (const { id: n, fields } of documentItems(wasm, od).items) {
+    for (const [n, fields] of answers.made.items) {
         const now = t.item(n);
         if (fields.kind === "revolution" && fields.sheet === undefined) assert.strictEqual(now.sheet, true);
         const want = { ...fields }, got = { ...now };
@@ -453,12 +449,11 @@ for (const c of [
         assert.ok(close(got, want, 1e-12), `#${n}: ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
         if (!isBody(t.model.item(n))) continue;
         assert.strictEqual(statuses.find((s) => s.id === `i${n}`)?.state, "ok", `#${n}`);
-        const [a, b] = [solidOf(t.doc, `i${n}`), solidOf(od, `i${n}`)];
+        const [a, b] = [solidOf(t.doc, `i${n}`), answers.made.solids[n]];
         assert.ok(close(a, b, 1e-6), `#${n} ${fields.kind}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`);
         bodies++;
     }
     assert.strictEqual(bodies, 19);
-    wasm[K + "document_free"](od);
     t.free();
 }
 
@@ -470,8 +465,6 @@ for (const c of [
     t.run({ op: "surface", id: 2, loops: [[1]], plane: "top" });
     assert.ok(close(t.item(2).pivot, [4, 3], 1e-12), JSON.stringify(t.item(2).pivot));
     assert.deepStrictEqual(t.node("i2_src").pivot, t.item(2).pivot);
-    const old = oldPivot(wasm, [t.item(1)]);
-    assert.ok(old[1] > 3.1, JSON.stringify(old));
     t.free();
 }
 
@@ -536,14 +529,13 @@ for (const c of [
     t.free();
 }
 
-// The body verbs against the 0.14 layer (forge-doc-convert.js, still on this package): the
-// same commands on both, each item read back off the nodes as the old layer has it, each
+// The body verbs against the 0.14 layer (its answers recorded off the 0.15.0 package): the
+// same commands, each item read back off the nodes as the old layer has it, each
 // body the same solid (counts exact; volume, area, bounds to 1e-6). A trim's face reference
 // is the split's (`sheet.split_by_curve`, not `forge.curve_tool`): the same face, its
 // numbers to 1e-6.
 {
     const t = fresh();
-    const od = wasm[K + "document_new"](UNITS);
     const at = (id, x, y = 0, z = 0) => ({ op: "set", id, place: { offset: [x, y, z], turn: [0, 0, 0] } });
     const box = (id, s = 10) => ({ op: "primitive", id, kind: "box", plane: "top", dims: [s, s, s] });
     const seq = [
@@ -603,11 +595,7 @@ for (const c of [
         { op: "split", target: 52, ids: [54, 55], cutter: 53 },
         { op: "set", id: 54, transform: { tx: 3, ty: 0, angle: 0, scale: 1 } },
     ];
-    for (const cmd of seq) {
-        t.run(cmd);
-        wasm[K + "document_evaluate"](od, false);
-        oldCommand(wasm, od, cmd);
-    }
+    for (const cmd of seq) t.run(cmd);
     // Measured to 1e-6: the comparison is to 1e-6.
     const measure = (doc, id) => {
         const kind = wasm[K + "document_result_kind"](doc, id);
@@ -619,11 +607,10 @@ for (const c of [
             wasm[K + "solid_free"](s);
         }
     };
-    const os = JSON.parse(wasm[K + "document_evaluate"](od, false));
     const ns = JSON.parse(wasm[K + "document_evaluate"](t.doc, false));
     const verbs = new Set();
     let built = 0;
-    for (const { id: n, fields } of documentItems(wasm, od).items) {
+    for (const [n, fields] of answers.verbs.items) {
         const got = t.item(n), want = { ...fields };
         if (want.kind === "trim") {
             assert.ok(close(got.faceRefs, want.faceRefs, 1e-6), `#${n}: ${JSON.stringify(got.faceRefs)}`);
@@ -634,10 +621,10 @@ for (const c of [
         if (!isBody(t.model.item(n))) continue;
         // Built on both, or failed on both in the kernel's same words (a rechamfer of a face
         // that is no chamfer).
-        const [a, b] = [ns, os].map((l) => l.find((s) => s.id === `i${n}`));
-        assert.deepStrictEqual([a.state, a.error], [b.state, b.error], `#${n} ${fields.kind}`);
+        const a = ns.find((s) => s.id === `i${n}`), b = answers.verbs.states[n];
+        assert.deepStrictEqual([a.state, a.error ?? null], b, `#${n} ${fields.kind}`);
         if (a.state === "ok") {
-            const [x, y] = [measure(t.doc, `i${n}`), measure(od, `i${n}`)];
+            const [x, y] = [measure(t.doc, `i${n}`), answers.verbs.solids[n]];
             assert.ok(close(x, y, 1e-6), `#${n} ${fields.kind}: ${JSON.stringify(x)} != ${JSON.stringify(y)}`);
             built++;
         }
@@ -661,7 +648,6 @@ for (const c of [
     // A press copies its face item's body and reference.
     assert.deepStrictEqual([t.node("i39").solid, t.node("i39").face], ["i37", t.node("i38").face]);
     assert.deepStrictEqual([t.node("i47").kind, t.node("i47").profile, t.node("i47_cut").curves, t.node("i51").plane, t.node("i54_inner").tool], ["solid.split_side_by_profile", "i47_cut", ["i45"], "i49", "i53"]);
-    wasm[K + "document_free"](od);
     t.free();
 }
 

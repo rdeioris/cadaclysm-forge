@@ -15,8 +15,7 @@ message.
   opened from (`examples/...`, `test/fixtures/...`), or `"inline"` with the text in
   `startText`. Those were 0.14 forge files; they are converted to 0.15 nodes now (the
   files and the `startText` in place: ACCEPTED.md), so the bodies the sequence recorded at
-  its `open` are what the converted file builds. The 0.14 files are kept in
-  `test/fixtures/v014/` while the 0.14 layer's tests read them.
+  its `open` are what the converted file builds. The 0.14 files went with the 0.14 layer.
 - `documents/*.json`: each forge document at its tip: its items and its bodies.
 - A body with a `mass` field could not be measured (the 0.14 kernel refused: faces turned
   inward); its counts and bounds still hold.

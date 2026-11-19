@@ -58,8 +58,8 @@ replay (`test/golden.mjs`) may differ from a recording only as listed.
   order, as the node layer writes them, the counters and the next id in the `forge` meta. A
   converted file is a fresh document: its nodes added in one commit, none of the 0.14
   history (no recorded step undoes past the file's own state). A 0.14 stand-in
-  (`forge.broken_<type>`) is a `value.unresolved` in the 0.14 words. The 0.14 copies stay in
-  `test/fixtures/v014/` for the 0.14 layer's own tests until that layer goes.
+  (`forge.broken_<type>`) is a `value.unresolved` in the 0.14 words. The 0.14 copies went
+  with the 0.14 layer (`git log` has them).
 - **A version-1 file's parts are not on nodes.** `forge-v1.json`'s join holds its parts
   inline, as a version-1 file had them (bodies of their own inside the item, no item of
   their own). The node layer has no such part (`"a version-1 part is not on nodes"`, spec
