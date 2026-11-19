@@ -3,7 +3,8 @@
 // makes, it posts the bodies whose node changed (and nothing else), saves the same bytes
 // as the page, answers picks, follows undo, redo, a branch switch and a drag's preview,
 // reports progress, and shows what the page wants on its View. The page's replica is driven as the page drives
-// it: forge-doc-convert.js over the kernel's public exports.
+// it: forge-commands.js's commands on its nodes (forge-model.js's mirror), over the kernel's
+// public exports.
 //
 // Run: node test/forge-scene.mjs   (after npm run setup)
 import assert from "node:assert";
@@ -13,12 +14,13 @@ import { basename, dirname, join } from "node:path";
 import { loadWasm } from "./package.mjs";
 import { createForgeScene, createForgeRouter, VIEW_ID, MESH_TOLERANCE, EDGE_TOLERANCE, bodyTable, massOf, itemOfNode, dropRedo, createQuarantine } from "../forge-scene.js";
 import { createWantedSender, typedBytes } from "../forge-wanted.js";
-import { command, commandOp, commandNeedsGeometry, openDocument, documentPickRefs, toJson } from "../forge-doc-convert.js";
-import { itemsOf } from "../forge-doc-nodes.js";
+import { Model, openDocument, metaOp } from "../forge-model.js";
+import { command, commandOps, pageItems } from "../forge-commands.js";
+import { documentPickRefs } from "../forge-picks.js";
 const here = dirname(fileURLToPath(import.meta.url));
-// The 0.14 files these tests open with the 0.14 layer: copies kept in test/fixtures/v014/
-// until that layer goes (examples/ and the fixtures are node documents now).
-const v014 = (file) => join(here, "fixtures", "v014", basename(file));
+// A file of the repo (examples/, test/fixtures/), as forge-pins.json names it.
+const file = (name) => join(here, "..", name);
+const example = (name) => file(join("examples", basename(name)));
 const wasm = await loadWasm();
 
 // The built answer of the reference join (a box and a cylinder): its table and refs only.
@@ -29,15 +31,19 @@ const SNAPSHOT_EXACT_BYTES = 24508;
 const pins = JSON.parse(readFileSync(join(here, "fixtures", "forge-pins.json"), "utf8"));
 const harness = (host = null, extra = {}) => { const posted = []; const s = createForgeScene({ wasm, post: (m) => posted.push(m), host, ...extra }); return { s, posted }; };
 const of = (posted, kind) => posted.filter((m) => m.kind === kind);
-// A document's items, as the page reads them off its save.
-const itemsNow = (doc) => itemsOf(JSON.parse(wasm.cadaclysm_blacksmith_document_save(doc))).toLit();
-
-// The page's replica: forge commands as the page runs them, each giving the op it sends.
+// The page's replica: forge commands as the page runs them (forge-commands.js's `command`, the
+// model kept by each), each giving the batch it sends. The replica is evaluated before each
+// command, so a pick finds the bodies built (the page asks the worker for those).
 function pageDoc(text = null) {
     const doc = text === null ? wasm.cadaclysm_blacksmith_document_new("mm") : openDocument(wasm, text);
+    const model = new Model(wasm, doc);
+    const step = (name, ...args) => model.refresh(wasm[`cadaclysm_blacksmith_document_${name}`](doc, ...args));
     return {
-        doc,
-        run: (cmd) => toJson(command(wasm, doc, cmd).op),
+        doc, model,
+        run: (cmd) => { wasm.cadaclysm_blacksmith_document_evaluate(doc, false); return JSON.stringify(command(wasm, model, doc, cmd).op); },
+        apply: (op) => model.refresh(wasm.cadaclysm_blacksmith_document_apply(doc, op, undefined), JSON.parse(op)),
+        undo: () => step("undo"), redo: () => step("redo"), endPreview: () => step("end_preview"), switchTo: (to) => step("branch_switch", to),
+        items: () => pageItems(model),
         save: () => wasm.cadaclysm_blacksmith_document_save(doc),
         status: () => new Map(JSON.parse(wasm.cadaclysm_blacksmith_document_evaluate(doc, false)).map((s) => [s.id, s])),
         free: () => wasm.cadaclysm_blacksmith_document_free(doc),
@@ -68,22 +74,34 @@ function meshBounds(solid) {
     return d < 1e-12 ? { centre: [b[0], b[1], b[2]], radius: 1 } : { centre: [0, 1, 2].map((k) => (b[k] + b[k + 3]) / 2), radius: d / 2 };
 }
 
-// Every pinned document opened: every pinned body built (none failed), at its pinned
-// figures -- faces and edges exact, volume and area within 1e-9 (the kernel's public solid
-// getters: B-rep faces, `cadaclysm_blacksmith_edge_count`, mass properties). The bounds are
-// the kernel mesh's box at MESH_TOLERANCE, no longer the box round the exact surfaces the
-// pins hold (a looser box): checked against the solid read here, the distance from the pin
-// reported.
+// Every pinned document opened (examples/ and the fixtures, converted to nodes): every pinned
+// body built (none failed), at its pinned figures -- faces and edges exact, volume and area
+// within 1e-9 (the kernel's public solid getters: B-rep faces, `cadaclysm_blacksmith_edge_count`,
+// mass properties). The bounds are the kernel mesh's box at MESH_TOLERANCE, no longer the box
+// round the exact surfaces the pins hold (a looser box): checked against the solid read here,
+// the distance from the pin reported. Where the node layer builds otherwise by decision
+// (test/fixtures/golden/ACCEPTED.md), `ACCEPTED` says how: a version-1 file's join is a
+// stand-in, and a trim by a closed curve (`sheet.split_by_curve`) and the prism of it measure
+// within 2e-6, the prism with one side face where it had two.
+const ACCEPTED = {
+    "test/fixtures/forge-v1.json": { 2: "fails" },
+    "examples/kinds-made.json": { 21: { within: 2e-6 }, 22: { within: 2e-6, faces: 3, edges: 5 } },
+    "examples/sheet-trim.json": { 4: { within: 2e-6 } },
+};
 {
     let checked = 0, offPin = 0;
-    for (const [file, pin] of Object.entries(pins)) {
+    for (const [name, pin] of Object.entries(pins)) {
         if (!pin.bodies.length) continue;
         const { s, posted } = harness();
-        s.open(readFileSync(v014(file), "utf8")); await s.drain();
+        s.open(readFileSync(file(name), "utf8")); await s.drain();
         const built = new Map(of(posted, "built").map((m) => [m.id, m]));
-        assert.deepStrictEqual(of(posted, "failed"), [], `${file}: nothing fails`);
-        assert.deepStrictEqual([...built.keys()].sort((a, b) => a - b), pin.bodies.map((b) => b.id).sort((a, b) => a - b), `${file}: every pinned body, once`);
-        for (const b of pin.bodies) {
+        const accepted = ACCEPTED[name] ?? {};
+        const fails = Object.keys(accepted).filter((id) => accepted[id] === "fails").map(Number);
+        assert.deepStrictEqual(of(posted, "failed").map((m) => m.id), fails, `${name}: nothing fails`);
+        assert.deepStrictEqual([...built.keys()].sort((a, b) => a - b), pin.bodies.map((b) => b.id).filter((id) => !fails.includes(id)).sort((a, b) => a - b), `${name}: every pinned body, once`);
+        for (const pinned of pin.bodies) {
+            if (fails.includes(pinned.id)) continue;
+            const b = { ...pinned, ...(accepted[pinned.id] ?? {}) }, within = b.within ?? 1e-9, file = name;
             const m = built.get(b.id), solid = s.solidOf(b.id);
             assert.ok(/^[0-9a-f]{16}$/.test(m.key) && m.version === 1, `${file} ${b.id}: key and version`);
             const [volume, area] = massOf(wasm, solid);
@@ -91,7 +109,7 @@ function meshBounds(solid) {
             assert.deepStrictEqual(got, { faces: b.faces, edges: b.edges }, `${file} ${b.id}: faces and edges`);
             assert.strictEqual(wasm.cadaclysm_blacksmith_face_count(solid), b.faces, `${file} ${b.id}: the solid's faces`);
             assert.strictEqual(m.table.edges[0], b.edges, `${file} ${b.id}: the table's edge list`);
-            assert.ok(close(volume, b.volume, 1e-9) && close(area, b.area, 1e-9), `${file} ${b.id}: volume ${volume} area ${area}, pinned ${b.volume} ${b.area}`);
+            assert.ok(close(volume, b.volume, within) && close(area, b.area, within), `${file} ${b.id}: volume ${volume} area ${area}, pinned ${b.volume} ${b.area}`);
             if (b.faces) assert.deepStrictEqual(m.table.bounds, meshBounds(solid), `${file} ${b.id}: bounds`);
             offPin = Math.max(offPin, Math.abs(m.table.bounds.radius - b.bounds.radius), ...m.table.bounds.centre.map((v, k) => Math.abs(v - b.bounds.centre[k])));
             assert.strictEqual(m.refs.length, m.table.faceKinds.length * 8, "eight numbers a face");
@@ -109,13 +127,13 @@ function meshBounds(solid) {
 // A flat face's frame is the one the document's `frame.on_face` gives it: the face sketch of
 // face-sketch.json stands on face 0 of i1, and the table's frame of that face is its node's value.
 {
-    const text = readFileSync(v014("face-sketch.json"), "utf8");
+    const text = readFileSync(example("face-sketch.json"), "utf8");
     const { s, posted } = harness();
     s.open(text); await s.drain();
     const table = of(posted, "built").find((m) => m.id === 1).table;
     const doc = openDocument(wasm, text);
     wasm.cadaclysm_blacksmith_document_evaluate(doc, false);
-    const node = JSON.parse(wasm.cadaclysm_blacksmith_document_save(doc)).nodes.find((n) => n.kind === "frame.on_face" && n.solid === "i1");
+    const node = JSON.parse(wasm.cadaclysm_blacksmith_document_nodes(doc, null)).find((n) => n.kind === "frame.on_face" && n.solid === "i1");
     const want = JSON.parse(wasm.cadaclysm_blacksmith_document_value(doc, node.id));
     const solid = s.solidOf(1);
     const face = wasm.cadaclysm_blacksmith_find_face(solid, Float64Array.of(node.face.surface, ...node.face.at, ...node.face.normal, node.face.extent), -1, 1e-6);
@@ -170,10 +188,10 @@ function meshBounds(solid) {
 
     // Undo: the join is gone (freed, and forgotten); redo makes it again, a new version.
     posted.length = 0;
-    wasm.cadaclysm_blacksmith_document_undo(page.doc); s.undo(); await s.drain();
+    page.undo(); s.undo(); await s.drain();
     assert.deepStrictEqual(posted, [{ kind: "forgotten", ids: [3] }], "an undone join is forgotten");
     assert.strictEqual(s.solidOf(3), null, "and its solid is freed");
-    wasm.cadaclysm_blacksmith_document_redo(page.doc); s.redo(); await s.drain();
+    page.redo(); s.redo(); await s.drain();
     assert.deepStrictEqual(of(posted, "built").map((m) => [m.id, m.version]), [[3, 2]]);
     assert.strictEqual(wasm.cadaclysm_blacksmith_document_save(s.doc), page.save());
     // Nothing to redo: nothing happens.
@@ -228,17 +246,17 @@ function meshBounds(solid) {
             if (m.kind === "built") tables.set(m.id, m.version);
             else if (m.kind === "forgotten") for (const id of m.ids) tables.delete(id);
         }
-        const bodies = itemsNow(page.doc).filter((i) => ["box", "cylinder", "join"].includes(i.kind)).map((i) => i.id);
+        const bodies = page.items().filter((i) => ["box", "cylinder", "join"].includes(i.kind)).map((i) => i.id);
         assert.deepStrictEqual([...tables.keys()].sort(), bodies.sort(), "the page's tables are its bodies");
     };
     await run(BOX, PEG, JOIN); follow();
-    const step = async (...what) => { for (const w of what) { wasm[`cadaclysm_blacksmith_document_${w}`](page.doc); s[w](); } await s.drain(); };
+    const step = async (...what) => { for (const w of what) { page[w](); s[w](); } await s.drain(); };
     await step("undo", "redo");
     assert.deepStrictEqual(posted, [], "undo then redo in one evaluation: nothing");
     follow();
     await step("undo"); assert.deepStrictEqual(posted, [{ kind: "forgotten", ids: [3] }]); follow();
     await step("redo"); assert.deepStrictEqual(of(posted, "built").map((m) => m.id), [3]); follow();
-    s.op(page.run({ op: "delete", ids: [3] })); wasm.cadaclysm_blacksmith_document_undo(page.doc); s.undo(); await s.drain();
+    s.op(page.run({ op: "delete", ids: [3] })); page.undo(); s.undo(); await s.drain();
     assert.deepStrictEqual(posted, [], "delete then undo in one evaluation: nothing");
     follow();
     await run({ op: "delete", ids: [3] });
@@ -255,7 +273,7 @@ function meshBounds(solid) {
             const out = JSON.parse(wasm.cadaclysm_blacksmith_document_evaluate_with(doc, cheap, report));
             return JSON.stringify(out.filter((st) => st.id !== hide));
         },
-        cadaclysm_blacksmith_document_save: (doc) => { if (broken) throw new Error("save broke"); return wasm.cadaclysm_blacksmith_document_save(doc); },
+        cadaclysm_blacksmith_document_evaluate: (doc, cheap) => { if (broken) throw new Error("evaluate broke"); return wasm.cadaclysm_blacksmith_document_evaluate(doc, cheap); },
     };
     const { s, posted, run } = await pair(null, { wasm: spy });
     await run(BOX);
@@ -270,11 +288,11 @@ function meshBounds(solid) {
     hide = null; broken = true; posted.length = 0;
     await run({ op: "set", id: 2, dims: [6, 32] });
     assert.deepStrictEqual(posted.map((m) => [m.kind, m.what]), [["opFailed", "evaluate"]]);
-    assert.ok(/save broke/.test(posted[0].error));
+    assert.ok(/evaluate broke/.test(posted[0].error));
 }
 // Open again: every body is posted again; a branch switch on both replicas leaves them equal.
 {
-    const text = readFileSync(v014("kinds-history.json"), "utf8");
+    const text = readFileSync(example("kinds-history.json"), "utf8");
     const page = pageDoc(text), { s, posted } = harness();
     s.open(page.save()); await s.drain();
     const first = of(posted, "built").map((m) => m.id);
@@ -282,11 +300,14 @@ function meshBounds(solid) {
     posted.length = 0;
     s.open(page.save()); await s.drain();
     assert.deepStrictEqual(of(posted, "built").map((m) => [m.id, m.version]), [[3, 1], [4, 1]], "an open posts every body again, an unchanged one from the solid it keeps");
-    const [tip] = JSON.parse(wasm.cadaclysm_blacksmith_document_tips(page.doc));
+    // A converted file has one commit: a change made on both, then both switched back to the
+    // commit before it.
+    const at = JSON.parse(wasm.cadaclysm_blacksmith_document_branch_list(page.doc)).head;
+    s.op(page.run({ op: "set", id: 3, dims: [12, 10, 10] })); await s.drain();
     posted.length = 0;
-    wasm.cadaclysm_blacksmith_document_branch_switch(page.doc, tip.id); s.switchBranch(tip.id); await s.drain();
+    page.switchTo(at); s.switchBranch(at); await s.drain();
     assert.strictEqual(wasm.cadaclysm_blacksmith_document_save(s.doc), page.save(), "the same save after the switch");
-    const items = itemsNow(page.doc), status = page.status();
+    const items = page.items(), status = page.status();
     for (const item of items.filter((i) => ["box", "join", "cylinder", "fillet", "cut", "shell"].includes(i.kind))) {
         assert.ok(status.get(`i${item.id}`).state !== "ok" || s.solidOf(item.id), `body ${item.id} is kept after the switch`);
     }
@@ -294,7 +315,7 @@ function meshBounds(solid) {
     page.free();
 }
 
-// A drag on both replicas: each frame the page's op (`commandOp`, its last
+// A drag on both replicas: each frame the page's ops (`commandOps`, its last
 // frame's preview ended first) previewed on both; the worker posts the moved box once for
 // two frames, at the page's previewed key, and the preview is in neither save. The commit
 // ends the preview on both sides and commits the drag's command: the same save, and nothing
@@ -310,10 +331,11 @@ function meshBounds(solid) {
     const before = page.save();
     const keyNow = () => JSON.parse(wasm.cadaclysm_blacksmith_document_evaluate(page.doc, true)).find((st) => st.id === "i1").key;
     const frame = (tx) => {
-        wasm.cadaclysm_blacksmith_document_end_preview(page.doc);
-        const op = toJson(commandOp(wasm, page.doc, { op: "edit", items: [{ id: 1, transform: { tx, ty: 0, angle: 0, scale: 1 } }] }));
-        wasm.cadaclysm_blacksmith_document_preview(page.doc, op);
-        return op;
+        page.endPreview();
+        const { ops, meta } = commandOps(page.model, { op: "edit", items: [{ id: 1, transform: { tx, ty: 0, angle: 0, scale: 1 } }] });
+        const batch = { op: "batch", ops: meta ? [...ops, metaOp(meta)] : ops };
+        page.model.refresh(wasm.cadaclysm_blacksmith_document_preview(page.doc, JSON.stringify(batch)), batch);
+        return JSON.stringify(batch);
     };
     posted.length = 0;
     s.preview(frame(5)); s.preview(frame(10)); await s.drain();
@@ -324,7 +346,7 @@ function meshBounds(solid) {
     assert.strictEqual(page.save(), before, "nor in the page's");
     // Committed: the preview ended on both, the drag's command committed as its op.
     posted.length = 0;
-    wasm.cadaclysm_blacksmith_document_end_preview(page.doc);
+    page.endPreview();
     route({ kind: "endPreview" });   // sent together, as the page sends them: one evaluation
     await routed({ kind: "op", op: page.run({ op: "set", id: 1, transform: { tx: 10, ty: 0, angle: 0, scale: 1 } }) });
     assert.notStrictEqual(page.save(), before);
@@ -336,7 +358,7 @@ function meshBounds(solid) {
     await routed({ kind: "preview", op: frame(30) });
     assert.strictEqual(of(posted, "built").at(-1).key, keyNow());
     posted.length = 0;
-    wasm.cadaclysm_blacksmith_document_end_preview(page.doc);
+    page.endPreview();
     await routed({ kind: "endPreview" });
     assert.strictEqual(keyNow(), committed);
     assert.deepStrictEqual(of(posted, "built").map((m) => [m.id, m.key]), [[1, committed]], "back where the document has it");
@@ -344,7 +366,7 @@ function meshBounds(solid) {
     assert.strictEqual(wasm.cadaclysm_blacksmith_document_save(s.doc), saved);
     // A Cancel: the peg taken back on both, and the commit past the head left unnamed on both.
     await run(PEG);
-    wasm.cadaclysm_blacksmith_document_undo(page.doc); s.undo(); await s.drain();
+    page.undo(); s.undo(); await s.drain();
     assert.ok(JSON.parse(wasm.cadaclysm_blacksmith_document_branch_list(page.doc)).can_redo);
     assert.ok(dropRedo(wasm, page.doc));
     await routed({ kind: "dropRedo" });
@@ -414,16 +436,17 @@ function meshBounds(solid) {
     page.free();
 }
 
-// A command that needs built geometry (a face taken without its references) is made an op
-// on the worker's evaluated replica (`resolve`), which the page applies and sends back as
-// any other: the replicas save the same. A command the document refuses is answered with
-// the error.
+// A command that needs built geometry (a face taken without its references) is made a batch
+// on the worker's evaluated replica (`resolve`, forge-commands.js's `commandBatch`), which the
+// page applies and sends back as any other: the replicas save the same. A command the
+// document refuses is answered with the error.
 {
     const { page, s, posted, run } = await pair();
     await run(BOX);
     const face = { op: "face", id: 2, from: 1, face: 1 };
-    assert.ok(commandNeedsGeometry(wasm, page.doc, face));
-    assert.ok(!commandNeedsGeometry(wasm, page.doc, { op: "set", id: 1, dims: [21, 20, 20] }));
+    // With no geometry to ask (the page's replica builds no body), the face cannot be made there.
+    assert.throws(() => commandOps(page.model, face, { kernel: wasm }), /no geometry/);
+    assert.doesNotThrow(() => commandOps(page.model, { op: "set", id: 1, dims: [21, 20, 20] }, { kernel: wasm }));
     posted.length = 0;
     s.resolve({ req: 4, cmd: face });
     s.resolve({ req: 5, cmd: { op: "face", id: 3, from: 99, face: 0 } });
@@ -432,10 +455,11 @@ function meshBounds(solid) {
     assert.strictEqual(ok.req, 4);
     assert.strictEqual(refused.req, 5);
     assert.ok(refused.error && !refused.op, refused.error);
-    wasm.cadaclysm_blacksmith_document_apply(page.doc, ok.op, undefined);
+    page.apply(ok.op);
     s.op(ok.op); await s.drain();
     assert.strictEqual(wasm.cadaclysm_blacksmith_document_save(s.doc), page.save(), "the same save");
-    assert.ok(itemsNow(page.doc).find((it) => it.id === 2)?.faceRefs?.length === 1, "the face carries its reference");
+    assert.strictEqual(page.model.node("i2").kind, "sheet.face_sheet");
+    assert.ok(page.model.node("i2").face?.normal, "the face carries its reference");
     page.free();
 }
 
@@ -501,7 +525,7 @@ const bodyItem = (id, extra = {}) => ({ key: `body:${id}`, deps: [], kind: "body
 // ghost colour; isocurves are made when shown, and both are shown again when their body is
 // rebuilt (the worker adds the version to deps).
 {
-    const page = pageDoc(readFileSync(v014("sheet-trim.json"), "utf8"));
+    const page = pageDoc(readFileSync(example("sheet-trim.json"), "utf8"));
     const v = fakeViewer(), counter = countingFrees(), { s, posted } = harness(fakeHost(v), { wasm: counter.wasm });
     s.open(page.save()); await s.drain();
     const run = async (cmd) => { s.op(page.run(cmd)); await s.drain(); };

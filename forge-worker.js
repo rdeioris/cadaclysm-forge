@@ -8,10 +8,10 @@
 // The protocol, page to worker: `{ kind: "open", text, skip }` -- the replica from a file's text
 // (null: a new document), the nodes `skip` names left out (the page's crash quarantine),
 // every body posted; `{ kind: "skip", nodes }` the quarantine replaced; `{ kind: "resolve",
-// req, cmd }` a command needing built geometry made an op here, answered `resolved {req, op}`
-// (or `error`); `{ kind: "op", op }` -- the op the page's
-// forge-doc-convert.js's `command` gave (JSON text), applied as the page applied it; `{ kind:
-// "preview", op }` a drag frame's op (`commandOp`), applied unrecorded in place of the last
+// req, cmd }` a command needing built geometry made a batch here (forge-commands.js's
+// `commandBatch`), answered `resolved {req, op}` (or `error`); `{ kind: "op", op }` -- the
+// batch the page's forge-commands.js `command` gave (JSON text), applied as the page applied
+// it; `{ kind: "preview", op }` a drag frame's ops (`commandOps`), applied unrecorded in place of the last
 // frame, and `{ kind: "endPreview" }` that preview taken back -- sent before the op that
 // commits the drag, or alone when the drag commits nothing; `{ kind: "undo" }`,
 // `{ kind: "redo" }`, `{ kind: "switch", branch }` the same on the replica, `{ kind:

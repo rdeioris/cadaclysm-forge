@@ -8,14 +8,14 @@
 import assert from "node:assert";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { basename, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { loadWasm } from "./package.mjs";
 import { createForgeScene } from "../forge-scene.js";
-import { command, toJson } from "../forge-doc-convert.js";
+import { Model } from "../forge-model.js";
+import { command } from "../forge-commands.js";
 const here = dirname(fileURLToPath(import.meta.url));
-// The 0.14 files these tests open with the 0.14 layer: copies kept in test/fixtures/v014/
-// until that layer goes (examples/ and the fixtures are node documents now).
-const v014 = (file) => join(here, "fixtures", "v014", basename(file));
+// A file of the repo (examples/, test/fixtures/), as forge-pins.json names it.
+const file = (name) => join(here, "..", name);
 const wasm = await loadWasm();
 const pins = JSON.parse(readFileSync(join(here, "fixtures", "forge-pins.json"), "utf8"));
 
@@ -39,12 +39,12 @@ const live = () => { const probe = wasm.cadaclysm_blacksmith_cuboid(1, 1, 1); wa
 
 // Two bodies made as the page makes them, and one alone.
 {
-    const doc = wasm.cadaclysm_blacksmith_document_new("mm"), { s, posted } = harness();
+    const doc = wasm.cadaclysm_blacksmith_document_new("mm"), model = new Model(wasm, doc), { s, posted } = harness();
     s.open(wasm.cadaclysm_blacksmith_document_save(doc)); await s.drain();
     for (const cmd of [
         { op: "primitive", id: 1, kind: "box", plane: "top", dims: [20, 20, 20] },
         { op: "primitive", id: 2, kind: "cylinder", plane: "top", dims: [6, 30] },
-    ]) s.op(toJson(command(wasm, doc, cmd).op));
+    ]) s.op(JSON.stringify(command(wasm, model, doc, cmd).op));
     await s.drain();
     const before = live();
     stepOf(s, posted, [1, 2], { 1: "Plate", 2: "Peg", file: "forge" }, 1);
@@ -58,9 +58,9 @@ const live = () => { const probe = wasm.cadaclysm_blacksmith_cuboid(1, 1, 1); wa
 
 // Every pinned document of several solid bodies, all of them in one file.
 let files = 0, bodies = 0;
-for (const [file, pin] of Object.entries(pins)) {
+for (const [name, pin] of Object.entries(pins)) {
     const { s, posted } = harness();
-    s.open(readFileSync(v014(file), "utf8")); await s.drain();
+    s.open(readFileSync(file(name), "utf8")); await s.drain();
     const ids = pin.bodies.map((b) => b.id).filter((id) => s.solidOf(id) && wasm.cadaclysm_blacksmith_document_result_kind(s.doc, `i${id}`) === "solid"
         && (() => { const h = wasm.cadaclysm_blacksmith_document_result_solid(s.doc, `i${id}`); try { return wasm.cadaclysm_blacksmith_lump_count(h) === 1; } finally { wasm.cadaclysm_blacksmith_solid_free(h); } })());
     if (ids.length < 2) continue;

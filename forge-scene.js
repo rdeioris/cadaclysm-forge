@@ -4,18 +4,21 @@
 // the tests drive it directly with a `post` that collects.
 //
 // The page holds its own replica and sends the worker the same ops it applies (the batch
-// op forge-doc-convert.js's `command` gives back), so both save the same bytes. The
+// op forge-commands.js's `command` gives back), so both save the same bytes. The
 // document's cache is the only cache: a body whose node is unchanged is not built again.
-// The document layer is forge-doc-*.js over the kernel's public `cadaclysm_blacksmith_*`
-// exports, and so is everything here: a body is its node's solid handle
+// The replica's nodes are mirrored by a forge-model.js `Model` (its items: which node is
+// whose body), kept by every change's changed set. Everything here is the kernel's public
+// `cadaclysm_blacksmith_*` exports: a body is its node's solid handle
 // (`cadaclysm_blacksmith_document_result_solid`), its table read off the solid getters,
 // drawn with `View.showSolid`, written out with `cadaclysm_blacksmith_mesh_file` (STL, glTF,
-// OBJ) or `_step`; a trim's ghost is forge-doc-convert.js's `trimGhost`. Every face is
+// OBJ) or `_step`; a trim's ghost is its node evaluated in a probe with no face dropped
+// (`trimGhost`), its faces' frames forge-picks.js's `faceFrames`. Every face is
 // numbered as the solid's B-rep numbers it -- the table, the picks, the face colours.
 //
 //   createForgeScene({ wasm, post, now = () => performance.now(), host, viewId, crashed })
 //     open(text, skip = [])                     the replica from a document's text
-//                                               (`openDocument`; null: a new document),
+//                                               (forge-model.js `openDocument`; null: a new
+//                                               document),
 //                                               the nodes `skip` names left out (a crash
 //                                               quarantine, `cadaclysm_blacksmith_document_set_skip`);
 //                                               every body is posted again
@@ -35,9 +38,10 @@
 //                                               a tool's Cancel, as the page does it
 //     resolve({ req, cmd })                     a forge command that needs built geometry (a
 //                                               new face plane, a pick without references):
-//                                               its op off this replica, evaluated
-//                                               (`commandOp`), answered `{ kind: "resolved",
-//                                               req, op }` (the op as JSON text, or `error`),
+//                                               its batch off this replica, evaluated
+//                                               (forge-commands.js `commandBatch`), answered
+//                                               `{ kind: "resolved", req, op }` (the batch as
+//                                               JSON text, or `error`),
 //                                               nothing applied -- the page applies the op and
 //                                               sends it back as any other
 //     pick({ req, id, what, indices })          answer `{ kind: "picked", req, refs }` (or
@@ -118,8 +122,9 @@
 // kept here, dropped when the key is left out of a list (as the page's sender forgets it).
 // With no View (no `host`, or no view yet) `wanted` only keeps the list.
 import { createItemSync } from "./forge-items.js";
-import { openDocument, commandOp, documentPickRefs, trimGhost, faceFrames, toJson } from "./forge-doc-convert.js";
-import { itemsOf as docItemsOf, UNITS } from "./forge-doc-nodes.js";
+import { Model, UNITS, openDocument, helperId } from "./forge-model.js";
+import { commandBatch } from "./forge-commands.js";
+import { documentPickRefs, faceFrames, bodyNode, docPicks } from "./forge-picks.js";
 
 export const THROTTLE_MS = 40;
 // The host's view the forge draws in, and a trim's dropped faces' colour.
@@ -274,10 +279,33 @@ export function closureOf(row) {
 const typed = (o) => Object.values(o ?? {}).flatMap((a) => ArrayBuffer.isView(a) ? [a] : a && typeof a === "object" ? typed(a) : []);
 const copyOf = (a) => ArrayBuffer.isView(a) ? a.slice() : Array.isArray(a) ? a.map(copyOf) : a && typeof a === "object" ? Object.fromEntries(Object.entries(a).map(([k, v]) => [k, copyOf(v)])) : a;
 const isTrap = (error) => typeof WebAssembly !== "undefined" && error instanceof WebAssembly.RuntimeError;
-const nodeOf = (id) => typeof id === "number" ? `i${id}` : String(id);
+
+// A trim's ghost: its split pieces under its moves, no face dropped -- trim `n`'s node
+// evaluated in a probe (`document_probe`) whose op sets its `solid.drop_faces` step's `faces`
+// to none, the result read while the probe is open, then ended. A new solid handle (free
+// it). The document's state, cache and revision are untouched; the probe is refused while a
+// preview is open (the caller ends it first).
+export function trimGhost(kernel, doc, model, n) {
+    const id = `i${n}`;
+    const step = [helperId(n, "inner"), id].map((x) => model.node(x)).find((nd) => nd?.kind === "solid.drop_faces");
+    if (!step) throw new Error(`\`${id}\` is not a trim`);
+    const op = { op: "set", id: step.id, fields: { faces: [] } };
+    const statuses = JSON.parse(kernel.cadaclysm_blacksmith_document_probe(doc, JSON.stringify(op), JSON.stringify([id])));
+    try {
+        const st = statuses.find((s) => s.id === id);
+        const kind = kernel.cadaclysm_blacksmith_document_result_kind(doc, id);
+        if (kind !== "solid" && kind !== "sheet") throw new Error(`\`${id}\`'s ghost did not build: ${st?.error ?? st?.state ?? "no status"}`);
+        return kernel.cadaclysm_blacksmith_document_result_solid(doc, id);
+    } finally {
+        kernel.cadaclysm_blacksmith_document_probe_end(doc);
+    }
+}
 
 export function createForgeScene({ wasm, post, now = () => performance.now(), host = null, viewId = VIEW_ID, crashed = null }) {
     let doc = null;
+    let model = null;             // the replica's nodes (forge-model.js), kept by every change
+    // The node item `id`'s body is (a held item's own node while it has no head), or a node id as it is.
+    const nodeOf = (id) => typeof id === "number" ? (model && bodyNode(model, id)) ?? `i${id}` : String(id);
     const bodies = new Map();     // item id -> { solid, version, table, refs, ghostFaces, drop, kind }
     const sent = new Map();       // item id -> the `(key, hash)` or error last posted for it
     const ghosts = new Map();     // trim body id -> { solid, faces, version }, freed when replaced
@@ -295,11 +323,16 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
 
     // A solid handle freed (a leak, not an error, where that fails: the trap is the news).
     const free = (solid) => { if (solid === null || solid === undefined) return; try { wasm.cadaclysm_blacksmith_solid_free(solid); } catch { /* leaked */ } };
-    // `fn` -- a scratch evaluation on the replica (`_preview_begin`, which drops a drag's live
-    // frame) -- and the drag's frame put back after it, so the replica is as the page's is.
+    // `fn` -- a scratch evaluation on the replica (`_probe`, which a drag's live frame refuses:
+    // the frame is ended first) -- and the drag's frame put back after it, so the replica is as
+    // the page's is.
     function scratch(fn) {
+        if (dragOp !== null && doc !== null) model.refresh(wasm.cadaclysm_blacksmith_document_end_preview(doc));
         try { return fn(); } finally {
-            if (dragOp !== null && doc !== null) { try { wasm.cadaclysm_blacksmith_document_preview(doc, dragOp); } catch (error) { if (isTrap(error)) throw error; dragOp = null; } }
+            if (dragOp !== null && doc !== null) {
+                try { model.refresh(wasm.cadaclysm_blacksmith_document_preview(doc, dragOp), JSON.parse(dragOp)); }
+                catch (error) { if (isTrap(error)) throw error; dragOp = null; }
+            }
         }
     }
 
@@ -333,7 +366,9 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
             if (m.kind === "open") {
                 if (doc !== null) { const old = doc; doc = null; wasm.cadaclysm_blacksmith_document_free(old); }
                 dragOp = null;
+                model = null;
                 doc = m.text === null || m.text === undefined ? wasm.cadaclysm_blacksmith_document_new(UNITS) : openDocument(wasm, m.text);
+                model = new Model(wasm, doc);
                 if (m.skip?.length) wasm.cadaclysm_blacksmith_document_set_skip(doc, JSON.stringify(m.skip));
                 sent.clear();
                 stale = true;
@@ -342,7 +377,7 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
             if (doc === null) throw new Error("no document is open");
             if (m.kind === "dropRedo") { dragOp = null; dropRedo(wasm, doc); return; }
             if (m.kind === "skip") { wasm.cadaclysm_blacksmith_document_set_skip(doc, JSON.stringify(m.nodes ?? [])); stale = true; return; }
-            const op = typeof m.op === "string" ? m.op : toJson(m.op);
+            const op = typeof m.op === "string" ? m.op : JSON.stringify(m.op);
             const changed = m.kind === "op" ? wasm.cadaclysm_blacksmith_document_apply(doc, op, m.message ?? undefined)
                 : m.kind === "preview" ? wasm.cadaclysm_blacksmith_document_preview(doc, op)
                 : m.kind === "endPreview" ? wasm.cadaclysm_blacksmith_document_end_preview(doc)
@@ -351,6 +386,7 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
                 : m.kind === "switch" ? wasm.cadaclysm_blacksmith_document_branch_switch(doc, String(m.branch))
                 : null;
             if (changed === null) throw new Error(`unknown change \`${m.kind}\``);
+            model.refresh(changed, m.kind === "op" || m.kind === "preview" ? JSON.parse(op) : undefined);
             // A drag's frame lasts until the next change of any kind takes it back.
             dragOp = m.kind === "preview" ? op : null;
             if (lists(changed)) stale = true;
@@ -381,7 +417,8 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
     function answerResolve({ req, cmd }) {
         try {
             if (doc === null) throw new Error("no document is open");
-            const op = toJson(scratch(() => commandOp(wasm, doc, typeof cmd === "string" ? JSON.parse(cmd) : cmd)));
+            const c = typeof cmd === "string" ? JSON.parse(cmd) : cmd;
+            const op = JSON.stringify(scratch(() => commandBatch(wasm, model, doc, c, { kernel: wasm, picks: docPicks(wasm, doc, model) })));
             post({ kind: "resolved", req, op });
         } catch (error) {
             if (isTrap(error)) { fault(error, null); return; }
@@ -404,7 +441,8 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
         let reporting = null;
         const rebuilt = new Set();
         try {
-            const items = docItemsOf(JSON.parse(wasm.cadaclysm_blacksmith_document_save(doc))).toLit();
+            // Each item's kind and name and, for a trim, the faces it drops (its head's page fields).
+            const items = model.items().map((it) => ({ id: it.id, kind: it.kind, name: it.name, drop: it.head?.meta?.forge?.drop }));
             const byId = new Map(items.map((item) => [item.id, item]));
             // The steps: what a cheap-only pass leaves pending (the cheap nodes it computes are
             // cached for the full pass, so nothing is evaluated twice).
@@ -491,7 +529,7 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
             // The flat faces' frames as the document's `frame.on_face` makes them; none where
             // the scratch evaluation is refused (the face sketch is then broken until a rebuild).
             const framesOf = (planes) => {
-                try { return scratch(() => faceFrames(wasm, doc, node, handle, planes)); }
+                try { return scratch(() => faceFrames(wasm, doc, model, planes.map((k) => ({ body: item.id, face: k })), new Map([[item.id, handle]]))); }
                 catch (error) { if (isTrap(error)) throw error; return []; }
             };
             const body = { solid, version, key, kind: item.kind, drop, table: bodyTable(wasm, solid, { refs, framesOf }), refs, ghostFaces: drop.length };
@@ -529,7 +567,7 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
         dropGhost(id);
         if (body.kind !== "trim" || !body.drop.length || doc === null) return null;
         let solid;
-        try { solid = scratch(() => trimGhost(wasm, doc, nodeOf(id))); }
+        try { solid = scratch(() => trimGhost(wasm, doc, model, id)); }
         catch (error) { if (isTrap(error)) throw error; return null; }
         g = { solid, faces: Uint32Array.from(body.drop), version: body.version };
         ghosts.set(id, g);
