@@ -841,6 +841,46 @@ for (const c of [
     t.free();
 }
 
+// Copies follow their source: a value a verb's node copies from another item is written
+// again by the command that writes that item, in the same batch. A sketch tilted under a
+// trimmed curve turns the trim's split direction with it (the trim reads the sketch's frame
+// through its curve); a split's curve moved to another plane takes the split's frame along.
+{
+    const t = fresh();
+    t.run({ op: "add", id: 1, kind: "line", plane: "top", shape: { x0: 0, y0: 50, x1: 10, y1: 50 } });
+    t.run({ op: "sketch", id: 2, mode: "angle", hinge: 1, tilt: 30 });
+    t.run({ op: "add", id: 3, kind: "rect", plane: 2, shape: { x0: -20, y0: -20, x1: 20, y1: 20 } });
+    t.run({ op: "surface", id: 4, loops: [[3]], plane: 2 });
+    t.run({ op: "add", id: 5, kind: "circle", plane: 2, shape: { cx: 3, cy: -2, r: 8 } });
+    t.run({ op: "trim", id: 6, sheet: 4, tool: 5 });
+    assert.ok(close(t.node("i6_split").direction, [0, -0.5, Math.sqrt(3) / 2], 1e-12), JSON.stringify(t.node("i6_split").direction));
+    const { op } = t.run({ op: "set", id: 2, tilt: 60 });
+    assert.deepStrictEqual(op.ops.map((o) => [o.op, o.id]), [["set", "i2_frame"], ["set", "i6_split"]]);
+    assert.ok(close(t.node("i6_split").direction, [0, -Math.sqrt(3) / 2, 0.5], 1e-12), JSON.stringify(t.node("i6_split").direction));
+    assert.strictEqual(t.statusOf("i6").state, "ok");
+    // A write that moves nothing it copies writes nothing more.
+    assert.deepStrictEqual(t.run({ op: "set", id: 5, shape: { cx: 3, cy: -2, r: 7 } }).op.ops.map((o) => o.id), ["i5"]);
+    // Undone, the direction goes back with the tilt: one commit.
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.ok(close(t.node("i6_split").direction, [0, -0.5, Math.sqrt(3) / 2], 1e-12));
+
+    t.run({ op: "primitive", id: 7, kind: "box", plane: "top", dims: [10, 10, 10] });
+    t.run({ op: "set", id: 7, place: { offset: [200, 0, 0], turn: [0, 0, 0] } });
+    t.run({ op: "add", id: 8, kind: "rect", plane: "top", shape: { x0: 190, y0: -20, x1: 202, y1: 3 } });
+    t.run({ op: "split", target: 7, ids: [9, 10], cutter: 8 });
+    assert.deepStrictEqual([t.node("i9").frame, t.node("i10").frame], ["xy", "xy"]);
+    const before = solidNow(t, "i10");
+    const moved = t.run({ op: "set", id: 8, plane: "front" }).op;
+    assert.deepStrictEqual(moved.ops.map((o) => [o.op, o.id]), [["set", "i8"], ["set", "i9"], ["set", "i10"]]);
+    assert.deepStrictEqual([t.node("i9").frame, t.node("i10").frame], ["xz", "xz"]);
+    for (const id of ["i9", "i10"]) assert.strictEqual(t.statusOf(id).state, "ok", id);
+    const after = solidNow(t, "i10");
+    assert.ok(!close(after.bounds, before.bounds), JSON.stringify([before.bounds, after.bounds]));
+    assert.deepStrictEqual(t.model.nodes(), t.nodes());
+    t.free();
+}
+
 // A version-1 file's items (`state`) are refused in words, the document untouched; an
 // unknown command and a bad id are refused as the page refused them.
 {

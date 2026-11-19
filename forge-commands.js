@@ -122,8 +122,8 @@
 //     `solid.split_side_by_plane` (a plane), with its `side`. Press, refillet, rechamfer and
 //     remove read face items: the face's body and reference are copied into their node
 //     (`solid.push_pull[_faces]`, `solid.refillet`, `solid.rechamfer`, `solid.unchamfer` /
-//     `solid.unfillet`), and written again when the face item is (`rewriteFaceReaders`). A
-//     verb's plane, `pivot` and the page's own fields are its head's meta.
+//     `solid.unfillet`), and written again when the face item is (see Copies). A verb's
+//     plane, `pivot` and the page's own fields are its head's meta.
 //   - placed (`place` not the identity): the head is `{ solid, frame, pivot: [px + tx, py +
 //     ty, 0], turn_in: "world", turn, by_in: "world", by: offset }`, the pivot only when
 //     `turn` is not 0. Not placed, the in-plane move (`_moved`) is the last step, so `i<n>`
@@ -160,7 +160,21 @@
 // built") makes the item a stand-in, written again by a later command that picks. A write
 // that leaves the pick alone keeps the references, even where the source has moved since.
 // A trim's split direction is written as numbers: an origin plane's normal, else the frame
-// node's as last evaluated (ACCEPTED.md, kernel follow-ups).
+// node's -- as last evaluated, or, where this command's ops so far touch the frame or what it
+// reads, as those ops leave it (a probe of them, `Draft.frameValue`). ACCEPTED.md, kernel
+// follow-ups.
+//
+// # Copies
+//
+// A verb's node may hold a copy of a value of another item that no node input carries: a
+// trim's split direction (its curve's frame normal), a split's frame (its curve cutter's
+// plane), a press's, refillet's, rechamfer's or remove's face (its face item's body and
+// reference). After every command (`rewriteCopies`), each such item that reads an item the
+// command wrote -- through `document_readers`, transitive (a trim reads its curve's sketch's
+// frame through the curve), or a face item by its parts -- is written again from its own
+// fields, in the same batch; the diff writes nothing where the copy still holds. So tilting a
+// sketch under a trimmed curve turns the trim's direction with it, as the 0.14 layer's
+// rewrite of every node did.
 //
 // # Readers
 //
@@ -538,10 +552,11 @@ export class Draft {
         return { id: n, head, helpers: [], kind: typeof kind === "string" ? kind : (PAGE_CURVE_KINDS[head.kind] ?? ""), name: head.name };
     }
 
-    /// The nodes that read node `id`, as the document has them before this command.
-    readers(id) {
+    /// The nodes that read node `id` (`transitive`: and what reads those), as the document
+    /// has them before this command.
+    readers(id, transitive = false) {
         if (this.model.node(id) === undefined) return [];
-        return JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_readers", this.doc, id, false));
+        return JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_readers", this.doc, id, transitive));
     }
 
     /// `++counters[kind]`, the number alone (a name the page writes with another label).
@@ -571,9 +586,39 @@ export class Draft {
         return this._picks(`a face of \`${id}\``).findFace(id, ref, hint);
     }
 
-    /// Frame node `id`'s twelve numbers, as the document last evaluated it.
+    /// Frame node `id`'s twelve numbers: as the document last evaluated it, or -- where this
+    /// command's ops so far touch it or what it reads -- as they leave it, through a probe
+    /// of those ops (its result read while the probe is open, then ended). A probe the
+    /// kernel refuses (an op of an item that will stand in) reads the last evaluation.
     frameValue(id) {
+        if (this._touches(id)) {
+            const batch = JSON.stringify({ op: "batch", ops: this.ops });
+            let statuses;
+            try {
+                statuses = JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_probe", this.doc, batch, JSON.stringify([id])));
+            } catch {
+                statuses = undefined;
+            }
+            if (statuses !== undefined) {
+                try {
+                    const st = Array.isArray(statuses) ? statuses.find((x) => x?.id === id) : undefined;
+                    if (st && st.state !== "ok") fail(`\`${id}\` has not been built`);
+                    return JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_value", this.doc, id));
+                } finally {
+                    call(this.kernel, "cadaclysm_blacksmith_document_probe_end", this.doc);
+                }
+            }
+        }
         return this._picks(`the frame \`${id}\``).frameValue(id);
+    }
+
+    /// Whether this command's ops so far add, set or remove node `id` or a node it reads.
+    _touches(id) {
+        if (!this.ops.length) return false;
+        const touched = new Set(this.ops.map((o) => (o.op === "add" ? o.node.id : o.id)));
+        if (touched.has(id) || this.model.node(id) === undefined) return true;
+        const inputs = JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_inputs", this.doc, id, true));
+        return inputs.some((x) => touched.has(x));
     }
 
     _picks(what) {
@@ -1528,20 +1573,55 @@ export function writeItem(d, n, fields, at) {
             pos = d.index(nd.id) + 1;
         } else d.add(nd, pos++);
     }
-    if (c.kind === "face") rewriteFaceReaders(d, [n]);
 }
 
 /// The verbs that read a face item (press, refillet, rechamfer, remove).
 const FACE_READERS = ["press", "refillet", "rechamfer", "remove"];
 
-/// Every item that reads one of face items `faces` written again: such a verb copies the
-/// face's body and reference into its node (no node input carries them), so a face item
-/// picked again, or gone, reaches it here.
-function rewriteFaceReaders(d, faces) {
-    for (const it of d.model.items()) {
-        if (!FACE_READERS.includes(it.kind) || !d.has(headId(it.id))) continue;
-        const c = readItem(d, it.id);
-        if (Array.isArray(c.parts) && c.parts.some((p) => faces.includes(p))) writeItem(d, it.id, c);
+/// The items whose nodes hold a copy of a value of another item (see the header's Copies):
+/// a trim (its split's direction), a split (a curve cutter's plane), the face readers.
+const COPIERS = ["trim", "split", ...FACE_READERS];
+
+/// Every item that copies a value of an item this command wrote, written again from its
+/// own fields, so the copy is what its source now gives (the diff emits nothing where it
+/// is): the copiers reading a written item's nodes, at any depth (`document_readers`,
+/// transitive: a trim reads its curve's sketch's frame through the curve), and the face
+/// readers whose parts name a face item written or gone (no node input carries a face
+/// item's body and reference). An item gone is its node readers' to `orphanReaders`; one
+/// reading only its own nodes is not its own copier. What this writes is a source in turn,
+/// until nothing more moves. `d.copied` keeps the sources done.
+function rewriteCopies(d) {
+    d.copied ??= new Set();
+    for (;;) {
+        const sources = [...d.written].filter((n) => !d.copied.has(n));
+        if (!sources.length) return;
+        const targets = new Set();
+        let faces = false;
+        for (const n of sources) {
+            d.copied.add(n);
+            const it = d.model.item(n);
+            if ((d.item(n) ?? it)?.kind === "face") faces = true;
+            if (!it || !d.item(n)) continue;
+            const ids = it.of !== undefined ? [it.node] : [it.head.id, ...it.helpers.map((h) => h.id)];
+            for (const id of ids) {
+                for (const r of d.readers(id, true)) {
+                    const y = ownerOf(r);
+                    if (y !== undefined && y !== n) targets.add(y);
+                }
+            }
+        }
+        if (faces) {
+            for (const it of d.model.items()) {
+                if (!FACE_READERS.includes(it.kind) || !d.has(headId(it.id))) continue;
+                const c = readItem(d, it.id);
+                if (Array.isArray(c.parts) && c.parts.some((p) => sources.includes(p))) targets.add(it.id);
+            }
+        }
+        for (const y of targets) {
+            const it = d.item(y);
+            if (!it || it.of !== undefined || !COPIERS.includes(it.kind) || !d.has(headId(y))) continue;
+            writeItem(d, y, readItem(d, y));
+        }
     }
 }
 
@@ -1933,7 +2013,8 @@ function build(model, cmd, env, broken) {
             }
             // A held node no item names any more goes with its last item.
             for (const id of before) if (!after.has(id) && d.has(id)) { d.remove(id); gone.push(id); }
-            rewriteFaceReaders(d, doomed.filter((n) => model.item(n)?.kind === "face"));
+            // The face readers of a face that went first: a stand-in each, in their words.
+            rewriteCopies(d);
             orphanReaders(d, gone);
             break;
         }
@@ -2308,6 +2389,7 @@ function build(model, cmd, env, broken) {
             fail(`unknown command ${op}`);
     }
     finish(d, cmd);
+    rewriteCopies(d);
     return d;
 }
 
