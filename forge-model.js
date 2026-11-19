@@ -73,6 +73,14 @@
 //                                move only through it. Pass the same `meta` to name
 //                                several new items in one command.
 //     .forgeMeta()               a fresh copy of the `forge` meta, defaults filled in
+//     .over(nodes, meta?)        a model of `nodes` (file form, in document order) and the
+//                                forge meta `meta` (this one's when not given), read off
+//                                nothing: what a command's draft leaves, listed without
+//                                applying it (forge-commands.js's `itemsAfter`)
+//   openDocument(kernel, text)   a document handle off a file's text: a cadaclysm-blacksmith
+//                                document, else refused as not one (naming the format it
+//                                gives); one the kernel cannot load (a 0.14 forge file's
+//                                `forge.*` nodes) refused in the kernel's words
 //   bumpId(meta, n)              `meta.nextId` raised past item `n` (forge.js `bump`)
 //   takeId(meta)                 the next free id, `meta.nextId` moved past it
 //   metaOp(meta)                 `{ op: "meta", app: "forge", value: meta }`
@@ -374,5 +382,38 @@ export class Model {
     /// A fresh copy of the forge meta (`{ counters, nextId, ... }`), safe to change.
     forgeMeta() {
         return structuredClone(this._meta);
+    }
+
+    /// A model of `nodes` and `meta`, not of the document (see the header). Not to refresh.
+    over(nodes, meta = this._meta) {
+        const m = Object.create(Model.prototype);
+        m.kernel = this.kernel;
+        m.doc = this.doc;
+        m._byId = new Map(nodes.map((n) => [n.id, n]));
+        m._order = nodes.map((n) => n.id);
+        m._items = undefined;
+        m._meta = forgeMetaOf(meta);
+        m.revision = this.revision;
+        return m;
+    }
+}
+
+/// A document handle off a file's text (see the header). The caller frees it.
+export function openDocument(kernel, text) {
+    const NOT = "not a cadaclysm-blacksmith document";
+    let lit;
+    try {
+        lit = JSON.parse(text);
+    } catch {
+        throw new Error(`${NOT} (it is not JSON)`);
+    }
+    const f = lit !== null && typeof lit === "object" && !Array.isArray(lit) ? lit.format : undefined;
+    if (f !== "cadaclysm-blacksmith") throw new Error(typeof f === "string" ? `${NOT}: its format is "${f}"` : `${NOT}: it names no format`);
+    const load = kernel?.cadaclysm_blacksmith_document_load;
+    if (typeof load !== "function") throw new Error("the kernel has no `cadaclysm_blacksmith_document_load`");
+    try {
+        return load(text);
+    } catch (e) {
+        throw new Error(String(e?.message ?? e).replace(/^document_load: /, ""));
     }
 }

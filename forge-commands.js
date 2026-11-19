@@ -6,7 +6,7 @@
 // is forge-picks.js's.
 //
 //   commandOps(model, cmd, env)   `{ ops, meta? }`: the ops `cmd` (the page's command object,
-//                                 as forge-doc-commands.js's `applyCommand` takes it) makes
+//                                 as the 0.14 layer's `applyCommand` took it) makes
 //                                 on the model's document, and the forge meta when the
 //                                 command moved it (write it with `metaOp`). `env` is
 //                                 `{ kernel, picks }`, `picks` forge-picks.js's `docPicks`
@@ -25,6 +25,15 @@
 //                                 instead and the batch applied again, as the 0.14 layer did.
 //                                 Refused while a preview or a batch is open ("a preview is
 //                                 open"): the commit would go into it.
+//   commandBatch(kernel, model, doc, cmd, env?)
+//                                 the batch `command` would apply, applied to nothing (its ops
+//                                 tried in a probe, a refused item stood in): what the worker
+//                                 answers a command that needs built geometry with
+//   pageItems(model)              every item's page fields off its nodes (`readItem`), what the
+//                                 page holds: a held body's plane, pivot, transform and place
+//                                 (and the look its node's `meta.colour` gives) filled in
+//   itemsAfter(model, cmd, env)   `pageItems` as `cmd`'s ops would leave the document, nothing
+//                                 applied (forge-model.js's `over`)
 //   sketchFillet(kernel, curves, radius)
 //                                 a sketch fillet over item fields: two curves meeting at an
 //                                 end -> `{ two: { a, b, arc } }` (each curve's new `{ kind,
@@ -187,7 +196,7 @@
 // any other node is a `value.unresolved` stand-in of its output type, `why` "<id>: curve #n
 // is gone" (the 0.14 layer's words). A held node no item names any more goes with its last
 // item.
-import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, metaOp, bumpId } from "./forge-model.js";
+import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, metaOp, bumpId, heldOf } from "./forge-model.js";
 import { bodyNode, facePlaneId, docPicks } from "./forge-picks.js";
 
 /// How close the pieces of a curve must meet (the page's `LOOP_TOLERANCE`).
@@ -382,7 +391,7 @@ function piecesOfCurve(c) {
 }
 
 /// `f` on a new profile handle, freed after.
-function withProfile(kernel, make, f) {
+export function withProfile(kernel, make, f) {
     const h = make();
     try {
         return f(h);
@@ -392,7 +401,7 @@ function withProfile(kernel, make, f) {
 }
 
 /// A curve item as a profile handle (free it).
-function curveProfile(kernel, c) {
+export function curveProfile(kernel, c) {
     const { pieces, closed } = piecesOfCurve(c);
     return call(kernel, "cadaclysm_blacksmith_profile_from_pieces", JSON.stringify(pieces), closed, LOOP_TOLERANCE);
 }
@@ -2411,6 +2420,84 @@ function finish(d, cmd) {
 
 /// The command as the kernel would read it off the page's JSON.
 const asJson = (cmd) => JSON.parse(JSON.stringify(cmd) ?? "null");
+
+/// Every item the model lists, as the page holds it: its page fields read off its nodes
+/// (`readItem`), `id` among them, in the model's order. A held body has what a new quick solid
+/// has where its nodes say nothing (the page reads its plane, pivot, transform and place), and
+/// the look its held node's `meta.colour` gives, as the 0.14 layer listed it.
+export function pageItems(model) {
+    const d = new Draft(model);
+    return model.items().map((it) => {
+        const c = readItem(d, it.id);
+        return c.kind === "held" ? heldDefaults(model, c) : c;
+    });
+}
+
+/// A held body's fields, the ones its nodes do not hold filled in (see `pageItems`).
+function heldDefaults(model, c) {
+    const nd = typeof c.node === "string" ? model.node(c.node) : undefined;
+    const out = { ...c };
+    const fill = (k, v) => { if (out[k] === undefined) out[k] = v; };
+    fill("sheet", heldOf(nd ?? { kind: "" }) === "sheet");
+    fill("plane", "top");
+    fill("parts", []);
+    fill("pivot", [0, 0]);
+    fill("transform", { tx: 0, ty: 0, angle: 0, scale: 1 });
+    fill("holes", 0);
+    fill("axis", null);
+    fill("angle", 0);
+    fill("source", null);
+    fill("place", { offset: [0, 0, 0], turn: [0, 0, 0] });
+    const look = heldLook(nd?.meta);
+    if (look) fill("look", look);
+    return out;
+}
+
+/// The look a held node's `meta` gives (`colour` as `#rrggbb`, or three or four numbers in
+/// 0..1), as the page's `look`; undefined for none.
+function heldLook(meta) {
+    let colour = get(meta, "colour");
+    if (colour === undefined) colour = get(meta, "color");
+    if (typeof colour === "string" && /^#[0-9a-fA-F]{6}$/.test(colour)) return { colour: colour.toLowerCase() };
+    if (!Array.isArray(colour) || (colour.length !== 3 && colour.length !== 4) || !colour.slice(0, 3).every((x) => typeof x === "number")) return undefined;
+    const hex = colour.slice(0, 3).map((x) => { const v = Math.round(Math.min(Math.max(x, 0), 1) * 255); return (Number.isNaN(v) ? 0 : v).toString(16).padStart(2, "0"); });
+    return { colour: `#${hex.join("")}` };
+}
+
+/// The items `cmd` would leave (`pageItems` of its ops on a draft of the model), nothing
+/// applied: what the page prunes a structural command's constraints against.
+export function itemsAfter(model, cmd, env) {
+    const d = build(model, asJson(cmd), env, new Map());
+    return pageItems(model.over(d.order.map((id) => d.node(id)), d.metaMoved ? d.forge() : undefined));
+}
+
+/// `cmd` as the batch `command` would apply, applied to nothing: built, its ops tried on a
+/// scratch copy (`document_probe`), and an item whose node the kernel refuses written as a
+/// stand-in instead, as `command` does. What the worker answers a page's command with that
+/// needs built geometry; the page applies it as it is.
+export function commandBatch(kernel, model, doc, cmd, env) {
+    cmd = asJson(cmd);
+    env ??= { kernel, picks: docPicks(kernel, doc, model) };
+    const broken = new Map();
+    for (;;) {
+        const d = build(model, cmd, env, broken);
+        const ops = d.metaMoved ? [...d.ops, metaOp(d.forge())] : d.ops;
+        const batch = { op: "batch", ops, message: `forge: ${opOf(cmd)}` };
+        try {
+            call(kernel, "cadaclysm_blacksmith_document_probe", doc, JSON.stringify(batch), "[]");
+        } catch (e) {
+            const m = /^i(0|[1-9][0-9]*)(?:_[^:\s]*)?: /.exec(e.message);
+            const n = m ? Number(m[1]) : undefined;
+            if (n !== undefined && d.written.has(n) && !broken.has(n) && d.node(headId(n)) && d.node(headId(n)).kind !== "value.unresolved") {
+                broken.set(n, e.message);
+                continue;
+            }
+            throw e;
+        }
+        call(kernel, "cadaclysm_blacksmith_document_probe_end", doc);
+        return batch;
+    }
+}
 
 /// The ops of `cmd` on the model's document (see the header).
 export function commandOps(model, cmd, env) {

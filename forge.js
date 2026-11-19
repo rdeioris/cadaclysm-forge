@@ -5,11 +5,12 @@
 // extrusions, revolutions, sweeps, lofts, booleans, fillets, chamfers, shells and the
 // primitives, each an exact B-rep built by the cadaclysm kernel.
 //
-// A curve's Béziers come back from the page's wasm in microseconds, and a drag wants them on
-// the very next frame. Rebuilds are coalesced to one per animation frame and touch only the
-// curves that changed. The document is a blacksmith document (forge-doc-*.js over the
-// kernel's public exports); the bodies are built, and everything is drawn, in a worker
-// (forge-worker.js), which holds a replica of it.
+// A curve's Béziers come back from the page's wasm in microseconds (the document's own,
+// `document_result_beziers`, its drag previewed and cheaply evaluated), and a drag wants them
+// on the very next frame. Rebuilds are coalesced to one per animation frame and touch only the
+// curves that changed. The document is a blacksmith document whose nodes are the forge's
+// model (forge-model.js, forge-commands.js over the kernel's public exports); the bodies are
+// built, and everything is drawn, in a worker (forge-worker.js), which holds a replica of it.
 //
 // One canvas draws everything through the wasm's `View` in that worker (WebGPU, or WebGL2
 // where the browser has no WebGPU): each curve goes to it as the rational cubic Béziers the wasm
@@ -33,11 +34,12 @@ const cadaclysm = () => cadaclysmLine ??= (() => {
     const b = JSON.parse(wasm.cadaclysm_blacksmith_build());
     return `cadaclysm ${b.version} · ${b.branch} ${b.commit} · ${b.time.replace("T", " ").replace(/Z$/, " UTC")}`;
 })();
-import * as forgeDoc from "./forge-doc-convert.js";
-import { detectLoops, embedBeziers, closeCurve } from "./forge-doc-curves.js";
-import { itemsOf, UNITS } from "./forge-doc-nodes.js";
+import { Model, UNITS, isQuickKind, openDocument as openText, metaOp } from "./forge-model.js";
+import { command as commandOn, commandOps, pageItems, itemsAfter, sketchFillet as kernelFillet, trimmedCurves } from "./forge-commands.js";
+import { docPicks } from "./forge-picks.js";
+import { LOOP_TOLERANCE, curveBeziers, polygonPoints as kernelPolygonPoints, chainOf, closingSide, detectLoops, trimPieces } from "./forge-sketch.js";
 import * as sk from "./forge-constraints.js";
-import { V, Q, placeOf, LOOP_TOLERANCE, beziersOf, chainPieces, trimPieces, trimmedChains, chainCurve, roundCorner, roundPolyline, roundPolycurve, polygonPoints, worldAxis, parseEdges, closureText, isQuickKind } from "./forge-curves.js";
+import { V, Q, parseEdges, closureText } from "./forge-curves.js";
 import { typedBytes, createWantedSender } from "./forge-wanted.js";
 import { faceColoursOver } from "./forge-items.js";
 import { attachViewer } from "./pkg/viewer-client.js";
@@ -232,22 +234,23 @@ let curves = [];
 
 // ------------------------------------------------------------------ the history
 //
-// The document is a blacksmith document, its forge layer in
-// JavaScript (forge-doc-*.js) over the kernel's public `cadaclysm_blacksmith_*` exports: the page
-// holds a replica of it (`doc`), the worker another (forge-scene.js), and both take the same
-// ops in the same order, so both save the same bytes. Every change goes through `run` as a
-// command; forge-doc-convert.js's `command` makes it one commit on the page's replica and
-// gives back the batch op, which the worker applies as it is. A file is the document's own text, and
+// The document is a blacksmith document, and its nodes are the forge's model (forge-model.js:
+// item `n` is the node `i<n>` and its helpers): the page holds a replica of it (`doc`, mirrored
+// by `model`), the worker another (forge-scene.js), and both take the same ops in the same
+// order, so both save the same bytes. Every change goes through `run` as a command;
+// forge-commands.js's `command` makes it one commit on the page's replica and gives back the
+// batch op, which the worker applies as it is. A file is the document's own text, and
 // undo, redo and a branch switch are the document's, sent to the worker the same. A
-// command names what it makes by id; the names and counters are the document's. The
-// items (`curves`) are the document's items (`itemsOf`) with the page's
+// command names what it makes by id; the names and counters are the document's (its
+// `forge` meta). The items (`curves`) are each item's page fields read off its nodes
+// (`pageItems`, forge-commands.js's `readItem`) with the page's
 // runtime fields beside them (a curve's Béziers, a body's table off the worker, errors,
 // selection state): `syncItems` updates them in place after every change, so whatever
 // holds an item keeps holding it.
 //
 // A drag or a typed field changes items in place first. While the page's items differ from
-// the document's, the difference is previewed -- an `edit` command's op
-// (`commandOp`) applied unrecorded on both replicas (`livePreview`) -- so a
+// the document's, the difference is previewed -- an `edit` command's ops
+// (`commandOps`) applied unrecorded on both replicas (`livePreview`) -- so a
 // body follows a drag in the worker; the drag's commit ends that preview on both sides and
 // commits its own command. A run of `set`s of one item's same fields (`merge`), or a typed
 // field's keystrokes (`"replace"`), is held as one pending command, its fields applied
@@ -262,6 +265,8 @@ let curves = [];
 // document's commits (`undoOrder`, forge-order.js).
 
 let doc = null;                // the page's replica, a wasm DOCUMENTS handle once the wasm is up
+let model = null;              // its nodes mirrored (forge-model.js), kept by every change's changed set
+let historyAt = null;          // the document revision the history (`syncHistory`) was read at
 let baseItems = new Map();     // id -> the item as the document holds it (no preview), at the last sync
 let history = [];              // the commits on the line the head is on, the root left out (`commitInfo`)
 let head = 0;                  // how many of them the document stands after
@@ -659,8 +664,8 @@ function runStructural(cmd, planes, { remap = null, mutate = null, dropped = nul
     });
 }
 // `command`'s document share (its image ids left out: the images are the page's) made into
-// the nodes it would leave (`commandNodes`, nothing applied: the worker never sees it), and
-// the page's items synced to those; then each sketch of `before` pruned on the curves it
+// the items it would leave (`itemsAfter`: its ops on a draft of the model, nothing applied;
+// the worker never sees it), and the page's items synced to those; then each sketch of `before` pruned on the curves it
 // leaves and its refused records settled, the results put on the command
 // (`sketchConstraints`, `sketchEdits`) and on the page's items in place. The records the
 // prune took out are returned. A command the document refuses is not pruned: its commit
@@ -670,11 +675,11 @@ function pruneUnderPreview(command, before, migrated, remap) {
     endPreview();   // a drag's frame: the command is made on the document as it stands
     const share = command.op === "delete" ? { ...command, ids: command.ids.filter((id) => !isImage(byId(id))) } : command;
     if (share.op === "delete" && !share.ids.length) return gone;
-    let nodes;
-    try { ({ nodes } = forgeDoc.commandNodes(wasm, doc, share)); } catch { return gone; }
+    let items;
+    try { items = itemsAfter(model, share, pageEnv()); } catch { return gone; }
     let failed = null;
     try {
-        syncItems(itemsOf(nodes).toLit());
+        syncItems(items);
         // A sketch whose records were made here (`migrate`, an old file's) has none in the
         // document yet: the migrated ones are what the prune starts from.
         for (const [id, list] of migrated) { const s = byId(id); if (isSketch(s) && s.constraints === undefined) setConstraints(s, structuredClone(list)); }
@@ -820,29 +825,45 @@ function flushPending() {
 // One command committed on the page's replica and sent to the worker as the op it gave. A
 // command the document refuses changes nothing: the items are put back as the document has
 // them, and the status line says why. One that needs built geometry (a pick without its
-// references, a new face plane: `commandNeedsGeometry`) is made an op on
+// references, a new face plane: the page's picks answer `NeedsGeometry`) is made an op on
 // the worker, whose replica is evaluated (`commitResolved`): the page's replica evaluates
 // the cheap kinds only, and never runs the kernel's heavy work on the page's thread. `here`:
-// on the page, whatever it needs (a pending run, which never needs any). With no worker, such
-// a command is refused (`commitResolved`), never evaluated on the page.
+// on the page (a pending run, which never needs any: one that would is refused). With no
+// worker, such a command is refused (`commitResolved`), never evaluated on the page.
 function commit(cmd, { here = false } = {}) {
     endPreview();
-    let remote = false;
-    if (!here) {
-        try { remote = forgeDoc.commandNeedsGeometry(wasm, doc, cmd); } catch { remote = false; }   // a refusal is the command's own, below
-    }
-    if (remote) return commitResolved(cmd);
     let out;
     try {
-        out = forgeDoc.command(wasm, doc, cmd);
+        out = commandOn(wasm, model, doc, cmd, pageEnv());
     } catch (error) {
+        if (error instanceof NeedsGeometry && !here) return commitResolved(cmd);
         afterChange();
         refuse(String(error?.message ?? error));
         return false;
     }
-    toWorker({ kind: "op", op: forgeDoc.toJson(out.op) });
+    toWorker({ kind: "op", op: JSON.stringify(out.op) });
     committed(cmd);
     return true;
+}
+// What the page's commands may ask of its replica's geometry (forge-picks.js's `docPicks`):
+// a frame node as the cheap evaluation left it, and nothing that needs a built body -- that
+// is `NeedsGeometry`, and the command goes to the worker (`commitResolved`).
+class NeedsGeometry extends Error {}
+function pageEnv() {
+    const picks = docPicks(wasm, doc, model);
+    const need = (what) => { throw new NeedsGeometry(`${what} needs a built body`); };
+    return {
+        kernel: wasm,
+        picks: {
+            kernel: wasm,
+            faceFrame: (n, k) => need(`the frame of face ${k} of #${n}`),
+            edgeRef: (n, k) => need(`edge ${k} of #${n}`),
+            faceRef: (n, k) => need(`face ${k} of #${n}`),
+            nodeFaceRef: (id, k) => need(`face ${k} of \`${id}\``),
+            findFace: (id) => need(`a face of \`${id}\``),
+            frameValue: (id) => { try { return picks.frameValue(id); } catch { return need(`the frame \`${id}\``); } },
+        },
+    };
 }
 // A command made an op on the worker's replica (`resolve`), then applied on the page's as
 // that op and sent back to the worker as any op is. The order holds every other command and
@@ -855,7 +876,7 @@ async function commitResolved(cmd) {
         return false;
     }
     endPreview();   // a frame previewed while the answer was out
-    try { wasm.cadaclysm_blacksmith_document_apply(doc, answer.op, undefined); }
+    try { model.refresh(wasm.cadaclysm_blacksmith_document_apply(doc, answer.op, undefined), JSON.parse(answer.op)); }
     catch (error) { afterChange(); refuse(String(error?.message ?? error)); return false; }
     toWorker({ kind: "op", op: answer.op });
     committed(cmd);
@@ -1009,10 +1030,10 @@ function refreshItem(c, it) {
     if (was !== null && (!isCurve(c) || JSON.stringify([c.kind, c.plane, c.shape]) !== was)) c.dirty = true;
     return c;
 }
-// The page's items made again from the document's (`documentItems`; `items`: those given
-// instead), in place: the images, and the curve being drawn (`local`, added when it is done),
-// stay.
-function syncItems(items = forgeDoc.documentItems(wasm, doc).toLit()) {
+// The page's items made again from the document's (`pageItems`: each item's page fields off
+// its nodes; `items`: those given instead), in place: the images, and the curve being drawn
+// (`local`, added when it is done), stay.
+function syncItems(items = pageItems(model)) {
     baseItems = new Map(items.map((it) => [it.id, JSON.parse(JSON.stringify(it))]));
     const old = new Map(curves.map((c) => [c.id, c]));
     const next = items.map((it) => {
@@ -1035,6 +1056,7 @@ function syncItems(items = forgeDoc.documentItems(wasm, doc).toLit()) {
 // curve's and sketch's own error.
 let progressTimer = null;
 function readStatuses() {
+    frameValues.clear();
     let statuses;
     try { statuses = JSON.parse(wasm.cadaclysm_blacksmith_document_evaluate(doc, true)); }
     catch (error) { console.error("forge: the cheap evaluation failed:", error); return; }
@@ -1060,7 +1082,12 @@ function readStatuses() {
 }
 // The commits on the line the head is on, root first (the root left out), and where the head
 // stands among them: the timeline's chips and its count.
+// Read only when the document's revision moved since the last read (the log is the costly
+// read): a change that left the history alone (a preview ended) reads nothing.
 function syncHistory() {
+    const rev = wasm.cadaclysm_blacksmith_document_revision(doc);
+    if (rev === historyAt) return;
+    historyAt = rev;
     const info = JSON.parse(wasm.cadaclysm_blacksmith_document_branch_list(doc));
     const line = JSON.parse(wasm.cadaclysm_blacksmith_document_log(doc, info.branch ?? undefined)).reverse();
     const commits = line.filter((row) => row.parents.length);
@@ -1142,8 +1169,10 @@ function livePreview() {
     previewSig = sig;   // a refused frame is not asked again until the items move on
     let op;
     try {
-        op = forgeDoc.toJson(forgeDoc.commandOp(wasm, doc, { op: "edit", items }));
-        wasm.cadaclysm_blacksmith_document_preview(doc, op);
+        const { ops, meta } = commandOps(model, { op: "edit", items }, pageEnv());
+        const batch = { op: "batch", ops: meta ? [...ops, metaOp(meta)] : ops };
+        op = JSON.stringify(batch);
+        model.refresh(wasm.cadaclysm_blacksmith_document_preview(doc, op), batch);
     } catch (error) {
         console.error("forge: the preview was refused:", error);
         return;
@@ -1158,7 +1187,7 @@ function endPreview() {
     previewSig = null;
     if (previewOp === null) return;
     previewOp = null;
-    try { wasm.cadaclysm_blacksmith_document_end_preview(doc); } catch (error) { console.error("forge: end_preview:", error); }
+    try { model.refresh(wasm.cadaclysm_blacksmith_document_end_preview(doc)); } catch (error) { console.error("forge: end_preview:", error); }
     toWorker({ kind: "endPreview" });
     readStatuses();
 }
@@ -1171,6 +1200,7 @@ function step(kind) {
     try { changed = kind === "undo" ? wasm.cadaclysm_blacksmith_document_undo(doc) : wasm.cadaclysm_blacksmith_document_redo(doc); }
     catch (error) { say(`${kind}: ${error?.message ?? error}`, true); return false; }
     if (changed === "null") return false;
+    model.refresh(changed);
     toWorker({ kind });
     return true;
 }
@@ -1200,7 +1230,7 @@ function switchBranch(to) {
         // drops it, or its Cancel would roll back by commit count on another line.
         tool = null;
         disarmSketchPick();
-        try { wasm.cadaclysm_blacksmith_document_branch_switch(doc, to); }
+        try { model.refresh(wasm.cadaclysm_blacksmith_document_branch_switch(doc, to)); }
         catch (error) { say(`switch: ${error?.message ?? error}`, true); return false; }
         toWorker({ kind: "switch", branch: to });
         afterChange({ reset: true });
@@ -1274,6 +1304,11 @@ function iconOf(kind, glyph = GLYPHS[kind] ?? "•") {
     return svg;
 }
 const pointed = (c) => c?.kind === "nurbs" || c?.kind === "polyline";
+// A body's place in the world, after its in-plane transform: an offset and turns about the
+// world axes (degrees) about its pivot. The identity for a body without one.
+const placeOf = (body) => body.place ?? { offset: [0, 0, 0], turn: [0, 0, 0] };
+// A regular polygon's corners, the kernel's (forge-sketch.js).
+const polygonPoints = (s) => kernelPolygonPoints(wasm, s);
 const isBody = (c) => c?.kind === "surface" || c?.kind === "extrusion" || c?.kind === "revolution" || c?.kind === "solid" || c?.kind === "sweep" || c?.kind === "loft" || isMade(c);
 // The bodies a join or a shell takes: closed ones (a revolution of an open curve is a
 // sheet, and the kernel says so when asked).
@@ -2066,15 +2101,8 @@ function setSketchTrim(on) {
     schedule();
 }
 const sketchTrimHint = () => `click a piece of ${sketchTrim.ids.map((id) => byId(id)?.name).filter((n) => n).join(", ")} between crossings to remove it · OK, Enter or trim ends · Esc cancels`;
-// The cutters of `c`: every other drawn curve shown on its plane, as Béziers laid end
-// to end with how many each has.
-function cuttersOf(c) {
-    const others = curves.filter((k) => isCurve(k) && k !== c && k.plane === c.plane && visible(k) && k.sketch.length > 0);
-    const cutters = new Float32Array(others.reduce((n, k) => n + k.sketch.length, 0));
-    let at = 0;
-    for (const k of others) { cutters.set(k.sketch, at); at += k.sketch.length; }
-    return { cutters, perCutter: new Uint32Array(others.map((k) => k.sketch.length / 16)) };
-}
+// The cutters of `c`: every other drawn curve shown on its plane.
+const cuttersOf = (c) => curves.filter((k) => isCurve(k) && k !== c && k.plane === c.plane && visible(k) && k.sketch.length > 0);
 // The pieces again, of the curves the mode still has: after a trim, a delete, an edit.
 function refreshSketchTrim() {
     if (!sketchTrim) return;
@@ -2084,10 +2112,8 @@ function refreshSketchTrim() {
     sketchTrim.rev = ++trimRevs;   // the piece shown is keyed by it
     for (const id of sketchTrim.ids) {
         const c = byId(id);
-        const { cutters, perCutter } = cuttersOf(c);
         try {
-            const frame = frame9(c.plane);
-            sketchTrim.pieces.set(id, trimPieces(c.sketch, cutters, perCutter).map((p) => ({ beziers: p.beziers, world: embedBeziers(wasm, p.beziers, frame) })));
+            sketchTrim.pieces.set(id, trimPieces(wasm, c, cuttersOf(c), frame12(planeInfo(c.plane).frame)));
         } catch (error) { say(`${c.name}: ${error.message || error}`, true); }
     }
     if (!sketchTrim.ids.length) setSketchTrim(false);
@@ -2109,10 +2135,8 @@ function pieceUnder(i, px) {
 function trimAway(id, k) {
     const c = byId(id);
     if (!c || !sketchTrim) return;
-    const { cutters, perCutter } = cuttersOf(c);
-    let chains;
-    try { chains = trimmedChains(c.sketch, cutters, perCutter, k); } catch (error) { say(`${c.name}: ${error.message || error}`, true); return; }
-    const items = chains.map(chainCurve);
+    let items;
+    try { items = trimmedCurves(wasm, c, cuttersOf(c), k); } catch (error) { say(`${c.name}: ${error.message || error}`, true); return; }
     const ids = items.map((_, j) => nextId + j);
     runStructural({ op: "snip", id: c.id, ids, items }, [c.plane]);
     sketchTrim.removed++;
@@ -2177,9 +2201,10 @@ function filletable(picked) {
     if (picked.length === 2) return picked.every((c) => c.kind === "line") && picked[0].plane === picked[1].plane;
     return picked.length === 1 && (picked[0].kind === "rect" || picked[0].kind === "polygon" || picked[0].kind === "polycurve" || (picked[0].kind === "polyline" && picked[0].shape.points.length > 2));
 }
-// The sketch fillet worked out (pure, so the command's replay finds the same): for
-// two lines, their trimmed ends and the arc; for one item, its shape as a polycurve.
-// Null with the reason in `say` where it cannot be done.
+// The sketch fillet asked of the kernel first (forge-commands.js's `sketchFillet`, the one the
+// command makes): for two lines, which end of each it trims (`a`, `b`: "start" or "end") and
+// the arc; for one item, its shape as a polycurve. Null with the reason in `say` where it
+// cannot be done.
 function sketchFillet(items, radius, complain = false) {
     const fail = (why) => { if (complain) say(why, true); return null; };
     try {
@@ -2191,20 +2216,13 @@ function sketchFillet(items, radius, complain = false) {
             let meet = null;
             for (const i of [0, 1]) for (const j of [0, 1]) if (near(ea[i], eb[j])) meet = [i, j];
             if (!meet) return fail(`${a.name} and ${b.name} do not meet end to end`);
-            const [i, j] = meet;
-            const p = ea[i], far_a = ea[1 - i], far_b = eb[1 - j];
-            const r = roundCorner(p, far_a, far_b, radius);
-            if (!r) return fail(`the radius ${radius} does not fit the corner of ${a.name} and ${b.name}`);
-            const trimmed = (i, t) => i === 0 ? { x0: t[0], y0: t[1] } : { x1: t[0], y1: t[1] };
-            return { a: trimmed(i, r.t1), b: trimmed(j, r.t2), arc: { x0: r.t1[0], y0: r.t1[1], xm: r.m[0], ym: r.m[1], x1: r.t2[0], y1: r.t2[1] } };
+            let done;
+            try { done = kernelFillet(wasm, items, radius).two; }
+            catch (error) { return fail(`the radius ${radius} does not fit the corner of ${a.name} and ${b.name} (${error.message ?? error})`); }
+            const end = (i) => i === 0 ? "start" : "end";
+            return { a: end(meet[0]), b: end(meet[1]), arc: done.arc };
         }
-        const c = items[0], s = c.shape;
-        const rounded = c.kind === "rect" ? roundPolyline([[s.x0, s.y0], [s.x1, s.y0], [s.x1, s.y1], [s.x0, s.y1]], true, radius)
-            : c.kind === "polygon" ? roundPolyline(polygonPoints(s), true, radius)
-            : c.kind === "polyline" ? roundPolyline(s.points, s.closed, radius)
-            : roundPolycurve(s.pieces, radius);
-        const { beziers } = chainPieces(rounded.pieces);
-        return { shape: { pieces: rounded.pieces, closed: rounded.closed, ends: rounded.closed ? [[0, 0], [0, 0]] : [[beziers[0], beziers[1]], [beziers[beziers.length - 4], beziers[beziers.length - 3]]] } };
+        return { shape: kernelFillet(wasm, items, radius).one.shape };
     } catch (error) { return fail(String(error.message ?? error)); }
 }
 function newFillet(style = "round") {
@@ -2221,7 +2239,7 @@ function newFillet(style = "round") {
             // longer holds (the solver would pull the ends back over the arc), nor what sized
             // the lines; the arc's ends are held to the trimmed ends instead (they are one
             // point by construction).
-            const trimmed = rounded.arc ? [[picked[0].id, "x0" in rounded.a ? "start" : "end"], [picked[1].id, "x0" in rounded.b ? "start" : "end"]] : [];
+            const trimmed = rounded.arc ? [[picked[0].id, rounded.a], [picked[1].id, rounded.b]] : [];
             const sized = new Set(["length", "midpoint", "equal_length"]);
             const remap = (list, sketch) => {
                 if (!trimmed.length) return list;
@@ -2473,8 +2491,17 @@ function angleOf() {
     return angleEl.value !== "" && Number.isFinite(a) && a > 0 && a <= 360 ? a : 360;
 }
 
+// A body's source-space point under its in-plane transform (the plane's coordinates), and a
+// revolution's axis so: where its ends are drawn and picked. The gizmo's arithmetic, as the
+// drag that moves them composes it.
+function mapPoint(c, q) {
+    const { tx, ty, angle, scale } = c.transform, [px, py] = c.pivot;
+    const cos = Math.cos(angle) * scale, sin = Math.sin(angle) * scale, x = q[0] - px, y = q[1] - py;
+    return [px + tx + cos * x - sin * y, py + ty + sin * x + cos * y];
+}
+const worldAxis = (c) => c.axis.map((q) => mapPoint(c, q));
 // A world point into the body's source space, for dragging an axis end (the inverse
-// of forge-curves.js's `mapPoint`).
+// of `mapPoint`).
 function unmapPoint(c, w) {
     const { tx, ty, angle, scale } = c.transform, [px, py] = c.pivot;
     const cos = Math.cos(-angle) / scale, sin = Math.sin(-angle) / scale, x = w[0] - px - tx, y = w[1] - py - ty;
@@ -2764,7 +2791,7 @@ function duplicateCurve() {
 // before it, or none. A status line about a deleted curve -- its error, or the last
 // build's news when it was the last curve -- is stale now, and goes.
 // The selected curves merged into one polycurve: two or more, on one plane, each with
-// something drawn and none closed on its own, meeting end to end (`chainPieces` says
+// something drawn and none closed on its own, meeting end to end (`chainOf` says
 // which does not). The originals go; undo brings them back.
 function mergeCurves() {
     if (curves.some((c) => c.dirty)) rebuild();
@@ -2777,7 +2804,7 @@ function mergeCurves() {
     }
     const pieces = picked.map(snapshot);
     let chained;
-    try { chained = chainPieces(pieces); } catch (error) { say(String(error.message ?? error), true); return; }
+    try { chained = chainOf(wasm, pieces); } catch (error) { say(String(error.message ?? error), true); return; }
     const id = nextId;
     const b = chained.beziers;
     // The run's ends are Float32: the picked curves' own exact ends stand in for them, so a
@@ -4002,50 +4029,92 @@ function planeInfo(key) {
     const item = byIdAs(key, isSketch);
     if (!item) return { ...planeInfo("top"), name: "?" };
     const looking = VIEW_PLANE_KEYS.find((k) => viewPlane[k] === key) ?? null;
+    // The sketch's frame node `i<n>_frame` as the page's cheap evaluation gives it: an offset,
+    // a tilt about a hinge, a plane across a path, through three ends, between two planes.
+    // A frame node of another kind than the mode's is Top standing in for what is gone or not
+    // picked yet: broken.
+    const node = model.node(`i${item.id}_frame`);
+    const gone = item.mode !== "offset" && node?.kind !== FRAME_KINDS[item.mode];
+    const evaluated = item.mode === "face" || gone ? null : frameValue(node.id);
     if (item.mode === "offset") {
         const { right, up, normal } = PLANES[item.base];
-        return { name: item.name, frame: { origin: V.mul(normal, item.offset), x: right, y: up, z: normal }, base: item.base, offset: item.offset, view: viewShowing(item.base) };
+        return { name: item.name, frame: evaluated ?? { origin: V.mul(normal, item.offset), x: right, y: up, z: normal }, base: item.base, offset: item.offset, view: viewShowing(item.base) };
     }
     const broken = { ...planeInfo("top"), name: item.name, view: looking, broken: true };
+    if (evaluated) return { name: item.name, frame: evaluated, base: null, offset: 0, view: looking };
+    if (gone) return broken;
     if (item.mode === "face") {
         const body = item.face && byIdAs(item.face.body, isBody);
         const frame = body ? faceFrame(body, item.face.index) : null;
         if (!frame) return broken;
         return { name: item.name, frame, base: null, offset: 0, view: looking };
     }
-    if (item.mode === "mid" || item.mode === "points") {
-        // The kernel's construction planes, over the planes or points they are placed by --
-        // each resolved here, so a plane moved (or a curve end dragged) moves this one. A
-        // chain of planes on planes that comes back round is broken, not endless.
-        if (planeDepth > 16) return broken;
-        planeDepth++;
-        try {
-            const frame = item.mode === "mid" ? midFrame(item) : pointsFrame(item);
-            return frame ? { name: item.name, frame, base: null, offset: 0, view: looking } : broken;
-        } finally { planeDepth--; }
-    }
+    // No value: the frame reads a body's face (the page evaluates no body), so it is worked
+    // out here over the faces' frames in the worker's table -- the kernel's plane between two
+    // planes, or through three ends; a tilt about a hinge, a plane across a path. A chain of
+    // planes on planes that comes back round is broken, not endless.
+    if (planeDepth > 16) return broken;
+    planeDepth++;
+    try {
+        const frame = item.mode === "mid" ? midFrame(item) : item.mode === "points" ? pointsFrame(item) : refFrame(item);
+        return frame ? { name: item.name, frame, base: null, offset: 0, view: looking } : broken;
+    } finally { planeDepth--; }
+}
+// A tilted sketch's frame (about its hinge) or a path sketch's (across its path's start), off
+// the reference curve's plane: what `frame.tilted` / `frame.on_path` make, for a curve on a
+// face's plane.
+function refFrame(item) {
     const ref = curves.find((c) => c.id === (item.mode === "angle" ? item.hinge : item.path) && isCurve(c));
-    if (!ref) return broken;
+    if (!ref || (item.mode !== "angle" && item.mode !== "path")) return null;
     const F = planeInfo(ref.plane).frame;
     const at = (q) => V.add(F.origin, V.add(V.mul(F.x, q[0]), V.mul(F.y, q[1])));
     if (item.mode === "angle") {
         const s = ref.shape;
         const x = V.unit(V.sub(at([s.x1, s.y1]), at([s.x0, s.y0])));
-        if (!x) return broken;
+        if (!x) return null;
         const p = V.cross(F.z, x), t = item.tilt * Math.PI / 180;
         const y = V.add(V.mul(p, Math.cos(t)), V.mul(F.z, Math.sin(t)));
-        return { name: item.name, frame: { origin: at([s.x0, s.y0]), x, y, z: V.cross(x, y) }, base: null, offset: 0, view: looking };
+        return { origin: at([s.x0, s.y0]), x, y, z: V.cross(x, y) };
     }
     const b = ref.sketch;
-    if (b.length < 16) return broken;
+    if (!b || b.length < 16) return null;
     let d = [b[4] - b[0], b[5] - b[1]];
     if (Math.hypot(d[0], d[1]) < 1e-9) d = [b[12] - b[0], b[13] - b[1]];
     const z = V.unit(V.add(V.mul(F.x, d[0]), V.mul(F.y, d[1])));
-    if (!z) return broken;
+    if (!z) return null;
     const x = F.z, y = V.cross(z, x);
-    return { name: item.name, frame: { origin: at([b[0], b[1]]), x, y, z }, base: null, offset: 0, view: looking };
+    return { origin: at([b[0], b[1]]), x, y, z };
+}
+// A 3-point plane's frame: through its three curve ends, as they are in the world now.
+function pointsFrame(item) {
+    if (!item.points || item.points.length !== 3) return null;
+    const at = item.points.map(({ curve, end }) => {
+        const c = byIdAs(curve, isCurve);
+        const ends = c && c.plane !== item.id ? endsOf(c) : null;
+        return ends ? embed3(c.plane, ends[end]) : null;
+    });
+    if (at.some((p) => !p)) return null;
+    try { return frameOf12(cadaclysm_blacksmith_frame_through(...at.map((p) => new Float64Array(p)))); } catch { return null; }
 }
 let planeDepth = 0;
+// The frame node's kind of each sketch mode (forge-commands.js's sketch frames).
+const FRAME_KINDS = { offset: "frame.offset", angle: "frame.tilted", path: "frame.on_path", face: "frame.on_face", mid: "frame.mid", points: "frame.through_ends" };
+// A frame node's value off the page's cheap evaluation, as `{ origin, x, y, z }`; null where it
+// has none (not evaluated, failed, reading a body). Kept until the next evaluation
+// (`readStatuses` clears it).
+const frameValues = new Map();
+function frameValue(id) {
+    if (frameValues.has(id)) return frameValues.get(id);
+    let out = null;
+    try {
+        if (model.node(id) && wasm.cadaclysm_blacksmith_document_result_kind(doc, id) !== "none") {
+            const v = JSON.parse(wasm.cadaclysm_blacksmith_document_value(doc, id));
+            if (Array.isArray(v) && v.length === 12 && v.every(Number.isFinite)) out = frameOf12(v);
+        }
+    } catch { out = null; }
+    frameValues.set(id, out);
+    return out;
+}
 const frame12 = (f) => new Float64Array([...f.origin, ...f.x, ...f.y, ...f.z]);
 const frameOf12 = (v) => ({ origin: [v[0], v[1], v[2]], x: [v[3], v[4], v[5]], y: [v[6], v[7], v[8]], z: [v[9], v[10], v[11]] });
 // A midplane's frame: its two planes' (an origin plane, a sketch, a body's flat face),
@@ -4061,21 +4130,8 @@ function midFrame(item) {
     if (frames.some((f) => !f)) return null;
     try { return frameOf12(cadaclysm_blacksmith_frame_midplane(frame12(frames[0]), frame12(frames[1]))); } catch { return null; }
 }
-// A 3-point plane's frame: through its three curve ends, as they are in the world now.
-function pointsFrame(item) {
-    if (!item.points || item.points.length !== 3) return null;
-    const at = item.points.map(({ curve, end }) => {
-        const c = byIdAs(curve, isCurve);
-        const ends = c && c.plane !== item.id ? endsOf(c) : null;
-        return ends ? embed3(c.plane, ends[end]) : null;
-    });
-    if (at.some((p) => !p)) return null;
-    try { return frameOf12(cadaclysm_blacksmith_frame_through(...at.map((p) => new Float64Array(p)))); } catch { return null; }
-}
 // A sketch's frame as a signature, to notice it moved (its offset, tilt, hinge or path).
 const frameSig = (key) => JSON.stringify(planeInfo(key).frame);
-// The frame as the wasm takes it: origin, x, y.
-const frame9 = (key) => { const { origin, x, y } = planeInfo(key).frame; return new Float64Array([...origin, ...x, ...y]); };
 // What each orthographic view looks at: its origin plane, or a sketch.
 const viewPlane = { 0: "top", 2: "front", 3: "right" };
 const viewOf = (plane) => planeInfo(plane).view;
@@ -7388,12 +7444,12 @@ function toggleClosedShape(c) {
     if (c?.kind === "polycurve") {
         const s = c.shape;
         if (!s.closed) {
-            // The kernel's close (`Profile::close_loop`, through forge-doc-curves.js's `closeCurve`): the
-            // straight side from the chain's end back to its start, or none where the ends
+            // The kernel's close (`Profile::close_loop`, through forge-sketch.js's `closingSide`):
+            // the straight side from the chain's end back to its start, or none where the ends
             // meet within the sketch's tolerance. Pieces that do not chain close as their
             // ends say, and the build names what is wrong with them.
             let side = null;
-            try { side = closeCurve(wasm, chainPieces(s.pieces).beziers, LOOP_TOLERANCE); } catch { side = null; }
+            try { side = closingSide(wasm, s.pieces); } catch { side = null; }
             if (side === null) {
                 const [a, b] = s.ends;
                 if (Math.hypot(a[0] - b[0], a[1] - b[1]) > LOOP_TOLERANCE) side = [b[0], b[1], a[0], a[1]];
@@ -7404,7 +7460,7 @@ function toggleClosedShape(c) {
             const last = s.pieces[s.pieces.length - 1];
             if (s.pieces.length > 1 && last.kind === "line") s.pieces.pop();
             try {
-                const { beziers } = chainPieces(s.pieces);
+                const { beziers } = chainOf(wasm, s.pieces);
                 s.ends = [[beziers[0], beziers[1]], [beziers[beziers.length - 4], beziers[beziers.length - 3]]];
             } catch { /* the pieces stay as they are; the build says what is wrong */ }
             s.closed = false;
@@ -7844,8 +7900,10 @@ function onWorkerMessage({ data }) {
         // Bodies that left the worker's replica: their tables go, and only now.
         for (const id of data.ids) {
             bodyResults.delete(id);
+            // An item of that id that is no body now (another document's) keeps its own
+            // bounds and error: a curve's or a sketch's.
             const c = byId(id);
-            if (c && !isBody(c)) for (const k of BODY_RESULT_KEYS) delete c[k];
+            if (c && !isBody(c)) for (const k of BODY_RESULT_KEYS) if (k !== "bounds" && k !== "error") delete c[k];
         }
         renderProgress();
         wakeSettled();
@@ -7947,6 +8005,9 @@ function rebuild() {
     let failed = null, dotsChanged = false;
     const fail = (c, error) => { dotsChanged ||= c.error === null || !!c.closure; c.error = error instanceof Error ? error.message : String(error); c.closure = null; failed = c; };
     const ok = (c, closure = null) => { dotsChanged ||= c.error !== null || closureText(c.closure) !== closureText(closure); c.error = null; c.closure = closure; built.push(c); };
+    // The page's items as they differ from the document's (a drag's frame), previewed first:
+    // a curve's Béziers are the document's, evaluated with the preview.
+    livePreview();
     // The curves, then any sketch whose plane moved with them (its offset or tilt typed,
     // its hinge or path dragged) takes everything on it along -- round again until no
     // plane moves, which a chain of sketches on sketches needs. Then the bodies, and a
@@ -7974,8 +8035,7 @@ function rebuild() {
         c.dirty = false;
         touchSketch(c.plane);   // a shape or kind changed, or a curve added: its sketch's diagnosis is stale
         try {
-            c.sketch = beziersOf(c);
-            c.beziers = embedBeziers(wasm, c.sketch, frame9(c.plane));
+            ({ sketch: c.sketch, beziers: c.beziers } = curveDrawing(c));
             // What the worker's copy of the Béziers is keyed by: page-wide, so a curve made
             // again by a replay or a load (a new item, same id) never matches the old one's.
             c.rev = ++curveRevs;
@@ -7987,8 +8047,6 @@ function rebuild() {
         // Drawn, but the document's own evaluation refuses it: its error is the curve's.
         if (c.docError) fail(c, c.docError); else ok(c);
     } }
-    // The page's items as they differ from the document's (a drag's frame), previewed.
-    livePreview();
     if (dotsChanged) renderList();
     show();
     if (failed) { statusCurve = failed.id; say(`${failed.name}: ${failed.error}`, true); }
@@ -8000,6 +8058,24 @@ function rebuild() {
     wakeSettled();
 }
 
+// A curve's Béziers, in its sketch's coordinates (`sketch`) and in the world (`beziers`): the
+// document's (`document_result_beziers`), its preview applied, off the page's cheap
+// evaluation. A curve the document does not hold yet (one being drawn), or holds but cannot
+// evaluate here (on a face's plane, which the page does not build; in error), is the
+// kernel's profile of its own fields instead, on its plane's frame.
+const IDENTITY = new Float64Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]);
+function curveDrawing(c) {
+    const id = `i${c.id}`;
+    if (!c.local && baseItems.has(c.id) && model.node(id)) {
+        try {
+            if (wasm.cadaclysm_blacksmith_document_result_kind(doc, id) !== "none") {
+                return { sketch: Float32Array.from(wasm.cadaclysm_blacksmith_document_result_beziers(doc, id, IDENTITY)),
+                         beziers: Float32Array.from(wasm.cadaclysm_blacksmith_document_result_beziers(doc, id, null)) };
+            }
+        } catch { /* the page's own fields, below */ }
+    }
+    return { sketch: curveBeziers(wasm, c), beziers: curveBeziers(wasm, c, frame12(planeInfo(c.plane).frame)) };
+}
 // Hand every body, curve and image to the View -- a curve as Béziers alone, the
 // selected one in the accent -- over the union of their bounds, and write the stats line.
 // The cameras are never placed from here: a curve is laid down where the Top view already
@@ -8074,7 +8150,7 @@ const TRIM_PIECE = linear("#ff5a5a");   // the piece a sketch trim would remove,
 // each the ids of the curves that join end to end into it (one id for a curve that
 // closes on itself), `loopOf` the loop number a curve is in. Ends meet within a
 // micrometre -- a snapped end is the other's exact coordinates, and the tolerance only
-// absorbs the arithmetic in between (`LOOP_TOLERANCE`, in forge-curves.js). A curve with no
+// absorbs the arithmetic in between (`LOOP_TOLERANCE`, in forge-sketch.js). A curve with no
 // ends is closed by kind.
 let loops = [], loopOf = new Map();
 function detect(shown) {
@@ -8273,23 +8349,31 @@ function documentJson() {
     flushPending();
     return wasm.cadaclysm_blacksmith_document_save(doc);
 }
-// The first item id no commit of `d`'s tree has used: an id is never used again (ids are
-// unique, stable, never reused), not even one an undone line or another branch holds, so an
-// undo, a redo or a switch never lowers `nextId`. Read off the save: every node id `i<n>`
-// (and its helpers `i<n>_<role>`) any commit names.
-function idsAfter(d) {
+// The first item id no commit of the file `text` has used: an id is never used again (ids
+// are unique, stable, never reused), not even one an undone line or another branch holds, so
+// an undo, a redo or a switch never lowers `nextId`. Read off the file as it was opened: every
+// node id `i<n>` (and its helpers `i<n>_<role>`) any commit names; and past the document's own
+// next id (its `forge` meta).
+function idsAfter(text, m) {
     let top = 0;
-    for (const m of wasm.cadaclysm_blacksmith_document_save(d).matchAll(/"i(\d+)(?:_[^"]*)?"/g)) top = Math.max(top, +m[1]);
-    return top + 1;
+    for (const x of text.matchAll(/"i(\d+)(?:_[^"]*)?"/g)) top = Math.max(top, +x[1]);
+    return Math.max(top + 1, m.forgeMeta().nextId);
 }
+// A file opened (`openDocument`: a blacksmith document, or refused in the kernel's words -- a
+// forge file of 0.14, whose `forge.*` nodes no kernel has now, among them), in place of the
+// document the page holds.
 function loadDocument(text) {
     // All of it in the order's turn: what the document was stays until what is in flight is done.
     return act(async () => {
-        const opened = forgeDoc.openDocument(wasm, text);   // throws for what is no document
+        const opened = openText(wasm, text);   // throws for what is no document
+        let mirror;
+        try { mirror = new Model(wasm, opened); } catch (error) { wasm.cadaclysm_blacksmith_document_free(opened); throw error; }
         pendingRun = null;
         endPreview();
         const old = doc;
         doc = opened;
+        model = mirror;
+        historyAt = null;
         if (old !== null) wasm.cadaclysm_blacksmith_document_free(old);
         // A tool session or a pick left open belongs to the document that was: dropped, or
         // its Cancel would roll the loaded history back to where that session began.
@@ -8298,7 +8382,7 @@ function loadDocument(text) {
         selection = []; selected = null;
         chainSeen.clear();
         curves = [];
-        nextId = idsAfter(opened);   // another document: past every id it ever gave (the sync bumps past what stands)
+        nextId = idsAfter(text, model);   // another document: past every id it ever gave (the sync bumps past what stands)
         bodyResults.clear();
         progress = null;
         quarantine.clear();   // another document: nothing of it has crashed yet
@@ -8498,6 +8582,7 @@ if (!("transferControlToOffscreen" in HTMLCanvasElement.prototype) || typeof Wor
 // The page's replica: an empty document until one is loaded; the worker opens its own from
 // the page's save as it starts.
 doc = wasm.cadaclysm_blacksmith_document_new(UNITS);
+model = new Model(wasm, doc);
 afterChange();
 startWorker();
 // The page's own controls wait behind a command or action in flight; the view's own input and
@@ -8684,5 +8769,5 @@ function installTestHook() {
 const openParam = new URLSearchParams(location.search).get("open");
 if (openParam) {
     // Once the first View is up, as the page opened it before the View moved to its worker.
-    Promise.all([fetch(openParam).then((r) => r.text()), firstView]).then(([text]) => loadDocument(text)).catch((e) => console.error("open:", e));
+    Promise.all([fetch(openParam).then((r) => r.text()), firstView]).then(([text]) => loadDocument(text)).catch((e) => { console.error("open:", e); say(`load: ${e?.message ?? e}`, true); });
 }
