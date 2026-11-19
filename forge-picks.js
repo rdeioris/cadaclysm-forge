@@ -21,7 +21,12 @@
 //                                           item's own node); undefined for no body item
 //   docPicks(kernel, doc, model?)           the geometry a command may ask of a document:
 //                                           `{ kernel, edgeRef(n, k), faceRef(n, k),
-//                                           faceFrame(n, k) }` (faceFrame needs the model)
+//                                           faceFrame(n, k) }` (faceFrame needs the model),
+//                                           and off any node's result: `nodeFaceRef(id, k)`,
+//                                           `findFace(id, ref8, hint)` (the face the page's
+//                                           own eight-number reference finds, -1 none),
+//                                           `frameValue(id)` (a frame node's twelve numbers);
+//                                           a node with no result yet: "`id` has not been built"
 //   faceFrames(kernel, doc, model, wanted, solids?)   per `{ body, face }` of `wanted`, the
 //                                           twelve doubles (origin, x, y, z) its `frame.on_face`
 //                                           `f<body>_<face>` evaluates to, or null where it has
@@ -41,6 +46,9 @@ import { headId } from "./forge-model.js";
 /// How far a reference may be from the face or edge it names, as a node looks it up (the
 /// Rust `kind::REF_TOLERANCE`).
 const REF_TOLERANCE = 1e-6;
+/// How far the page's own face reference (eight numbers: a shell's `openRefs`, a face item's
+/// `ref`) may be from the face it finds (the 0.14 layer's `FORGE_REF_TOLERANCE`).
+const PAGE_REF_TOLERANCE = 1e-3;
 
 const fail = (why) => { throw new Error(why); };
 
@@ -152,6 +160,7 @@ export function docPicks(kernel, doc, model) {
         if (id === undefined) fail(`#${n} is not an item`);
         return withSolid(kernel, doc, id, f, () => fail(`#${n} has not been built`));
     };
+    const onNode = (id, f) => withSolid(kernel, doc, id, f, () => fail(`\`${id}\` has not been built`));
     return {
         kernel,
         faceFrame: (n, k) => {
@@ -161,6 +170,12 @@ export function docPicks(kernel, doc, model) {
         },
         edgeRef: (n, index) => body(n, (s) => edgeRefOf(kernel, s, index)),
         faceRef: (n, index) => body(n, (s) => faceRefOf(kernel, s, index)),
+        nodeFaceRef: (id, index) => onNode(id, (s) => faceRefOf(kernel, s, index)),
+        findFace: (id, ref, hint) => onNode(id, (s) => call(kernel, "cadaclysm_blacksmith_find_face", s, Float64Array.from(ref), hint, PAGE_REF_TOLERANCE)),
+        frameValue: (id) => {
+            if (call(kernel, "cadaclysm_blacksmith_document_result_kind", doc, id) === "none") fail(`\`${id}\` has not been built`);
+            return JSON.parse(call(kernel, "cadaclysm_blacksmith_document_value", doc, id));
+        },
     };
 }
 

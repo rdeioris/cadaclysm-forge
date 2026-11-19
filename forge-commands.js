@@ -23,6 +23,8 @@
 //                                 (forge-scene.js, the worker). An item whose node the kernel
 //                                 refuses (a polygon of 2.5 sides) is written as a stand-in
 //                                 instead and the batch applied again, as the 0.14 layer did.
+//                                 Refused while a preview or a batch is open ("a preview is
+//                                 open"): the commit would go into it.
 //   sketchFillet(kernel, curves, radius)
 //                                 a sketch fillet over item fields: two curves meeting at an
 //                                 end -> `{ two: { a, b, arc } }` (each curve's new `{ kind,
@@ -47,10 +49,11 @@
 //
 // On nodes so far: `add`, `image`, `sketch`, `duplicate`, `delete`, `round`, `merge`, `snip`,
 // `explode` (5.3a); the made bodies `surface`, `sweep` (an extrusion or a revolution of a
-// curve), `solid`, `revolved`, `lofted`, `swept`, `primitive`, `pipe` (5.3b); `set` / `edit`
-// of curves, sketches, held items and those bodies, a body's in-plane move and its place in
-// the world among them. The body verbs throw `Unported` until their group lands: each adds
-// its kinds to the body class (`bodyNodes`, `bodyHeld`) and its cases to `build`.
+// curve), `solid`, `revolved`, `lofted`, `swept`, `primitive`, `pipe` (5.3b); the body verbs
+// `join`, `cut`, `intersect`, `shell`, `thicken`, `trim`, `face`, `prism`, `press`,
+// `rechamfer`, `remove`, `refillet`, `fillet`, `split` (5.3c); `set` / `edit` of curves,
+// sketches, held items and every body, a body's in-plane move and its place in the world
+// among them. `state` (a version-1 file's items) throws `Unported`.
 //
 // Every command first adopts the held items the model lists without a head of their own
 // (`adoptHeld`): each gets its head `i<n>` under the number the model shows for it, and the
@@ -106,6 +109,20 @@
 //   - a quick solid: `solid.<shape>` on the plane's frame (`solid.cuboid` with `anchor:
 //     "base"`; a coil `i<n>_circle` -> `i<n>_wire` -> `i<n>_coil` -> `solid.place`), its
 //     `dims` read back off it. A pipe: `solid.pipe` (`path`, `dims`).
+//   - a body verb reads its parts' heads (`parts`, item ids): `solid.join` (`solids`),
+//     `solid.cut` (`target`, `tool`), `solid.common` (`a`, `b`) -- then `solid.merge_flush`
+//     `i<n>_flush` when `flush`; `solid.shell` (`thickness`, `open`), `solid.thicken`,
+//     `solid.extrude_faces` (a prism's `height`), `sheet.face_sheet` (a face item: its one
+//     face); `solid.fillet` / `solid.chamfer` (`style`; `radius` the chamfer's `distance`);
+//     a trim `i<n>_tool` `curve.as_nurbs` of its curve, `i<n>_split` `sheet.split_by_curve`
+//     along the curve's frame normal (`sheet.split_sheet` by a body tool), `solid.drop_faces`
+//     of the split; a split `solid.split_side_by_profile` (a curve cutter: `i<n>_cut`
+//     `profile.from_curves` over it, on the curve's plane), `solid.split_side` (a body),
+//     `solid.split_side_by_plane` (a plane), with its `side`. Press, refillet, rechamfer and
+//     remove read face items: the face's body and reference are copied into their node
+//     (`solid.push_pull[_faces]`, `solid.refillet`, `solid.rechamfer`, `solid.unchamfer` /
+//     `solid.unfillet`), and written again when the face item is (`rewriteFaceReaders`). A
+//     verb's plane, `pivot` and the page's own fields are its head's meta.
 //   - placed (`place` not the identity): the head is `{ solid, frame, pivot: [px + tx, py +
 //     ty, 0], turn_in: "world", turn, by_in: "world", by: offset }`.
 //   - `meta.forge`: `kind`, and every page field the nodes do not give back as it is
@@ -116,9 +133,28 @@
 //     read as the node it was.
 // - A new body's pivot is the centre of its curves' exact bounds (`profile_bounds`), as a
 //   literal (spec; test/fixtures/golden/ACCEPTED.md).
+// - A sketch deleted takes every item whose `plane` is the sketch along (a made body keeps
+//   its first part's plane in its meta, with no node on the sketch's frame), as the page did.
 // - A stand-in: the head `i<n>` `value.unresolved` `{ type, why }`, the item's page fields
 //   whole in `meta.forge`; a stand-in for a node an item reads that went (`delete`, `explode`,
 //   ...) keeps its own id, and the node it was as `meta.forge.was`.
+//
+// # Picks
+//
+// A face or an edge the page picks is an index (fillet `edges`, shell `open`, trim `drop`, a
+// face item's `face`), kept in the head's meta as the page has it; the node holds the
+// reference it resolved to (`edgeRefs` / `faceRefs` read back off the node). It is resolved
+// when the item is written and what it is made of changed -- its parts or indices, a
+// shell's `openRefs`, a face item's `ref` -- without the command giving references of its
+// own (`picked`): off the document as it was last evaluated (`env.picks`: the body item's
+// head, a trim's `i<n>_split`). Where the page kept its own eight-number reference to a face
+// (`openRefs`, `ref`) the face is the one it finds on the body as its verb made it, before
+// its flush and its moves. An index the solid does not have refuses the command ("edge 40 is
+// not on the solid", the 0.14 layer's words); a source with no result ("`#1` has not been
+// built") makes the item a stand-in, written again by a later command that picks. A write
+// that leaves the pick alone keeps the references, even where the source has moved since.
+// A trim's split direction is written as numbers: an origin plane's normal, else the frame
+// node's as last evaluated (ACCEPTED.md, kernel follow-ups).
 //
 // # Readers
 //
@@ -505,10 +541,40 @@ export class Draft {
         return JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_readers", this.doc, id, false));
     }
 
+    /// `++counters[kind]`, the number alone (a name the page writes with another label).
+    count(kind) {
+        const m = this.forge();
+        this.model.nameFor(kind, m);
+        return m.counters[kind];
+    }
+
     /// The face reference of face `k` of body item `b`, off the evaluated document.
     faceRef(b, k) {
-        const picks = this.env?.picks ?? fail(`no geometry: face ${k} of #${b}`);
-        return picks.faceRef(b, k);
+        return this._picks(`face ${k} of #${b}`).faceRef(b, k);
+    }
+
+    /// The reference of edge `k` of body item `b`, off the evaluated document.
+    edgeRef(b, k) {
+        return this._picks(`edge ${k} of #${b}`).edgeRef(b, k);
+    }
+
+    /// The reference of face `k` of node `id`'s result, off the evaluated document.
+    nodeFaceRef(id, k) {
+        return this._picks(`face ${k} of \`${id}\``).nodeFaceRef(id, k);
+    }
+
+    /// The face of node `id`'s result the page's own reference (eight numbers) finds, -1 none.
+    findFace(id, ref, hint) {
+        return this._picks(`a face of \`${id}\``).findFace(id, ref, hint);
+    }
+
+    /// Frame node `id`'s twelve numbers, as the document last evaluated it.
+    frameValue(id) {
+        return this._picks(`the frame \`${id}\``).frameValue(id);
+    }
+
+    _picks(what) {
+        return this.env?.picks ?? fail(`no geometry: ${what}`);
     }
 }
 
@@ -891,6 +957,247 @@ function profileNode(d, id, holder, frame, open, moves, pre) {
     return nd;
 }
 
+// ---------------------------------------------------------------------------------
+// The body verbs: bodies made of other bodies (see the header's Picks).
+
+/// The body verbs' item kinds.
+const VERBS = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "split"];
+
+/// The normal of each origin plane's frame, as the kernel's `xy` / `xz` / `yz` have it.
+const ORIGIN_NORMALS = { xy: [0, 0, 1], xz: [0, -1, 0], yz: [1, 0, 0] };
+
+/// The page's own face reference (a shell's `openRefs` entry, a face item's `ref`): eight
+/// finite numbers, the kind not negative; else undefined.
+function pageRef(l) {
+    if (!Array.isArray(l) || l.length !== 8 || !l.every((x) => num(x) !== undefined)) return undefined;
+    return l[0] >= 0 ? l.slice() : undefined;
+}
+
+/// A geometric question a write asks of the evaluated document: a node that has not been
+/// built makes the item a stand-in in those words; any other refusal (an index the solid
+/// does not have) refuses the command, as the 0.14 layer did.
+function asked(base, f) {
+    try {
+        return f();
+    } catch (e) {
+        if (!(e instanceof Refuse) && /has not been built/.test(e.message)) refuse(`${base}: ${e.message}`);
+        throw e;
+    }
+}
+
+/// Item `n`'s fields before this write, undefined for a new item.
+function priorFields(d, n) {
+    if (!d.node(headId(n))) return undefined;
+    try {
+        return readItem(d, n);
+    } catch {
+        return undefined;
+    }
+}
+
+/// The references an index pick resolves to (see the header's Picks): the item's own
+/// (`c[refsKey]`) where what the pick is made of (`sig`) did not change, or the command gave
+/// new ones; else each index of `indices` resolved by `one(index, k)`.
+function picked(d, n, c, indices, refsKey, sig, one) {
+    const base = headId(n);
+    const ids = Array.isArray(indices) ? indices.map(idOf) : undefined;
+    if (!ids || ids.includes(undefined)) refuse(`${base}: a pick is not a list of indices`);
+    const given = get(c, refsKey);
+    if (Array.isArray(given)) {
+        const prev = priorFields(d, n);
+        if (!prev || sig.every((k) => same(get(prev, k), get(c, k))) || !same(get(prev, refsKey), given)) return clone(given);
+    }
+    // Resolved afresh: the item's fields (writeItem's copy) take them, so its head's meta
+    // keeps none of the old ones.
+    const refs = ids.map((k, i) => asked(base, () => one(k, i)));
+    if (given !== undefined) c[refsKey] = clone(refs);
+    return refs;
+}
+
+/// The node a body part of item `base` reads: an item's head (a held item's own node while
+/// it has none); refused where it is not a body.
+function bodyPart(d, base, p) {
+    if (isMap(p)) refuse(`${base}: a version-1 part is not on nodes`);
+    const i = idOf(p);
+    if (i === undefined) refuse(`${base}: no body`);
+    const it = d.item(i);
+    if (!isBody(it)) refuse(`${base}: body #${i} is gone`);
+    return it.of !== undefined && !d.has(headId(i)) ? it.node : headId(i);
+}
+
+/// Face `k` of body item `src` as a reference; where the page kept its own reference to it
+/// (`page`), the face that reference finds on the body as its verb made it (before its
+/// flush and its moves) -- the 0.14 layer's rule.
+function faceOfPart(d, src, k, page) {
+    const forge = pageRef(page);
+    let at = k;
+    if (forge) {
+        const unmoved = [helperId(src, "flush"), helperId(src, "inner")].find((id) => d.has(id)) ?? bodyNode(d.model, src) ?? headId(src);
+        at = d.findFace(unmoved, forge, k <= 0x7fffffff ? k : -1);
+        if (at < 0) fail(`the face (${k + 1} when it was picked) is no longer on the solid`);
+    }
+    return d.faceRef(src, at);
+}
+
+/// A frame field's normal: an origin plane's, else its frame node's as the document last
+/// evaluated it (a sketch `i<s>`: its `i<s>_frame`). A literal: see the header's Picks.
+function frameNormal(d, base, frame) {
+    if (frame === undefined) return ORIGIN_NORMALS.xy.slice();
+    if (Object.hasOwn(ORIGIN_NORMALS, frame)) return ORIGIN_NORMALS[frame].slice();
+    const s = itemOfId(frame);
+    const id = s !== undefined ? helperId(s, "frame") : frame;
+    const v = asked(base, () => d.frameValue(id));
+    return nums(v, 12)?.slice(9, 12) ?? refuse(`${base}: \`${id}\` is not a frame`);
+}
+
+/// What reads a page plane resolves to (`frameFor`), or undefined where it is gone.
+function planeFrame(d, plane, pending) {
+    const k = planeKey(plane);
+    if (!k) return undefined;
+    if (k.origin) return ORIGIN_FRAMES[k.origin];
+    if (k.sketch !== undefined) return isSketch(d.item(k.sketch)) ? headId(k.sketch) : undefined;
+    return isBody(d.item(k.face.body)) ? frameFor(d, plane, pending) : undefined;
+}
+
+/// A body verb's steps (its helpers pushed to `pre`), before its flush and its moves.
+function verbSteps(d, n, c, pending, pre, numOr) {
+    const base = headId(n), kind = c.kind;
+    const ps = get(c, "parts");
+    const parts = Array.isArray(ps) ? ps : [];
+    const part = (k) => bodyPart(d, base, parts[k]);
+    const src = idOf(parts[0]);
+    // A face item a verb reads (press, refillet, ...): the body it is on, its reference.
+    const faceItem = (k) => {
+        const i = idOf(parts[k]);
+        if (i === undefined) refuse(`${base}: no face`);
+        if (!d.item(i)) refuse(`${base}: face #${i} is gone`);
+        return readItem(d, i);
+    };
+    const faceBody = (k) => {
+        const fp = get(faceItem(k), "parts");
+        if (!Array.isArray(fp)) refuse(`${base}: the face has no body`);
+        return bodyPart(d, base, fp[0]);
+    };
+    const faceRefOf = (k) => {
+        const f = faceItem(k), r = get(f, "faceRefs");
+        return Array.isArray(r) && isMap(r[0]) ? clone(r[0]) : refuse(`${base}: face #${f.id} has no reference`);
+    };
+    switch (kind) {
+        case "join":
+            return [{ kind: "solid.join", solids: parts.map((_, k) => part(k)) }];
+        case "cut":
+            return [{ kind: "solid.cut", target: part(0), tool: part(1) }];
+        case "intersect":
+            return [{ kind: "solid.common", a: part(0), b: part(1) }];
+        case "shell": {
+            const solid = part(0), thickness = numOr("thickness");
+            const pages = Array.isArray(c.openRefs) ? c.openRefs : [];
+            const open = picked(d, n, c, get(c, "open"), "faceRefs", ["parts", "open", "openRefs"], (k, i) => faceOfPart(d, src, k, pages[i]));
+            return [{ kind: "solid.shell", solid, thickness, open }];
+        }
+        case "thicken":
+            return [{ kind: "solid.thicken", sheet: part(0), thickness: numOr("thickness") }];
+        case "trim": {
+            // A curve tool: the curve as a NURBS, the sheet split along its frame's normal.
+            const sheet = part(0);
+            const t = idOf(parts[1]), it = t === undefined ? undefined : d.item(t);
+            const split = helperId(n, "split");
+            if (curveItem(it) && classOf(it.kind) === "curve") {
+                const tool = helperId(n, "tool");
+                pre.push({ id: tool, kind: "curve.as_nurbs", curve: headId(t) });
+                pre.push({ id: split, kind: "sheet.split_by_curve", sheet, curve: tool, direction: frameNormal(d, base, d.node(headId(t))?.frame) });
+            } else pre.push({ id: split, kind: "sheet.split_sheet", sheet, tool: part(1) });
+            const faces = picked(d, n, c, get(c, "drop"), "faceRefs", ["parts", "drop"], (k) => d.nodeFaceRef(split, k));
+            return [{ kind: "solid.drop_faces", solid: split, faces }];
+        }
+        case "prism":
+            return [{ kind: "solid.extrude_faces", sheet: part(0), height: numOr("height") }];
+        case "press": {
+            const solid = faceBody(0);
+            if (parts.length === 1) return [{ kind: "solid.push_pull", solid, face: faceRefOf(0), distance: numOr("height") }];
+            return [{ kind: "solid.push_pull_faces", solid, faces: parts.map((_, k) => faceRefOf(k)), distance: numOr("height") }];
+        }
+        case "refillet": case "rechamfer": case "remove": {
+            const solid = faceBody(0), face = faceRefOf(0);
+            if (kind === "refillet") return [{ kind: "solid.refillet", solid, face, radius: numOr("radius") }];
+            if (kind === "rechamfer") return [{ kind: "solid.rechamfer", solid, face, distance: numOr("radius") }];
+            return [{ kind: get(c, "what") === "chamfer" ? "solid.unchamfer" : "solid.unfillet", solid, face }];
+        }
+        case "face": {
+            const solid = part(0);
+            const [face] = picked(d, n, c, [get(c, "face")], "faceRefs", ["parts", "face", "ref"], (k) => faceOfPart(d, src, k, get(c, "ref")));
+            return [{ kind: "sheet.face_sheet", solid, face }];
+        }
+        case "fillet": {
+            const solid = part(0);
+            const edges = picked(d, n, c, get(c, "edges"), "edgeRefs", ["parts", "edges", "edgeNumbering"], (k) => d.edgeRef(src, k));
+            if (get(c, "style") === "chamfer") return [{ kind: "solid.chamfer", solid, edges, distance: numOr("radius") }];
+            return [{ kind: "solid.fillet", solid, edges, radius: numOr("radius") }];
+        }
+        case "split": {
+            const solid = part(0);
+            const side = orElse(get(c, "side"), 0);
+            const cutter = get(c, "cutter");
+            const t = idOf(cutter), it = t === undefined ? undefined : d.item(t);
+            if (curveItem(it) && classOf(it.kind) === "curve") {
+                // A curve: the profile it is, cut square to its plane.
+                const cut = helperId(n, "cut");
+                pre.push({ id: cut, kind: "profile.from_curves", curves: [headId(t)] });
+                return [{ kind: "solid.split_side_by_profile", solid, profile: cut, frame: frameFor(d, readItem(d, t).plane, pending), side }];
+            }
+            if (isBody(it)) return [{ kind: "solid.split_side", solid, tool: headId(t), side }];
+            // A plane: an origin plane's key, a sketch's, a face's -- or gone.
+            const plane = planeFrame(d, cutter, pending) ?? refuse(`${base}: the cutter is gone`);
+            return [{ kind: "solid.split_side_by_plane", solid, plane, side }];
+        }
+        default:
+            return refuse(`${base}: no body kind \`${kind}\``);
+    }
+}
+
+/// The page fields a verb's nodes give back (`get`: the item's nodes by id): its parts
+/// where the verb names them, its numbers, and the references its picks resolved to.
+function verbHeld(get, n, verb, vk) {
+    const out = {};
+    if (!verb) return out;
+    const put = (k, v) => { if (v !== undefined) out[k] = clone(v); };
+    const parts = (l) => {
+        const ids = Array.isArray(l) ? l.map(itemOfId) : undefined;
+        if (ids && !ids.includes(undefined)) out.parts = ids;
+    };
+    switch (vk) {
+        case "solid.join": parts(verb.solids); break;
+        case "solid.cut": parts([verb.target, verb.tool]); break;
+        case "solid.common": parts([verb.a, verb.b]); break;
+        case "solid.shell": parts([verb.solid]); put("thickness", verb.thickness); put("faceRefs", verb.open); break;
+        case "solid.thicken": parts([verb.sheet]); put("thickness", verb.thickness); break;
+        case "solid.drop_faces": {
+            const split = get(helperId(n, "split"));
+            const tool = split?.kind === "sheet.split_by_curve" ? get(helperId(n, "tool"))?.curve : split?.tool;
+            if (split) parts([split.sheet, tool]);
+            put("faceRefs", verb.faces);
+            break;
+        }
+        case "solid.extrude_faces": parts([verb.sheet]); put("height", verb.height); break;
+        case "solid.push_pull": case "solid.push_pull_faces": put("height", verb.distance); break;
+        case "solid.refillet": put("radius", verb.radius); break;
+        case "solid.rechamfer": put("radius", verb.distance); break;
+        case "sheet.face_sheet": parts([verb.solid]); if (isMap(verb.face)) out.faceRefs = [clone(verb.face)]; break;
+        case "solid.fillet": parts([verb.solid]); put("edgeRefs", verb.edges); put("radius", verb.radius); break;
+        case "solid.chamfer": parts([verb.solid]); put("edgeRefs", verb.edges); put("radius", verb.distance); break;
+        case "solid.split_side": parts([verb.solid]); put("side", verb.side); put("cutter", itemOfId(verb.tool)); break;
+        case "solid.split_side_by_plane": parts([verb.solid]); put("side", verb.side); put("cutter", planeOfFrame(verb.plane)); break;
+        case "solid.split_side_by_profile": {
+            parts([verb.solid]);
+            put("side", verb.side);
+            const cs = get(helperId(n, "cut"))?.curves;
+            if (Array.isArray(cs) && cs.length === 1) put("cutter", itemOfId(cs[0]));
+            break;
+        }
+    }
+    return out;
+}
+
 /// The page fields a body's nodes give back (`get`: its nodes by id), less what only its
 /// head's meta holds.
 function bodyHeld(get, n, head, kind) {
@@ -899,7 +1206,8 @@ function bodyHeld(get, n, head, kind) {
     const world = head.kind === "solid.transform" && head.turn_in === "world" ? head : undefined;
     const verb = inner ?? (world || moved || flush ? undefined : head);
     const src = get(helperId(n, "src"));
-    const frame = verb?.frame ?? moved?.frame ?? world?.frame;
+    // A split by a curve's frame is the curve's plane, not the body's.
+    const frame = (verb?.kind === "solid.split_side_by_profile" ? undefined : verb?.frame) ?? moved?.frame ?? world?.frame;
     if (frame !== undefined) {
         const p = planeOfFrame(frame);
         if (p !== undefined) out.plane = p;
@@ -929,6 +1237,11 @@ function bodyHeld(get, n, head, kind) {
     out.place = world ? { offset: clone(world.by ?? [0, 0, 0]), turn: clone(world.turn ?? [0, 0, 0]) } : noPlace();
     const vk = verb?.kind ?? "";
     if (kind === "held") return out;
+    if (VERBS.includes(kind)) {
+        Object.assign(out, verbHeld(get, n, verb, vk));
+        if (flush?.kind === "solid.merge_flush") out.flush = true;
+        return out;
+    }
     if (vk.startsWith("solid.extrude")) {
         out.height = clone(verb.distance);
         out.taper = vk.endsWith("_tapered") ? clone(verb.taper) : 0;
@@ -954,6 +1267,9 @@ function bodyHeld(get, n, head, kind) {
     }
     return out;
 }
+
+/// The steps that read the one before as their `solid`.
+const CHAINED = ["solid.transform", "solid.merge_flush"];
 
 /// A body's nodes (see the header): its helpers, then its chain, the last step `i<n>`.
 function bodyNodes(d, n, c, pending) {
@@ -1041,6 +1357,9 @@ function bodyNodes(d, n, c, pending) {
             pre.push({ id: helperId(n, "coil"), kind: "solid.coil", section: helperId(n, "wire"), pitch, turns });
             steps.push({ kind: "solid.place", solid: helperId(n, "coil"), frame });
         } else steps.push({ ...QUICK[kind][1](dims), frame });
+    } else if (VERBS.includes(kind)) {
+        steps.push(...verbSteps(d, n, c, pending, pre, numOr));
+        if (["join", "cut", "intersect"].includes(kind) && Boolean(get(c, "flush"))) steps.push({ role: "flush", kind: "solid.merge_flush" });
     } else unported(`a ${kind} item is not on nodes yet`);
     // The in-plane move, then the place in the world.
     const pivot = nums(get(c, "pivot"), 2) ?? [0, 0];
@@ -1057,7 +1376,7 @@ function bodyNodes(d, n, c, pending) {
         const { role, ...fields } = st;
         const id = k + 1 === steps.length ? base : helperId(n, role ?? "inner");
         const nd = { id, kind: fields.kind };
-        if (prev !== undefined && fields.kind === "solid.transform") nd.solid = prev;
+        if (prev !== undefined && CHAINED.includes(fields.kind)) nd.solid = prev;
         for (const [key, v] of Object.entries(fields)) if (key !== "kind") nd[key] = clone(v);
         prev = id;
         return nd;
@@ -1199,6 +1518,21 @@ export function writeItem(d, n, fields, at) {
             }
             pos = d.index(nd.id) + 1;
         } else d.add(nd, pos++);
+    }
+    if (c.kind === "face") rewriteFaceReaders(d, [n]);
+}
+
+/// The verbs that read a face item (press, refillet, rechamfer, remove).
+const FACE_READERS = ["press", "refillet", "rechamfer", "remove"];
+
+/// Every item that reads one of face items `faces` written again: such a verb copies the
+/// face's body and reference into its node (no node input carries them), so a face item
+/// picked again, or gone, reaches it here.
+function rewriteFaceReaders(d, faces) {
+    for (const it of d.model.items()) {
+        if (!FACE_READERS.includes(it.kind) || !d.has(headId(it.id))) continue;
+        const c = readItem(d, it.id);
+        if (Array.isArray(c.parts) && c.parts.some((p) => faces.includes(p))) writeItem(d, it.id, c);
     }
 }
 
@@ -1450,6 +1784,15 @@ function bodyOf(d, kind, profile, holes, plane, n) {
     return Object.assign(c, { hidden: false, pivot: pivotOver(d.kernel, curves), transform: still(), place: noPlace(), holes: clone(holes), height: 0, axis: null, angle: 0 });
 }
 
+/// The page's `pivotOf`: a body's pivot where its in-plane move took it (`null` for a
+/// number that is not one, as JSON writes it).
+function pivotOf(c) {
+    const pv = get(c, "pivot"), t = get(c, "transform");
+    const p = (k) => (Array.isArray(pv) && typeof pv[k] === "number" ? pv[k] : NaN);
+    const m = (k) => num(get(t, k)) ?? NaN;
+    return [p(0) + m("tx"), p(1) + m("ty")].map((v) => (Number.isFinite(v) ? v : null));
+}
+
 /// The fields every made body's item ends with (the page's `madeTail` and `blankBody`).
 function madeTail(c, height) {
     c.holes = 0;
@@ -1558,13 +1901,15 @@ function build(model, cmd, env, broken) {
             break;
         }
         case "delete": {
-            // A sketch takes what is on it along (what has a node on its frame).
+            // A sketch takes what is on it along: every item whose `plane` is the sketch (a
+            // made body keeps its first part's, with no node on the sketch's frame), as the
+            // page's walk did.
             const doomed = idsOf(get(cmd, "ids")).filter((n) => d.item(n));
             for (const n of doomed.slice()) {
                 if (!isSketch(d.item(n))) continue;
                 for (const it of model.items()) {
                     if (doomed.includes(it.id) || it.of !== undefined) continue;
-                    if (d.nodesOf(it.id).some((id) => d.node(id)?.frame === headId(n))) doomed.push(it.id);
+                    if (readItem(d, it.id).plane === n) doomed.push(it.id);
                 }
             }
             const gone = [];
@@ -1579,6 +1924,7 @@ function build(model, cmd, env, broken) {
             }
             // A held node no item names any more goes with its last item.
             for (const id of before) if (!after.has(id) && d.has(id)) { d.remove(id); gone.push(id); }
+            rewriteFaceReaders(d, doomed.filter((n) => model.item(n)?.kind === "face"));
             orphanReaders(d, gone);
             break;
         }
@@ -1793,9 +2139,160 @@ function build(model, cmd, env, broken) {
             writeItem(d, n, madeTail(c, true));
             break;
         }
-        case "join": case "cut": case "intersect":
-        case "shell": case "thicken": case "trim": case "face": case "prism": case "press": case "rechamfer": case "remove": case "refillet":
-        case "fillet": case "split": case "state":
+        case "join": case "cut": case "intersect": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const parts = idsOf(get(cmd, "parts"));
+            const first = need(d, parts[0], op);
+            // A cut or an intersection hides its parts; a join takes them (and what they
+            // were made of) along.
+            if (op !== "join") for (const p of parts) hide(d, need(d, p, op).id);
+            const c = { id: n, name: d.nameFor(op), kind: op };
+            if (first.plane !== undefined) c.plane = clone(first.plane);
+            Object.assign(c, { parts: kept(get(cmd, "parts")), pivot: pivotOf(first), transform: still() });
+            madeTail(c, true);
+            if (get(cmd, "flush")) c.flush = true;
+            writeItem(d, n, c);
+            if (op === "join") for (const p of parts) consume(d, p);
+            break;
+        }
+        case "shell": case "thicken": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const src = need(d, idOf(get(cmd, "source")), op);
+            const c = { id: n, name: d.nameFor(op), kind: op };
+            if (src.plane !== undefined) c.plane = clone(src.plane);
+            c.parts = [src.id];
+            if (get(cmd, "thickness") !== undefined) c.thickness = clone(cmd.thickness);
+            if (op === "shell") {
+                const open = get(cmd, "open");
+                if (open === undefined) fail("shell: no open");
+                c.open = kept(open);
+                c.openRefs = get(cmd, "openRefs") ? kept(cmd.openRefs) : null;
+                // A live command's references (the page picked them on the solid).
+                if (get(cmd, "faceRefs") !== undefined) c.faceRefs = kept(cmd.faceRefs);
+            }
+            Object.assign(c, { pivot: pivotOf(src), transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            consume(d, src.id);
+            break;
+        }
+        case "trim": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const sheet = need(d, idOf(get(cmd, "sheet")), op);
+            const tool = need(d, idOf(get(cmd, "tool")), op).id;
+            hide(d, sheet.id);
+            const c = { id: n, name: d.nameFor("trim"), kind: "trim" };
+            if (sheet.plane !== undefined) c.plane = clone(sheet.plane);
+            Object.assign(c, { parts: [sheet.id, tool], drop: [], tool, pivot: pivotOf(sheet), transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            break;
+        }
+        case "face": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const src = need(d, idOf(get(cmd, "from")), op);
+            const c = { id: n, name: d.nameFor("face"), kind: "face" };
+            const face = get(cmd, "face");
+            // Flat: the item stands on the face's own plane (`facePlane`).
+            const plane = get(cmd, "curved") ? clone(src.plane) : `face:${src.id}:${face === null || face === undefined ? "null" : String(face)}`;
+            if (plane !== undefined) c.plane = plane;
+            c.parts = [src.id];
+            if (face !== undefined) c.face = clone(face);
+            c.ref = get(cmd, "ref") ? kept(cmd.ref) : null;
+            if (get(cmd, "faceRefs") !== undefined) c.faceRefs = kept(cmd.faceRefs);
+            Object.assign(c, { pivot: [0, 0], transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            break;
+        }
+        // Named with the solids' counter.
+        case "prism": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const sheet = need(d, idOf(get(cmd, "from")), op);
+            const c = { id: n, name: `${d.model.label("prism")} ${d.count("solid")}`, kind: "prism" };
+            if (sheet.plane !== undefined) c.plane = clone(sheet.plane);
+            c.parts = [sheet.id];
+            if (get(cmd, "height") !== undefined) c.height = clone(cmd.height);
+            Object.assign(c, { pivot: pivotOf(sheet), transform: still() });
+            writeItem(d, n, madeTail(c, false));
+            consume(d, sheet.id);
+            break;
+        }
+        case "press": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const from = get(cmd, "from");
+            let faces;
+            if (Array.isArray(from)) faces = idsOf(from);
+            else {
+                const one = idOf(from);
+                if (one === undefined) fail("press: no face");
+                faces = [one];
+            }
+            for (const f of faces) need(d, f, op);
+            const first = need(d, faces[0], op);
+            const src = need(d, idsOf(first.parts)[0], op);
+            const c = { id: n, name: d.nameFor("press"), kind: "press" };
+            if (src.plane !== undefined) c.plane = clone(src.plane);
+            c.parts = faces.slice();
+            if (get(cmd, "height") !== undefined) c.height = clone(cmd.height);
+            Object.assign(c, { pivot: pivotOf(src), transform: still() });
+            writeItem(d, n, madeTail(c, false));
+            for (const f of faces) consume(d, f);
+            consume(d, src.id);
+            break;
+        }
+        case "rechamfer": case "remove": case "refillet": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const face = need(d, idOf(get(cmd, "from")), op);
+            const src = need(d, idsOf(face.parts)[0], op);
+            const name = op === "remove" ? `${get(cmd, "what") === "chamfer" ? "Unchamfer" : "Unfillet"} ${d.count("remove")}` : d.nameFor(op);
+            const c = { id: n, name, kind: op };
+            if (src.plane !== undefined) c.plane = clone(src.plane);
+            c.parts = [face.id];
+            if (op === "refillet") {
+                if (get(cmd, "radius") !== undefined) c.radius = clone(cmd.radius);
+            } else Object.assign(c, { radius: orElse(get(cmd, "radius"), 0), what: orElse(get(cmd, "what"), null) });
+            Object.assign(c, { pivot: pivotOf(src), transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            consume(d, face.id);
+            consume(d, src.id);
+            break;
+        }
+        case "fillet": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const src = need(d, idOf(get(cmd, "source")), op);
+            hide(d, src.id);
+            const style = orElse(get(cmd, "style"), "round");
+            const c = { id: n, name: d.nameFor(style === "chamfer" ? "chamfer" : "fillet"), kind: "fillet", style };
+            if (src.plane !== undefined) c.plane = clone(src.plane);
+            Object.assign(c, { parts: [src.id], edges: [] });
+            if (get(cmd, "radius") !== undefined) c.radius = clone(cmd.radius);
+            Object.assign(c, { tool: src.id, pivot: pivotOf(src), transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            break;
+        }
+        case "split": {
+            const target = need(d, idOf(get(cmd, "target")), op);
+            idsOf(get(cmd, "ids")).forEach((n, side) => {
+                d.bump(n);
+                const c = { id: n, name: d.nameFor("split"), kind: "split" };
+                if (target.plane !== undefined) c.plane = clone(target.plane);
+                c.parts = [target.id];
+                const cutter = get(cmd, "cutter");
+                if (cutter !== undefined) c.cutter = kept(cutter);
+                Object.assign(c, { side, pivot: pivotOf(target), transform: still() });
+                writeItem(d, n, madeTail(c, true));
+            });
+            consume(d, target.id);
+            break;
+        }
+        // A version-1 file's items, whole (5.3d).
+        case "state":
             unported(`${op}: not on nodes yet`);
             break;
         default:
@@ -1830,9 +2327,16 @@ export function commandOps(model, cmd, env) {
     return d.metaMoved ? { ops: d.ops, meta: d.forge() } : { ops: d.ops };
 }
 
+const NO_OPS = JSON.stringify({ op: "batch", ops: [] });
+
 /// One command as one commit (see the header).
 export function command(kernel, model, doc, cmd, env) {
     cmd = asJson(cmd);
+    // Refused while a preview or a batch is open, as the 0.14 layer was: the commit would go
+    // into it (the page ends a drag's preview before it sends a command). An empty probe
+    // asks, in the kernel's words.
+    call(kernel, "cadaclysm_blacksmith_document_probe", doc, NO_OPS, "[]");
+    call(kernel, "cadaclysm_blacksmith_document_probe_end", doc);
     env ??= { kernel, picks: docPicks(kernel, doc, model) };
     const broken = new Map();
     for (;;) {

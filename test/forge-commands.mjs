@@ -46,6 +46,12 @@ function solidOf(doc, id) {
     }
 }
 
+// The same, the document evaluated first.
+const solidNow = (t, id) => {
+    wasm[K + "document_evaluate"](t.doc, false);
+    return solidOf(t.doc, id);
+};
+
 const close = (a, b, tol = 1e-5) => {
     if (typeof a === "number" && typeof b === "number") return Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b));
     if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x, i) => close(x, b[i], tol));
@@ -530,13 +536,274 @@ for (const c of [
     t.free();
 }
 
+// The body verbs against the 0.14 layer (forge-doc-convert.js, still on this package): the
+// same commands on both, each item read back off the nodes as the old layer has it, each
+// body the same solid (counts exact; volume, area, bounds to 1e-6). A trim's face reference
+// is the split's (`sheet.split_by_curve`, not `forge.curve_tool`): the same face, its
+// numbers to 1e-6.
+{
+    const t = fresh();
+    const od = wasm[K + "document_new"](UNITS);
+    const at = (id, x, y = 0, z = 0) => ({ op: "set", id, place: { offset: [x, y, z], turn: [0, 0, 0] } });
+    const box = (id, s = 10) => ({ op: "primitive", id, kind: "box", plane: "top", dims: [s, s, s] });
+    const seq = [
+        box(1, 20), { op: "primitive", id: 2, kind: "cylinder", plane: "top", dims: [6, 30] },
+        { op: "join", id: 3, parts: [1, 2] },
+        box(4), at(4, 40), { op: "primitive", id: 5, kind: "cylinder", plane: "top", dims: [3, 20] }, at(5, 45, 5, -5),
+        { op: "cut", id: 6, parts: [4, 5] },
+        box(7), at(7, 80), box(8), at(8, 85),
+        { op: "intersect", id: 9, parts: [7, 8], flush: true },
+        box(10), at(10, 80, 40), box(11), at(11, 90, 40),
+        { op: "join", id: 12, parts: [10, 11], flush: true },
+        { op: "set", id: 12, place: { offset: [0, 0, 5], turn: [0, 0, 10] }, transform: { tx: 1, ty: 2, angle: 0.2, scale: 1 } },
+        box(13, 20), at(13, 0, 80),
+        { op: "shell", id: 14, source: 13, thickness: 1, open: [1] },
+        { op: "add", id: 15, kind: "rect", plane: "top", shape: { x0: 150, y0: 0, x1: 160, y1: 10 } },
+        { op: "surface", id: 16, loops: [[15]], plane: "top" },
+        { op: "thicken", id: 17, source: 16, thickness: 2 },
+        { op: "add", id: 18, kind: "rect", plane: "top", shape: { x0: 170, y0: 0, x1: 180, y1: 10 } },
+        { op: "surface", id: 19, loops: [[18]], plane: "top" },
+        { op: "prism", id: 20, from: 19, height: 3 },
+        // A trim on a tilted sketch: its curve split along the sketch's normal.
+        { op: "add", id: 21, kind: "line", plane: "top", shape: { x0: 0, y0: 50, x1: 10, y1: 50 } },
+        { op: "sketch", id: 22, mode: "angle", hinge: 21, tilt: 30 },
+        { op: "add", id: 23, kind: "rect", plane: 22, shape: { x0: -20, y0: -20, x1: 20, y1: 20 } },
+        { op: "surface", id: 24, loops: [[23]], plane: 22 },
+        { op: "add", id: 25, kind: "circle", plane: 22, shape: { cx: 3, cy: -2, r: 8 } },
+        { op: "trim", id: 26, sheet: 24, tool: 25 },
+        { op: "set", id: 26, drop: [1] },
+        box(27), at(27, 0, -60),
+        { op: "fillet", id: 28, source: 27, radius: 1, style: "chamfer" },
+        { op: "set", id: 28, edges: [0, 3] },
+        { op: "face", id: 29, from: 28, face: 0, curved: true },
+        { op: "rechamfer", id: 30, from: 29, radius: 2 },
+        { op: "remove", id: 31, from: 29, what: "chamfer" },
+        box(32), at(32, 30, -60),
+        { op: "fillet", id: 33, source: 32, radius: 1 },
+        { op: "set", id: 33, edges: [1, 2] },
+        { op: "face", id: 34, from: 33, face: 6, curved: true },
+        { op: "refillet", id: 35, from: 34, radius: 2 },
+        { op: "remove", id: 36, from: 34, what: "fillet" },
+        box(37), at(37, 60, -60),
+        { op: "face", id: 38, from: 37, face: 1 },
+        { op: "press", id: 39, from: [38], height: 2 },
+        box(40), at(40, 90, -60),
+        { op: "face", id: 41, from: 40, face: 2 },
+        { op: "face", id: 42, from: 40, face: 3 },
+        { op: "press", id: 43, from: [41, 42], height: 2 },
+        // A split by a curve, by a sketch's plane, by a body.
+        box(44), at(44, 200),
+        { op: "add", id: 45, kind: "circle", plane: "top", shape: { cx: 200, cy: 0, r: 3 } },
+        { op: "split", target: 44, ids: [46, 47], cutter: 45 },
+        box(48), at(48, 230),
+        { op: "sketch", id: 49, mode: "offset", base: "top", offset: 4 },
+        { op: "split", target: 48, ids: [50, 51], cutter: 49 },
+        box(52), at(52, 260),
+        box(53, 6), at(53, 264, 0, 2),
+        { op: "split", target: 52, ids: [54, 55], cutter: 53 },
+        { op: "set", id: 54, transform: { tx: 3, ty: 0, angle: 0, scale: 1 } },
+    ];
+    for (const cmd of seq) {
+        t.run(cmd);
+        wasm[K + "document_evaluate"](od, false);
+        oldCommand(wasm, od, cmd);
+    }
+    // Measured to 1e-6: the comparison is to 1e-6.
+    const measure = (doc, id) => {
+        const kind = wasm[K + "document_result_kind"](doc, id);
+        const s = wasm[K + "document_result_solid"](doc, id);
+        try {
+            const m = wasm[K + "mass_properties"](s, 1e-6);
+            return { kind, faces: wasm[K + "face_count"](s), edges: wasm[K + "edge_count"](s), volume: m[0] ? m[6] : 0, area: m[4], bounds: Array.from(wasm[K + "bounds64"](s, 0.01)) };
+        } finally {
+            wasm[K + "solid_free"](s);
+        }
+    };
+    const os = JSON.parse(wasm[K + "document_evaluate"](od, false));
+    const ns = JSON.parse(wasm[K + "document_evaluate"](t.doc, false));
+    const verbs = new Set();
+    let built = 0;
+    for (const { id: n, fields } of documentItems(wasm, od).items) {
+        const got = t.item(n), want = { ...fields };
+        if (want.kind === "trim") {
+            assert.ok(close(got.faceRefs, want.faceRefs, 1e-6), `#${n}: ${JSON.stringify(got.faceRefs)}`);
+            delete got.faceRefs;
+            delete want.faceRefs;
+        }
+        assert.ok(close(got, want, 1e-12), `#${n}: ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
+        if (!isBody(t.model.item(n))) continue;
+        // Built on both, or failed on both in the kernel's same words (a rechamfer of a face
+        // that is no chamfer).
+        const [a, b] = [ns, os].map((l) => l.find((s) => s.id === `i${n}`));
+        assert.deepStrictEqual([a.state, a.error], [b.state, b.error], `#${n} ${fields.kind}`);
+        if (a.state === "ok") {
+            const [x, y] = [measure(t.doc, `i${n}`), measure(od, `i${n}`)];
+            assert.ok(close(x, y, 1e-6), `#${n} ${fields.kind}: ${JSON.stringify(x)} != ${JSON.stringify(y)}`);
+            built++;
+        }
+        verbs.add(fields.kind === "remove" ? `${fields.kind} ${fields.what}` : fields.kind === "fillet" ? fields.style : fields.kind);
+    }
+    assert.strictEqual(built, 45);
+    assert.deepStrictEqual([...verbs].sort(), ["box", "chamfer", "cut", "cylinder", "face", "intersect", "join", "press", "prism", "rechamfer", "refillet", "remove chamfer", "remove fillet", "round", "shell", "split", "surface", "thicken", "trim"]);
+    // The layout: a flush after the verb, the in-plane move and the world place after it.
+    assert.deepStrictEqual(t.nodes().filter((x) => x.id.startsWith("i12")).map((x) => [x.id, x.kind, x.solid ?? x.solids]), [
+        ["i12_inner", "solid.join", ["i10", "i11"]], ["i12_flush", "solid.merge_flush", "i12_inner"], ["i12_moved", "solid.transform", "i12_flush"], ["i12", "solid.transform", "i12_moved"],
+    ]);
+    assert.deepStrictEqual([t.node("i9").kind, t.node("i9").solid, t.node("i9_inner").kind], ["solid.merge_flush", "i9_inner", "solid.common"]);
+    // A trim: the curve as a NURBS, the sheet split along the sketch's normal, the faces dropped
+    // by reference; the dropped indices are the page's (meta).
+    const [tool, split, trim] = ["i26_tool", "i26_split", "i26"].map(t.node);
+    assert.deepStrictEqual([tool.kind, tool.curve, split.kind, split.sheet, split.curve, trim.kind, trim.solid], ["curve.as_nurbs", "i25", "sheet.split_by_curve", "i24", "i26_tool", "solid.drop_faces", "i26_split"]);
+    assert.ok(close(split.direction, [0, -0.5, Math.sqrt(3) / 2], 1e-12), JSON.stringify(split.direction));
+    assert.deepStrictEqual([trim.meta.forge.drop, trim.faces.length], [[1], 1]);
+    // A fillet's edges: indices in the meta, references in the node.
+    assert.deepStrictEqual([t.node("i33").meta.forge.edges, t.node("i33").edges.length, t.node("i33").edges[0].curve], [[1, 2], 2, 0]);
+    // A press copies its face item's body and reference.
+    assert.deepStrictEqual([t.node("i39").solid, t.node("i39").face], ["i37", t.node("i38").face]);
+    assert.deepStrictEqual([t.node("i47").kind, t.node("i47").profile, t.node("i47_cut").curves, t.node("i51").plane, t.node("i54_inner").tool], ["solid.split_side_by_profile", "i47_cut", ["i45"], "i49", "i53"]);
+    wasm[K + "document_free"](od);
+    t.free();
+}
+
+// Picks: an index pick resolves to a reference off the evaluated document when it is made or
+// its indices change (the command's own references taken as they are); a write that leaves
+// it alone keeps the references (an edge the source moved away from is gone, in the
+// kernel's words, when it does not find its edge any more). An index the solid has not refuses the command; a source that has not
+// built makes the item a stand-in in those words, which builds once a write finds it.
+{
+    const t = fresh();
+    t.run({ op: "primitive", id: 1, kind: "box", plane: "top", dims: [20, 20, 20] });
+    t.run({ op: "fillet", id: 2, source: 1, radius: 2, style: "round" });
+    assert.deepStrictEqual([t.node("i2").edges, t.item(2).edgeRefs, t.node("i1").hidden], [[], [], true]);
+    t.run({ op: "set", id: 2, edges: [0, 1] });
+    const refs = t.node("i2").edges;
+    assert.strictEqual(refs.length, 2);
+    assert.deepStrictEqual(t.item(2).edgeRefs, refs);
+    assert.strictEqual(t.node("i2").meta.forge.edgeRefs, undefined);
+    assert.strictEqual(solidNow(t, "i2").faces, 8);
+    t.run({ op: "set", id: 2, name: "Rounded", radius: 3 });
+    assert.deepStrictEqual(t.node("i2").edges, refs);
+    // The source moved: the references stay as they were picked (the same indices picked
+    // again too), until the edges picked change.
+    t.run({ op: "set", id: 1, transform: { tx: 10, ty: 0, angle: 0, scale: 1 } });
+    assert.deepStrictEqual(t.node("i2").edges, refs);
+    t.run({ op: "set", id: 2, edges: [0, 1] });
+    assert.deepStrictEqual(t.node("i2").edges, refs);
+    t.run({ op: "set", id: 2, edges: [0] });
+    assert.deepStrictEqual(t.node("i2").edges.map((e) => e.mid), [[0, 0, 0]]);
+    assert.strictEqual(t.statusOf("i2").state, "ok");
+    // The page's own references are taken as they are.
+    const given = [refs[0]];
+    t.run({ op: "set", id: 2, edges: [5], edgeRefs: given });
+    assert.deepStrictEqual(t.node("i2").edges, given);
+    const before = t.nodes();
+    assert.throws(() => t.run({ op: "set", id: 2, edges: [0, 40] }), /^Error: edge 40 is not on the solid$/);
+    assert.throws(() => t.run({ op: "face", id: 3, from: 1, face: 9 }), /^Error: face 9 is not on the solid$/);
+    assert.deepStrictEqual(t.nodes(), before);
+    // A source with no solid: a stand-in, built once a write finds the solid.
+    t.run({ op: "set", id: 1, dims: [30, 30, -1] });
+    t.run({ op: "set", id: 2, edges: [1] });
+    assert.deepStrictEqual([t.node("i2").kind, t.node("i2").type], ["value.unresolved", "solid"]);
+    assert.match(t.node("i2").why, /^i2: #1 has not been built$/);
+    assert.deepStrictEqual([t.item(2).edges, t.item(2).name, t.item(2).radius], [[1], "Rounded", 3]);
+    t.run({ op: "set", id: 1, dims: [30, 30, 30] });
+    t.run({ op: "set", id: 2, edges: [1] });
+    assert.deepStrictEqual([t.node("i2").kind, t.node("i2").edges.length, t.statusOf("i2").state], ["solid.fillet", 1, "ok"]);
+    // A shell's face the page kept a reference to: found by it on the body as its verb made it.
+    t.run({ op: "primitive", id: 4, kind: "box", plane: "top", dims: [20, 20, 20] });
+    t.run({ op: "set", id: 4, place: { offset: [50, 0, 0], turn: [0, 0, 0] } });
+    t.run({ op: "shell", id: 5, source: 4, thickness: 1, open: [0], openRefs: [[0, 0, 0, 20, 0, 0, 1, 28.284271247461902]] });
+    assert.deepStrictEqual([t.node("i5").open[0].at, t.node("i5").open[0].normal], [[50, 0, 20], [0, 0, 1]]);
+    assert.strictEqual(solidNow(t, "i5").faces, 11);
+    t.free();
+}
+
+// Face items: a press, a refillet, a rechamfer or a remove copies its face item's body and
+// reference into its node, so the face picked again reaches it, and the face gone makes it
+// a stand-in. A command is refused while a preview or a batch is open, in the kernel's words.
+{
+    const t = fresh();
+    t.run({ op: "primitive", id: 1, kind: "box", plane: "top", dims: [10, 10, 10] });
+    t.run({ op: "face", id: 2, from: 1, face: 1 });
+    assert.deepStrictEqual([t.item(2).plane, t.node("i2").solid, t.node("i2").face.normal], ["face:1:1", "i1", [0, 0, 1]]);
+    t.run({ op: "press", id: 3, from: 2, height: 2 });
+    assert.deepStrictEqual(t.node("i3").face, t.node("i2").face);
+    t.run({ op: "set", id: 2, face: 0 });
+    assert.deepStrictEqual(t.node("i2").face.normal, [0, 0, -1]);
+    assert.deepStrictEqual(t.node("i3").face, t.node("i2").face);
+    assert.ok(close(solidNow(t, "i3").bounds, [-5, -5, -2, 5, 5, 10]), JSON.stringify(solidNow(t, "i3").bounds));
+    t.run({ op: "delete", ids: [2] });
+    assert.deepStrictEqual([t.node("i3").kind, t.node("i3").why], ["value.unresolved", "i3: face #2 is gone"]);
+    assert.deepStrictEqual(t.item(3).parts, [2]);
+    wasm[K + "document_preview_begin"](t.doc);
+    assert.throws(() => t.run({ op: "set", id: 1, dims: [5, 5, 5] }), /^Error: a preview is open$/);
+    wasm[K + "document_end_preview"](t.doc);
+    wasm[K + "document_batch_begin"](t.doc, "busy");
+    assert.throws(() => t.run({ op: "set", id: 1, dims: [5, 5, 5] }), /^Error: a batch is open$/);
+    wasm[K + "document_batch_abort"](t.doc);
+    t.run({ op: "set", id: 1, dims: [5, 5, 5] });
+    assert.strictEqual(t.node("i1").x, 5);
+    t.free();
+}
+
+// A sketch deleted takes the bodies on it along -- by the item's plane, as the page did: a
+// join of two boxes on the sketch (not moved, so no node of it is on the sketch's frame)
+// goes too, and nothing stands in for it.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 5 });
+    t.run({ op: "primitive", id: 2, kind: "box", plane: 1, dims: [10, 10, 10] });
+    t.run({ op: "primitive", id: 3, kind: "cylinder", plane: 1, dims: [3, 20] });
+    t.run({ op: "join", id: 4, parts: [2, 3] });
+    assert.deepStrictEqual([t.item(4).plane, t.node("i4").frame], [1, undefined]);
+    t.run({ op: "delete", ids: [1] });
+    assert.deepStrictEqual(t.model.items(), []);
+    assert.deepStrictEqual(t.nodes(), []);
+    t.free();
+}
+
+// A loft through sections outputs a body; a verb that wants a solid takes it (the reader
+// checks what it got): a fillet and a shell on a solid loft build, no cast between. (A
+// fillet of one of its spline edges is the kernel's to refuse, past the type check.)
+{
+    const t = fresh();
+    t.run({ op: "add", id: 1, kind: "rect", plane: "top", shape: { x0: -10, y0: -10, x1: 10, y1: 10 } });
+    t.run({ op: "surface", id: 2, loops: [[1]], plane: "top" });
+    for (const [s, off, r] of [[3, 10, 6], [5, 20, 8]]) {
+        t.run({ op: "sketch", id: s, mode: "offset", base: "top", offset: off });
+        t.run({ op: "add", id: s + 1, kind: "rect", plane: s, shape: { x0: -r, y0: -r, x1: r, y1: r } });
+    }
+    t.run({ op: "surface", id: 7, loops: [[6]], plane: 5 });
+    t.run({ op: "surface", id: 8, loops: [[4]], plane: 3 });
+    t.run({ op: "lofted", id: 9, from: 2, to: 7, via: [8] });
+    assert.strictEqual(t.node("i9").kind, "solid.loft_through");
+    t.run({ op: "fillet", id: 10, source: 9, radius: 0.5 });
+    t.run({ op: "shell", id: 11, source: 9, thickness: 0.5, open: [0] });
+    assert.deepStrictEqual([t.node("i10").solid, t.node("i11").solid], ["i9", "i9"]);
+    // Kind and faces only: a loft's spline faces are slow to measure.
+    const faces = (id) => {
+        const s = wasm[K + "document_result_solid"](t.doc, id);
+        try {
+            return wasm[K + "face_count"](s);
+        } finally {
+            wasm[K + "solid_free"](s);
+        }
+    };
+    for (const id of ["i9", "i10", "i11"]) assert.deepStrictEqual([id, t.statusOf(id).state, wasm[K + "document_result_kind"](t.doc, id)], [id, "ok", "solid"]);
+    assert.ok(faces("i11") > faces("i9"));
+    t.run({ op: "set", id: 10, edges: [0] });
+    assert.match(t.statusOf("i10").error, /^fillet: a spline edge ending at a corner/);
+    t.free();
+}
+
 // What is not on nodes yet says so; an unknown command and a bad id are refused as the
 // page refused them.
 {
     const t = fresh();
-    assert.throws(() => t.run({ op: "join", id: 1, parts: [1] }), (e) => e instanceof Unported);
+    assert.throws(() => t.run({ op: "state", items: [] }), (e) => e instanceof Unported);
     assert.throws(() => t.run({ op: "frobnicate" }), /^Error: unknown command frobnicate$/);
     assert.throws(() => t.run({ op: "add", id: -1 }), /add: `id` is not an id/);
+    assert.throws(() => t.run({ op: "join", id: 1, parts: [7] }), /^Error: join: item 7 is not there$/);
     assert.throws(() => sketchFillet(wasm, [{ kind: "line", shape: { x0: 0, y0: 0, x1: 1, y1: 0 } }, { kind: "line", shape: { x0: 5, y0: 5, x1: 6, y1: 5 } }], 1), /do not meet/);
     t.free();
 }

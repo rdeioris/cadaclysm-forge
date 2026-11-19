@@ -27,3 +27,47 @@ replay (`test/golden.mjs`) may differ from a recording only as listed.
   0.15 package still refuses it, so this is the port, not the kernel. Sequence:
   `every-command.json`, "Revolution 1" from step 7 on; `golden.mjs`:
   `{ from: 7, body: "Revolution 1", allow: "builds" }`.
+- **A raw op on the 0.14 trim's nodes is refused.** `a-late-tool.json` step 6 is a raw batch
+  written against the 0.14 layout: it adds a `forge.curve_tool`, sets `i4_split`'s `tool` to
+  it and removes `i4_tool`. A trim is now `curve.as_nurbs` `i4_tool` -> `sheet.split_by_curve`
+  `i4_split` (whose curve field is `curve`, not `tool`) -> `solid.drop_faces` (plan 2.5), so
+  the kernel refuses the batch ("`curve` names no node `i4_tool`") and the document stays as
+  it was; the 0.14 recording there is an unreadable document. `golden.mjs`:
+  `{ step: 6, allow: "raw-refused" }`.
+- **A held body placed is summarized where it is.** `held-bodies.json` step 9 places the held
+  plate 10 up. The 0.14 recorder measured a held item's own node (`plate`, unmoved); the node
+  layer's item is its head `i1`, the placed `solid.transform` (5.3b), so its bounds are 10
+  higher. The join over it moved in the recording too, so the place itself is the same.
+  `golden.mjs`: `{ from: 9, body: "plate part", allow: "placed" }`.
+
+## The 0.15 kernel
+
+Where the 0.15 kernel answers otherwise than the 0.14 one did. The 0.14 layer itself, run on
+the 0.15 package over the same sequences, gives these very answers, so they are not the port.
+`golden.mjs` lets the named summary keys differ (`allow: "kernel"`), or the body fail
+(`allow: "fails"`), from the step given on.
+
+- **A box's rounded edges.** Rounding two or four edges of a box meets in fewer edges than
+  0.14 counted (the 0.15.0 package's fillet edge pins moved 24 -> 20 with it): `edges` in
+  `a-fillet-s-life.json` step 3, `a-replica.json` from step 3, `busy.json` from step 5 and
+  `held-bodies.json` from step 8 ("Fillet 1"). Faces, area and volume agree.
+- **A box less a sphere counts 34 vertices**, not 16: `every-command.json` "Cut 1" from step
+  19 and "Cut 1 copy" from step 58 (`vertices`).
+- **The shell of that cut.** Its shell with face 0 open counts 68 vertices, not 32
+  (`every-command.json` step 20, "Shell 1", `vertices`); with the face the page's own
+  reference finds open (step 21 on) the 0.15 kernel refuses it: "shell: too thick: a face is
+  narrower than two walls" (`allow: "fails"`).
+- **A join of a box moved off a cylinder's middle** counts 20 edges, not 19:
+  `the-scene-s-commands.json` step 20, "Join 1" (`edges`).
+
+## Kernel follow-ups
+
+- **A trim's split direction is a literal.** `sheet.split_by_curve`'s `direction` is the
+  normal of the trim curve's frame (an origin plane's, else the sketch's or face plane's
+  frame node as the document last evaluated it, written as three numbers when the trim is
+  written). Nothing in the document carries a frame's normal to a vector field (a frame is no
+  number list to an expression, and no kind reads a frame's axis), so a sketch tilted later
+  leaves the direction stale until the trim is written again. The 0.14 `forge.curve_tool`
+  read the frame when it evaluated. A kernel follow-up: `sheet.split_by_curve` defaulting
+  `direction` to the curve's own frame normal (or a `frame.normal` kind). No recorded step
+  tilts a sketch under a trim.
