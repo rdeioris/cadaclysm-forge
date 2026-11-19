@@ -13,7 +13,10 @@ message.
   `"bodies": null` restores a state recorded earlier in the same sequence.
 - `start`: `null` for a sequence that starts from a new document. Otherwise it is the file it was
   opened from (`examples/...`, `test/fixtures/...`), or `"inline"` with the text in
-  `startText`. Those are 0.14 forge files, so they can only be replayed once converted.
+  `startText`. Those were 0.14 forge files; they are converted to 0.15 nodes now (the
+  files and the `startText` in place: ACCEPTED.md), so the bodies the sequence recorded at
+  its `open` are what the converted file builds. The 0.14 files are kept in
+  `test/fixtures/v014/` while the 0.14 layer's tests read them.
 - `documents/*.json`: each forge document at its tip: its items and its bodies.
 - A body with a `mass` field could not be measured (the 0.14 kernel refused: faces turned
   inward); its counts and bounds still hold.

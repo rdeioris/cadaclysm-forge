@@ -8,12 +8,14 @@
 import assert from "node:assert";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { loadWasm } from "./package.mjs";
 import { createForgeScene } from "../forge-scene.js";
 import { command, toJson } from "../forge-doc-convert.js";
 const here = dirname(fileURLToPath(import.meta.url));
-const repo = join(here, "..");
+// The 0.14 files these tests open with the 0.14 layer: copies kept in test/fixtures/v014/
+// until that layer goes (examples/ and the fixtures are node documents now).
+const v014 = (file) => join(here, "fixtures", "v014", basename(file));
 const wasm = await loadWasm();
 const pins = JSON.parse(readFileSync(join(here, "fixtures", "forge-pins.json"), "utf8"));
 
@@ -58,7 +60,7 @@ const live = () => { const probe = wasm.cadaclysm_blacksmith_cuboid(1, 1, 1); wa
 let files = 0, bodies = 0;
 for (const [file, pin] of Object.entries(pins)) {
     const { s, posted } = harness();
-    s.open(readFileSync(join(repo, file), "utf8")); await s.drain();
+    s.open(readFileSync(v014(file), "utf8")); await s.drain();
     const ids = pin.bodies.map((b) => b.id).filter((id) => s.solidOf(id) && wasm.cadaclysm_blacksmith_document_result_kind(s.doc, `i${id}`) === "solid"
         && (() => { const h = wasm.cadaclysm_blacksmith_document_result_solid(s.doc, `i${id}`); try { return wasm.cadaclysm_blacksmith_lump_count(h) === 1; } finally { wasm.cadaclysm_blacksmith_solid_free(h); } })());
     if (ids.length < 2) continue;

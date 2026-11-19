@@ -9,14 +9,16 @@
 import assert from "node:assert";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { loadWasm } from "./package.mjs";
 import { createForgeScene, createForgeRouter, VIEW_ID, MESH_TOLERANCE, EDGE_TOLERANCE, bodyTable, massOf, itemOfNode, dropRedo, createQuarantine } from "../forge-scene.js";
 import { createWantedSender, typedBytes } from "../forge-wanted.js";
 import { command, commandOp, commandNeedsGeometry, openDocument, documentPickRefs, toJson } from "../forge-doc-convert.js";
 import { itemsOf } from "../forge-doc-nodes.js";
 const here = dirname(fileURLToPath(import.meta.url));
-const repo = join(here, "..");
+// The 0.14 files these tests open with the 0.14 layer: copies kept in test/fixtures/v014/
+// until that layer goes (examples/ and the fixtures are node documents now).
+const v014 = (file) => join(here, "fixtures", "v014", basename(file));
 const wasm = await loadWasm();
 
 // The built answer of the reference join (a box and a cylinder): its table and refs only.
@@ -77,7 +79,7 @@ function meshBounds(solid) {
     for (const [file, pin] of Object.entries(pins)) {
         if (!pin.bodies.length) continue;
         const { s, posted } = harness();
-        s.open(readFileSync(join(repo, file), "utf8")); await s.drain();
+        s.open(readFileSync(v014(file), "utf8")); await s.drain();
         const built = new Map(of(posted, "built").map((m) => [m.id, m]));
         assert.deepStrictEqual(of(posted, "failed"), [], `${file}: nothing fails`);
         assert.deepStrictEqual([...built.keys()].sort((a, b) => a - b), pin.bodies.map((b) => b.id).sort((a, b) => a - b), `${file}: every pinned body, once`);
@@ -107,7 +109,7 @@ function meshBounds(solid) {
 // A flat face's frame is the one the document's `frame.on_face` gives it: the face sketch of
 // face-sketch.json stands on face 0 of i1, and the table's frame of that face is its node's value.
 {
-    const text = readFileSync(join(repo, "examples/face-sketch.json"), "utf8");
+    const text = readFileSync(v014("face-sketch.json"), "utf8");
     const { s, posted } = harness();
     s.open(text); await s.drain();
     const table = of(posted, "built").find((m) => m.id === 1).table;
@@ -272,7 +274,7 @@ function meshBounds(solid) {
 }
 // Open again: every body is posted again; a branch switch on both replicas leaves them equal.
 {
-    const text = readFileSync(join(repo, "examples/kinds-history.json"), "utf8");
+    const text = readFileSync(v014("kinds-history.json"), "utf8");
     const page = pageDoc(text), { s, posted } = harness();
     s.open(page.save()); await s.drain();
     const first = of(posted, "built").map((m) => m.id);
@@ -499,7 +501,7 @@ const bodyItem = (id, extra = {}) => ({ key: `body:${id}`, deps: [], kind: "body
 // ghost colour; isocurves are made when shown, and both are shown again when their body is
 // rebuilt (the worker adds the version to deps).
 {
-    const page = pageDoc(readFileSync(join(repo, "examples/sheet-trim.json"), "utf8"));
+    const page = pageDoc(readFileSync(v014("sheet-trim.json"), "utf8"));
     const v = fakeViewer(), counter = countingFrees(), { s, posted } = harness(fakeHost(v), { wasm: counter.wasm });
     s.open(page.save()); await s.drain();
     const run = async (cmd) => { s.op(page.run(cmd)); await s.drain(); };

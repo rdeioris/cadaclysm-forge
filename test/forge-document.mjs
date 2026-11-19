@@ -21,7 +21,9 @@ import { edgeList, massOf } from "../forge-scene.js";
 const here = dirname(fileURLToPath(import.meta.url));
 const wasm = await loadWasm();
 const fixture = (name) => readFileSync(join(here, "fixtures", name), "utf8").replace(/\r\n/g, "\n");
-const example = (name) => readFileSync(join(here, "..", "examples", name), "utf8").replace(/\r\n/g, "\n");
+// The 0.14 files these tests open with the 0.14 layer: copies kept in test/fixtures/v014/
+// until that layer goes (examples/ and the fixtures are node documents now).
+const v014 = (name) => readFileSync(join(here, "fixtures", "v014", name), "utf8").replace(/\r\n/g, "\n");
 const pins = JSON.parse(fixture("forge-pins.json"));
 const line = (x0, y0, x1, y1) => ({ kind: "line", shape: { x0, y0, x1, y1 } });
 
@@ -169,7 +171,7 @@ const itemsOf = (doc) => itemsOfState(JSON.parse(wasm.cadaclysm_blacksmith_docum
 // by id, name and kind, every body built as the page built it, and it saves to its own text.
 {
     const file = "test/fixtures/forge-v1.json";
-    const text = fixture("forge-v1.json");
+    const text = v014("forge-v1.json");
     assert.strictEqual(JSON.parse(text).format, "cadaclysm-blacksmith");
     const doc = openDocument(wasm, text);
     assert.deepStrictEqual(itemsOf(doc).map((it) => [it.id, it.name, it.kind]), pins[file].items.map((it) => [it.id, it.name, it.kind]));
@@ -193,7 +195,7 @@ const itemsOf = (doc) => itemsOfState(JSON.parse(wasm.cadaclysm_blacksmith_docum
 // is in today's numbering only: the JS layer maps no old one.)
 {
     const file = "examples/kinds-v2-spline-fillet.json";
-    const doc = openDocument(wasm, example("kinds-v2-spline-fillet.json"));
+    const doc = openDocument(wasm, v014("kinds-v2-spline-fillet.json"));
     const fillet = itemsOf(doc).find((it) => it.kind === "fillet");
     assert.strictEqual(fillet.edgeNumbering, 1, "the fillet's edges are in the old numbering");
     assert.ok(Array.isArray(fillet.edgeRefs) && fillet.edgeRefs.length > 0, "and it carries their references");
@@ -210,7 +212,7 @@ const itemsOf = (doc) => itemsOfState(JSON.parse(wasm.cadaclysm_blacksmith_docum
 {
     const file = "examples/kinds-history.json";
     const head = 7;
-    const doc = openDocument(wasm, example("kinds-history.json"));
+    const doc = openDocument(wasm, v014("kinds-history.json"));
     const items = () => itemsOf(doc).map((it) => [it.id, it.name]);
     const atHead = items(), saved = wasm.cadaclysm_blacksmith_document_save(doc);
     assert.deepStrictEqual(atHead, pins[file].items.map((it) => [it.id, it.name]), "the items the page held at the head");
