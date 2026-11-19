@@ -8,7 +8,7 @@
 import assert from "node:assert";
 import { loadWasm } from "./package.mjs";
 import { Model, UNITS } from "../forge-model.js";
-import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, Unported } from "../forge-commands.js";
+import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves } from "../forge-commands.js";
 import { isBody } from "../forge-model.js";
 import { sketchFillet as oldFillet, sourcePivot as oldPivot } from "../forge-doc-curves.js";
 import { command as oldCommand, documentItems } from "../forge-doc-convert.js";
@@ -796,11 +796,58 @@ for (const c of [
     t.free();
 }
 
-// What is not on nodes yet says so; an unknown command and a bad id are refused as the
-// page refused them.
+// Place, move, rename, hide: a quick solid moved in its plane only ends in its in-plane
+// `solid.transform` as `i<n>`, read back as its move (no transform kept in its meta); each
+// drag frame is one `set` on one node and no meta op -- in its plane the `_moved` step (the
+// head while nothing is placed), in the world the head; a rename and a hide one field of the
+// head. Placed but not turned, the world step has no pivot, so an in-plane drag moves
+// nothing else; turned, its pivot follows the move.
 {
     const t = fresh();
-    assert.throws(() => t.run({ op: "state", items: [] }), (e) => e instanceof Unported);
+    t.run({ op: "primitive", id: 1, kind: "box", plane: "top", dims: [10, 10, 10] });
+    const ops = (cmd) => t.run(cmd).op.ops;
+    const move = (tx, ty, angle) => ({ op: "set", id: 1, transform: { tx, ty, angle, scale: 1 } });
+    const place = (x, rz) => ({ op: "set", id: 1, place: { offset: [x, 0, 0], turn: [0, 0, rz] } });
+    t.run(move(3, 0, 0));
+    assert.deepStrictEqual(t.nodes().map((n) => n.id), ["i1_inner", "i1"]);
+    assert.deepStrictEqual([t.node("i1").kind, t.node("i1").solid, t.node("i1").by, t.node("i1").turn_in], ["solid.transform", "i1_inner", [3, 0, 0], undefined]);
+    assert.strictEqual(t.node("i1").meta.forge.transform, undefined);
+    assert.deepStrictEqual(t.item(1).transform, { tx: 3, ty: 0, angle: 0, scale: 1 });
+    assert.deepStrictEqual(ops(move(4, 1, 0.25)), [{ op: "set", id: "i1", fields: { by: [4, 1, 0], turn: [0, 0, t.node("i1").turn[2]] } }]);
+    assert.deepStrictEqual(t.item(1).transform, { tx: 4, ty: 1, angle: 0.25, scale: 1 });
+    assert.strictEqual(t.node("i1").meta.forge.transform, undefined);
+    assert.deepStrictEqual(ops(move(5, 1, 0.25)), [{ op: "set", id: "i1", fields: { by: [5, 1, 0] } }]);
+    // Placed: the move is `i1_moved`, the world step the head.
+    t.run(place(20, 0));
+    assert.deepStrictEqual(t.nodes().map((n) => n.id), ["i1_inner", "i1_moved", "i1"]);
+    assert.deepStrictEqual([t.node("i1").solid, t.node("i1").pivot, t.node("i1").by], ["i1_moved", undefined, [20, 0, 0]]);
+    assert.deepStrictEqual(ops(move(6, 1, 0.25)), [{ op: "set", id: "i1_moved", fields: { by: [6, 1, 0] } }]);
+    assert.deepStrictEqual(ops(place(25, 0)), [{ op: "set", id: "i1", fields: { by: [25, 0, 0] } }]);
+    assert.deepStrictEqual(ops(place(25, 30)), [{ op: "set", id: "i1", fields: { pivot: [6, 1, 0], turn: [0, 0, 30] } }]);
+    assert.deepStrictEqual(ops(place(25, 40)), [{ op: "set", id: "i1", fields: { turn: [0, 0, 40] } }]);
+    assert.deepStrictEqual(t.item(1).transform, { tx: 6, ty: 1, angle: 0.25, scale: 1 });
+    assert.deepStrictEqual(t.item(1).place, { offset: [25, 0, 0], turn: [0, 0, 40] });
+    assert.strictEqual(t.node("i1").meta.forge.transform, undefined);
+    // A rename, a hide: one field of the head, no meta op.
+    assert.deepStrictEqual(ops({ op: "set", id: 1, name: "Plinth" }), [{ op: "set", id: "i1", fields: { name: "Plinth" } }]);
+    assert.deepStrictEqual(ops({ op: "set", id: 1, hidden: true }), [{ op: "set", id: "i1", fields: { hidden: true } }]);
+    assert.deepStrictEqual([t.item(1).name, t.item(1).hidden], ["Plinth", true]);
+    // Back home: the verb is `i1` again, its name and its hidden flag with it.
+    t.run(place(0, 0));
+    t.run(move(0, 0, 0));
+    assert.deepStrictEqual(t.nodes().map((n) => [n.id, n.kind, n.name, n.hidden]), [["i1", "solid.cuboid", "Plinth", true]]);
+    assert.strictEqual(t.statusOf("i1").state, "ok");
+    assert.deepStrictEqual(t.model.nodes(), t.nodes());
+    t.free();
+}
+
+// A version-1 file's items (`state`) are refused in words, the document untouched; an
+// unknown command and a bad id are refused as the page refused them.
+{
+    const t = fresh();
+    const before = t.revision();
+    assert.throws(() => t.run({ op: "state", items: [], counters: { line: 1 } }), /^Error: state: a version-1 forge file's items are not loaded; open a document$/);
+    assert.deepStrictEqual([t.revision(), t.meta()], [before, null]);
     assert.throws(() => t.run({ op: "frobnicate" }), /^Error: unknown command frobnicate$/);
     assert.throws(() => t.run({ op: "add", id: -1 }), /add: `id` is not an id/);
     assert.throws(() => t.run({ op: "join", id: 1, parts: [7] }), /^Error: join: item 7 is not there$/);

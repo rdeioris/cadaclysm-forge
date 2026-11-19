@@ -4,11 +4,8 @@
 // every body item's summary is compared with the recorded one -- face, edge and vertex
 // counts and closure exact; area, volume and bounds to 1e-6 relative. A body that failed
 // must fail again (its words may differ: the node layout did). A refused command must be
-// refused again.
-//
-// A sequence is replayed up to the first step whose command is not on nodes yet
-// (forge-commands.js's `Unported`): the groups of task 5.3 extend the replay as they land.
-// Sequences that start from a 0.14 file wait for the converted files (task 5.4).
+// refused again. Every sequence that starts from a new document is replayed whole; those
+// that start from a 0.14 file wait for the converted files (task 5.4).
 //
 //     node test/golden.mjs            # every sequence
 //     node test/golden.mjs a-rect     # those whose file name contains a word, each listed
@@ -19,7 +16,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadWasm } from "./package.mjs";
 import { Model, isBody, UNITS } from "../forge-model.js";
-import { command, Unported } from "../forge-commands.js";
+import { command } from "../forge-commands.js";
 
 const wasm = await loadWasm();
 const K = "cadaclysm_blacksmith_";
@@ -95,7 +92,9 @@ const near = (a, b) => a === b || Math.abs(a - b) <= 1e-6 * Math.max(Math.abs(a)
 // on the 0.15 package too) or "kernel" (its `keys` differ: the 0.15 kernel answers
 // otherwise, the 0.14 layer on the 0.15 package the same); where two cover a step, the
 // later one in the list. Step `step`'s command may be "refused" where the 0.14 layer did
-// nothing; its raw op "raw-refused" where it names the 0.14 layout's nodes.
+// nothing; "unsupported" where the node layer refuses what the 0.14 layer did (the document
+// stays as it was, so the recording of that step is not compared); its raw op "raw-refused"
+// where it names the 0.14 layout's nodes.
 const ACCEPTED = {
     // A sketch fillet that cannot be done is refused.
     "two-lines-rounded.json": [{ step: 6, allow: "refused" }],
@@ -108,6 +107,8 @@ const ACCEPTED = {
         { from: 58, body: "Cut 1 copy", allow: "kernel", keys: ["vertices"] },
         { from: 20, to: 20, body: "Shell 1", allow: "kernel", keys: ["vertices"] },
         { from: 21, body: "Shell 1", allow: "fails" },
+        // A version-1 file's items are not loaded.
+        { step: 63, allow: "unsupported" },
     ],
     // The 0.15 kernel: a box's rounded edges meet in fewer edges.
     "a-fillet-s-life.json": [{ from: 3, to: 3, body: "Fillet 1", allow: "kernel", keys: ["edges"] }],
@@ -128,7 +129,8 @@ function accepted(file, k, name) {
     return (ACCEPTED[file] ?? []).filter((a) => k >= a.from && (a.to === undefined || k <= a.to) && a.body === name).pop();
 }
 
-const acceptedRefusal = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && a.allow === "refused");
+const acceptedRefusal = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && (a.allow === "refused" || a.allow === "unsupported"));
+const unsupported = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && a.allow === "unsupported");
 const acceptedRaw = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && a.allow === "raw-refused");
 
 // Each difference between the bodies `got` and the recorded `want`.
@@ -161,7 +163,7 @@ function differences(got, want, allow = () => undefined) {
     return out;
 }
 
-let sequences = 0, whole = 0, steps = 0;
+let sequences = 0, steps = 0;
 const started = Date.now();
 for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
     if (words.length && !words.some((w) => file.includes(w))) continue;
@@ -169,7 +171,7 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
     if (seq.start !== null) continue;
     const doc = wasm[K + "document_new"](UNITS);
     let model = new Model(wasm, doc);
-    let ran = 0, stopped;
+    let ran = 0;
     try {
         for (const [k, st] of seq.steps.entries()) {
             const where = `${file} step ${k}`;
@@ -202,7 +204,6 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
                         if (busy) wasm[K + busy[1]](doc);
                     }
                 } catch (e) {
-                    if (e instanceof Unported) { stopped = `${k}: ${e.message}`; break; }
                     refused = e.message;
                 }
                 if (st.refused !== undefined) {
@@ -211,6 +212,11 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
                     continue;
                 }
                 assert.ok(refused === undefined || acceptedRefusal(file, k), `${where}: refused: ${refused}`);
+                if (unsupported(file, k)) {
+                    assert.ok(refused !== undefined, `${where}: must be refused (not supported)`);
+                    ran++;
+                    continue;
+                }
             }
             if (st.bodies) {
                 const diff = differences(bodies(doc, model), st.bodies, (name) => accepted(file, k, name));
@@ -225,9 +231,9 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
         wasm[K + "document_free"](doc);
     }
     if (ran === 0) continue;
+    assert.strictEqual(ran, seq.steps.length, `${file}: replayed whole`);
     sequences++;
     steps += ran;
-    if (stopped === undefined) whole++;
-    if (words.length || process.env.GOLDEN_VERBOSE) console.log(`${file}: ${ran} of ${seq.steps.length} steps${stopped ? ` (then ${stopped})` : ""}`);
+    if (words.length || process.env.GOLDEN_VERBOSE) console.log(`${file}: ${ran} steps`);
 }
-console.log(`golden: ${steps} steps of ${sequences} sequences (${whole} whole) in ${((Date.now() - started) / 1000).toFixed(1)} s`);
+console.log(`golden: ${steps} steps of ${sequences} sequences in ${((Date.now() - started) / 1000).toFixed(1)} s`);

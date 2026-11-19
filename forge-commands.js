@@ -12,8 +12,8 @@
 //                                 `{ kernel, picks }`, `picks` forge-picks.js's `docPicks`
 //                                 (asked only by a command that needs a face's reference).
 //                                 Nothing is applied. Throws what the page would throw (an
-//                                 item a command names is not there, an unknown op), and
-//                                 `Unported` for a command or an item kind not on nodes yet.
+//                                 item a command names is not there, an unknown op, a
+//                                 version-1 file's `state`).
 //   command(kernel, model, doc, cmd, env?)
 //                                 the command as one commit: `{ op: "batch", ops (+ the meta
 //                                 op), message: "forge: <op>" }` applied with
@@ -45,15 +45,16 @@
 //                                 positions and the forge meta, every change an op
 //   pieceToNode / pieceFromNode   a polycurve piece, the page's `{ kind, shape }` <-> a
 //                                 `curve.polycurve` piece `{ kind, ...shape }` (nurbs <-> spline)
-//   Unported                      the error of a command or an item kind not on nodes yet
 //
 // On nodes so far: `add`, `image`, `sketch`, `duplicate`, `delete`, `round`, `merge`, `snip`,
 // `explode` (5.3a); the made bodies `surface`, `sweep` (an extrusion or a revolution of a
 // curve), `solid`, `revolved`, `lofted`, `swept`, `primitive`, `pipe` (5.3b); the body verbs
 // `join`, `cut`, `intersect`, `shell`, `thicken`, `trim`, `face`, `prism`, `press`,
 // `rechamfer`, `remove`, `refillet`, `fillet`, `split` (5.3c); `set` / `edit` of curves,
-// sketches, held items and every body, a body's in-plane move and its place in the world
-// among them. `state` (a version-1 file's items) throws `Unported`.
+// sketches, held items and every body: a body's in-plane move and its place in the world, a
+// rename, a hide (5.3d). `state` (a version-1 file's items, whole) is refused: the page
+// sends it for no file it opens, and a forge file of before is not loaded (spec, decision 2;
+// test/fixtures/golden/ACCEPTED.md).
 //
 // Every command first adopts the held items the model lists without a head of their own
 // (`adoptHeld`): each gets its head `i<n>` under the number the model shows for it, and the
@@ -124,7 +125,12 @@
 //     `solid.unfillet`), and written again when the face item is (`rewriteFaceReaders`). A
 //     verb's plane, `pivot` and the page's own fields are its head's meta.
 //   - placed (`place` not the identity): the head is `{ solid, frame, pivot: [px + tx, py +
-//     ty, 0], turn_in: "world", turn, by_in: "world", by: offset }`.
+//     ty, 0], turn_in: "world", turn, by_in: "world", by: offset }`, the pivot only when
+//     `turn` is not 0. Not placed, the in-plane move (`_moved`) is the last step, so `i<n>`
+//     itself: read back as the move (a transform after a verb, not in the world). A drag is
+//     one `set` of one node: in the plane `_moved` (or that head), in the world the head --
+//     but a body turned in the world pivots where its move took it, so its in-plane drag
+//     sets the head's pivot too.
 //   - `meta.forge`: `kind`, and every page field the nodes do not give back as it is
 //     (`bodyHeld`): `holes`, `axis`, `source`, `from`, a made body's `pivot`, `parts`, a
 //     transform whose turn has no degree value giving its radians back bit for bit, ...
@@ -176,9 +182,6 @@ const LOOP_TOLERANCE = 1e-3;
 /// `LOOP_TOLERANCE * 10`).
 const MEET_TOLERANCE = 1e-2;
 
-/// A command or an item kind the node layer does not write yet (5.3b-d port them).
-export class Unported extends Error {}
-const unported = (why) => { throw new Unported(why); };
 const fail = (why) => { throw new Error(why); };
 
 /// Fields the page keeps only while it runs: never written to a node (its `items()` hook
@@ -1202,8 +1205,11 @@ function verbHeld(get, n, verb, vk) {
 /// head's meta holds.
 function bodyHeld(get, n, head, kind) {
     const out = {};
-    const inner = get(helperId(n, "inner")), moved = get(helperId(n, "moved")), flush = get(helperId(n, "flush"));
+    const inner = get(helperId(n, "inner")), flush = get(helperId(n, "flush"));
     const world = head.kind === "solid.transform" && head.turn_in === "world" ? head : undefined;
+    // Not placed, the in-plane move is the last step: `i<n>` itself (a transform after a
+    // verb that does not turn in the world; a held body's own head has no verb under it).
+    const moved = get(helperId(n, "moved")) ?? (head.kind === "solid.transform" && !world && (inner || flush) ? head : undefined);
     const verb = inner ?? (world || moved || flush ? undefined : head);
     const src = get(helperId(n, "src"));
     // A split by a curve's frame is the curve's plane, not the body's.
@@ -1360,14 +1366,17 @@ function bodyNodes(d, n, c, pending) {
     } else if (VERBS.includes(kind)) {
         steps.push(...verbSteps(d, n, c, pending, pre, numOr));
         if (["join", "cut", "intersect"].includes(kind) && Boolean(get(c, "flush"))) steps.push({ role: "flush", kind: "solid.merge_flush" });
-    } else unported(`a ${kind} item is not on nodes yet`);
+    } else refuse(`${base}: no body kind \`${kind}\``);
     // The in-plane move, then the place in the world.
     const pivot = nums(get(c, "pivot"), 2) ?? [0, 0];
     const input = kind === "held" ? c.node : undefined;
     if (after) steps.push({ role: "moved", kind: "solid.transform", frame, pivot: [pivot[0], pivot[1], 0], turn: [0, 0, degreesFor(t.angle)], by: [t.tx, t.ty, 0] });
     if (placed) {
         const p = placeOfBody(c);
-        steps.push({ role: "placed", kind: "solid.transform", frame, pivot: [pivot[0] + t.tx, pivot[1] + t.ty, 0], turn_in: "world", turn: p.turn, by_in: "world", by: p.offset });
+        // Turned about the body's pivot where its in-plane move took it; not turned, no pivot,
+        // so an in-plane drag of a body only slid in the world sets its move alone.
+        const pv = p.turn.some((v) => v !== 0) ? { pivot: [pivot[0] + t.tx, pivot[1] + t.ty, 0] } : {};
+        steps.push({ role: "placed", kind: "solid.transform", frame, ...pv, turn_in: "world", turn: p.turn, by_in: "world", by: p.offset });
     }
     // A held body with nothing to do still has a head of its own.
     if (!steps.length) steps.push({ kind: "solid.transform" });
@@ -1442,7 +1451,7 @@ export function classOf(kind) {
 
 function classFor(kind) {
     const name = classOf(kind);
-    return ITEM_CLASSES[name] ?? unported(`a ${kind} item is not on nodes yet`);
+    return ITEM_CLASSES[name] ?? fail(`a ${kind} item is not on the document`);
 }
 
 /// The stand-in for item `n` (fields `c`): `value.unresolved` of `type`, failing with `why`.
@@ -2291,9 +2300,9 @@ function build(model, cmd, env, broken) {
             consume(d, target.id);
             break;
         }
-        // A version-1 file's items, whole (5.3d).
+        // A version-1 file's items, whole: refused (see the header).
         case "state":
-            unported(`${op}: not on nodes yet`);
+            fail("state: a version-1 forge file's items are not loaded; open a document");
             break;
         default:
             fail(`unknown command ${op}`);

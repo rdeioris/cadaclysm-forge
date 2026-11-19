@@ -39,6 +39,15 @@ replay (`test/golden.mjs`) may differ from a recording only as listed.
   layer's item is its head `i1`, the placed `solid.transform` (5.3b), so its bounds are 10
   higher. The join over it moved in the recording too, so the place itself is the same.
   `golden.mjs`: `{ from: 9, body: "plate part", allow: "placed" }`.
+- **A version-1 file's items are not loaded.** The 0.14 layer's `state` command replaced
+  every item with a version-1 forge file's items (`itemFromV1`) and set the counters. The
+  page sends it for no file it opens any more (it opens blacksmith documents only, and refuses
+  a forge file of before in words), and 0.15 keeps no compatibility with old forge files
+  (spec, decision 2), so the node layer refuses it: "state: a version-1 forge file's items
+  are not loaded; open a document", the document as it was. Sequence: `every-command.json`
+  step 63 (the last), where the 0.14 layer loaded a line and a box it could not build ("a
+  quick solid without dims": `itemFromV1` drops a box's dims). `golden.mjs`:
+  `{ step: 63, allow: "unsupported" }` (refused, that step's recording not compared).
 
 ## The 0.15 kernel
 
