@@ -1,0 +1,147 @@
+{
+ "source": "examples/kinds-history.json",
+ "start": "examples/kinds-history.json",
+ "items": [
+  {
+   "id": 5,
+   "name": "Rectangle 1 copy",
+   "kind": "rect",
+   "plane": "top",
+   "shape": {
+    "x0": 0,
+    "y0": 0,
+    "x1": 20,
+    "y1": 10
+   },
+   "hidden": false
+  },
+  {
+   "id": 2,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": "top",
+   "shape": {
+    "cx": 45,
+    "cy": 8,
+    "r": 7
+   },
+   "hidden": false
+  },
+  {
+   "id": 3,
+   "name": "Box 1",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    10,
+    10,
+    10
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 4,
+   "name": "Moved box",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    10,
+    10,
+    10
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     30,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ ],
+ "bodies": {
+  "Box 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -5,
+    -5,
+    0,
+    5,
+    5,
+    10
+   ],
+   "area": 599.9999999999999,
+   "volume": 999.9999999999999
+  },
+  "Moved box": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    25,
+    -5,
+    0,
+    35,
+    5,
+    10
+   ],
+   "area": 600,
+   "volume": 1000
+  }
+ }
+}

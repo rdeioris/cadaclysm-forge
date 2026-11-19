@@ -1,0 +1,39 @@
+{
+ "source": "an unknown op",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "frobnicate"
+    }
+   },
+   "refused": "unknown command frobnicate"
+  },
+  {
+   "do": {
+    "command": {
+     "op": "join",
+     "id": 1,
+     "parts": [
+      7
+     ]
+    }
+   },
+   "refused": "join: item 7 is not there"
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": -1
+    }
+   },
+   "refused": "add: `id` is not an id"
+  }
+ ]
+}

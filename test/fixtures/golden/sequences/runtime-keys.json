@@ -1,0 +1,53 @@
+{
+ "source": "runtime keys",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "kind": "line",
+     "plane": "top",
+     "shape": {
+      "x0": 0,
+      "y0": 0,
+      "x1": 1,
+      "y1": 0
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 1,
+     "cache": 3,
+     "name": "a"
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "edit",
+     "items": [
+      {
+       "id": 1,
+       "dirty": true,
+       "hidden": true
+      }
+     ]
+    }
+   },
+   "bodies": {}
+  }
+ ]
+}

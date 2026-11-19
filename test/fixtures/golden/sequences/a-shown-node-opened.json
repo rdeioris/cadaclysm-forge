@@ -1,0 +1,29 @@
+{
+ "source": "a shown node opened",
+ "start": "inline",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {
+    "Sewn": {
+     "kind": "sheet",
+     "faces": 2,
+     "edges": 5,
+     "vertices": 6,
+     "closed": false,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      15,
+      5,
+      0
+     ],
+     "area": 199.99999999999997,
+     "volume": 0
+    }
+   }
+  }
+ ],
+ "startText": "{\n  \"format\": \"cadaclysm-blacksmith\",\n  \"version\": 1,\n  \"units\": \"mm\",\n  \"params\": {},\n  \"nodes\": [\n    {\"id\": \"r\", \"kind\": \"profile.rect\", \"w\": 10, \"h\": 10},\n    {\"id\": \"left\", \"kind\": \"sheet.face\", \"profile\": \"r\", \"frame\": \"xy\"},\n    {\"id\": \"right\", \"kind\": \"sheet.face\", \"profile\": \"r\", \"frame\": {\"origin\": [10, 0, 0], \"x\": [1, 0, 0], \"y\": [0, 1, 0]}},\n    {\"id\": \"sewn\", \"kind\": \"sheet.join_sheets\", \"name\": \"Sewn\", \"meta\": {\"show\": true}, \"sheets\": [\"left\", \"right\"]}\n  ],\n  \"commits\": [\n    {\"id\": \"c0\", \"parents\": [], \"ops\": [], \"inverses\": []},\n    {\"id\": \"c1\", \"parents\": [\"c0\"], \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"r\", \"kind\": \"profile.rect\", \"w\": 10, \"h\": 10}}], \"inverses\": [{\"op\": \"remove\", \"id\": \"r\"}]},\n    {\"id\": \"c2\", \"parents\": [\"c1\"], \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"left\", \"kind\": \"sheet.face\", \"profile\": \"r\", \"frame\": \"xy\"}}], \"inverses\": [{\"op\": \"remove\", \"id\": \"left\"}]},\n    {\"id\": \"c3\", \"parents\": [\"c2\"], \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"right\", \"kind\": \"sheet.face\", \"profile\": \"r\", \"frame\": {\"origin\": [10, 0, 0], \"x\": [1, 0, 0], \"y\": [0, 1, 0]}}}], \"inverses\": [{\"op\": \"remove\", \"id\": \"right\"}]},\n    {\"id\": \"c4\", \"parents\": [\"c3\"], \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"sewn\", \"kind\": \"sheet.join_sheets\", \"name\": \"Sewn\", \"meta\": {\"show\": true}, \"sheets\": [\"left\", \"right\"]}}], \"inverses\": [{\"op\": \"remove\", \"id\": \"sewn\"}]}\n  ],\n  \"branches\": {\"main\": \"c4\"},\n  \"branch\": \"main\",\n  \"head\": \"c4\"\n}\n"
+}

@@ -1,0 +1,3563 @@
+{
+ "source": "examples/kinds-made.json",
+ "start": "examples/kinds-made.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Box 1",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 2,
+   "name": "Box 2",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    10,
+    10,
+    10
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     15,
+     0,
+     5
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 3,
+   "name": "Join 1",
+   "kind": "join",
+   "plane": "top",
+   "parts": [
+    1,
+    2
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "flush": true
+  },
+  {
+   "id": 4,
+   "name": "Box 3",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     60,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 5,
+   "name": "Box 4",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    10,
+    10,
+    10
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     75,
+     0,
+     5
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 6,
+   "name": "Join 2",
+   "kind": "join",
+   "plane": "top",
+   "parts": [
+    4,
+    5
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 7,
+   "name": "Box 5",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     120,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 8,
+   "name": "Cylinder 1",
+   "kind": "cylinder",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    4,
+    30
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     130,
+     10,
+     -5
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 9,
+   "name": "Cut 1",
+   "kind": "cut",
+   "plane": "top",
+   "parts": [
+    7,
+    8
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "flush": true
+  },
+  {
+   "id": 10,
+   "name": "Box 6",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     160,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 11,
+   "name": "Shell 1",
+   "kind": "shell",
+   "plane": "top",
+   "parts": [
+    10
+   ],
+   "thickness": 1.5,
+   "open": [
+    0
+   ],
+   "openRefs": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      160,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "extent": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 12,
+   "name": "Box 7",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     200,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 13,
+   "name": "Sphere 1",
+   "kind": "sphere",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    13
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     210,
+     10,
+     10
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 14,
+   "name": "Intersect 1",
+   "kind": "intersect",
+   "plane": "top",
+   "parts": [
+    12,
+    13
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "flush": true
+  },
+  {
+   "id": 15,
+   "name": "Rectangle 1",
+   "kind": "rect",
+   "plane": "top",
+   "shape": {
+    "x0": 0,
+    "y0": 60,
+    "x1": 20,
+    "y1": 80
+   },
+   "hidden": true
+  },
+  {
+   "id": 16,
+   "name": "Surface 1",
+   "kind": "surface",
+   "plane": "top",
+   "loops": [
+    [
+     15
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    10,
+    70
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 17,
+   "name": "Thicken 1",
+   "kind": "thicken",
+   "plane": "top",
+   "parts": [
+    16
+   ],
+   "thickness": 2,
+   "pivot": [
+    10,
+    70
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 18,
+   "name": "Rectangle 2",
+   "kind": "rect",
+   "plane": "top",
+   "shape": {
+    "x0": 40,
+    "y0": 60,
+    "x1": 70,
+    "y1": 80
+   },
+   "hidden": true
+  },
+  {
+   "id": 19,
+   "name": "Surface 2",
+   "kind": "surface",
+   "plane": "top",
+   "loops": [
+    [
+     18
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    55,
+    70
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 20,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": "top",
+   "shape": {
+    "cx": 55,
+    "cy": 70,
+    "r": 6
+   },
+   "hidden": false
+  },
+  {
+   "id": 21,
+   "name": "Trim 1",
+   "kind": "trim",
+   "plane": "top",
+   "parts": [
+    19,
+    20
+   ],
+   "drop": [
+    0
+   ],
+   "tool": 20,
+   "pivot": [
+    55,
+    70
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      65.5,
+      70,
+      0
+     ],
+     "normal": [
+      0,
+      0,
+      1
+     ],
+     "extent": 36.05551275463989
+    }
+   ]
+  },
+  {
+   "id": 22,
+   "name": "Solid 1",
+   "kind": "prism",
+   "plane": "top",
+   "parts": [
+    21
+   ],
+   "height": 5,
+   "pivot": [
+    55,
+    70
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 23,
+   "name": "Box 8",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     90,
+     60,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 24,
+   "name": "Face 1",
+   "kind": "face",
+   "plane": "face:23:1",
+   "parts": [
+    23
+   ],
+   "face": 1,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      90,
+      60,
+      20
+     ],
+     "normal": [
+      0,
+      0,
+      1
+     ],
+     "extent": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 25,
+   "name": "Solid 2",
+   "kind": "prism",
+   "plane": "face:23:1",
+   "parts": [
+    24
+   ],
+   "height": 6,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 26,
+   "name": "Box 9",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     130,
+     60,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 27,
+   "name": "Face 2",
+   "kind": "face",
+   "plane": "face:26:2",
+   "parts": [
+    26
+   ],
+   "face": 2,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      130,
+      50,
+      10
+     ],
+     "normal": [
+      0,
+      -1,
+      0
+     ],
+     "extent": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 28,
+   "name": "Cylinder 2",
+   "kind": "cylinder",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    8,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     120,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 29,
+   "name": "Face 3",
+   "kind": "face",
+   "plane": "top",
+   "parts": [
+    28
+   ],
+   "face": 0,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 1,
+     "at": [
+      8,
+      120,
+      10
+     ],
+     "normal": [
+      1,
+      0,
+      0
+     ],
+     "extent": 26.017102067678483
+    }
+   ]
+  },
+  {
+   "id": 30,
+   "name": "Press Pull 1",
+   "kind": "press",
+   "plane": "top",
+   "parts": [
+    29
+   ],
+   "height": 3,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 31,
+   "name": "Box 10",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     40,
+     120,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 32,
+   "name": "Face 4",
+   "kind": "face",
+   "plane": "face:31:0",
+   "parts": [
+    31
+   ],
+   "face": 0,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      40,
+      120,
+      0
+     ],
+     "normal": [
+      0,
+      0,
+      -1
+     ],
+     "extent": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 33,
+   "name": "Face 5",
+   "kind": "face",
+   "plane": "face:31:1",
+   "parts": [
+    31
+   ],
+   "face": 1,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      40,
+      120,
+      20
+     ],
+     "normal": [
+      0,
+      0,
+      1
+     ],
+     "extent": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 34,
+   "name": "Press Pull 2",
+   "kind": "press",
+   "plane": "top",
+   "parts": [
+    32,
+    33
+   ],
+   "height": 4,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 35,
+   "name": "Box 11",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     80,
+     120,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 36,
+   "name": "Fillet 1",
+   "kind": "fillet",
+   "style": "round",
+   "plane": "top",
+   "parts": [
+    35
+   ],
+   "edges": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "radius": 2,
+   "tool": 35,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "edgeRefs": [
+    {
+     "curve": 0,
+     "mid": [
+      70,
+      120,
+      0
+     ],
+     "tangent": [
+      0,
+      1,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       -1,
+       0,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      80,
+      130,
+      0
+     ],
+     "tangent": [
+      1,
+      0,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       0,
+       1,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      90,
+      120,
+      0
+     ],
+     "tangent": [
+      0,
+      -1,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       1,
+       0,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      80,
+      110,
+      0
+     ],
+     "tangent": [
+      -1,
+      0,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       0,
+       -1,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 37,
+   "name": "Face 6",
+   "kind": "face",
+   "plane": "top",
+   "parts": [
+    36
+   ],
+   "face": 6,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 1,
+     "at": [
+      70.5857864376269,
+      120,
+      0.5857864376269155
+     ],
+     "normal": [
+      -0.7071067811865528,
+      0,
+      -0.7071067811865422
+     ],
+     "extent": 20.208311318151537
+    }
+   ]
+  },
+  {
+   "id": 38,
+   "name": "Refillet 1",
+   "kind": "refillet",
+   "plane": "top",
+   "parts": [
+    37
+   ],
+   "radius": 4,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 39,
+   "name": "Box 12",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     120,
+     120,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 40,
+   "name": "Fillet 2",
+   "kind": "fillet",
+   "style": "round",
+   "plane": "top",
+   "parts": [
+    39
+   ],
+   "edges": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "radius": 2,
+   "tool": 39,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "edgeRefs": [
+    {
+     "curve": 0,
+     "mid": [
+      110,
+      120,
+      0
+     ],
+     "tangent": [
+      0,
+      1,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       -1,
+       0,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      120,
+      130,
+      0
+     ],
+     "tangent": [
+      1,
+      0,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       0,
+       1,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      130,
+      120,
+      0
+     ],
+     "tangent": [
+      0,
+      -1,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       1,
+       0,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      120,
+      110,
+      0
+     ],
+     "tangent": [
+      -1,
+      0,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       0,
+       -1,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 41,
+   "name": "Face 7",
+   "kind": "face",
+   "plane": "top",
+   "parts": [
+    40
+   ],
+   "face": 6,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 1,
+     "at": [
+      110.58578643762691,
+      120,
+      0.5857864376269073
+     ],
+     "normal": [
+      -0.7071067811865487,
+      0,
+      -0.7071067811865464
+     ],
+     "extent": 20.20831131815154
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "name": "Unfillet 1",
+   "kind": "remove",
+   "plane": "top",
+   "parts": [
+    41
+   ],
+   "radius": 0,
+   "what": "round",
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 43,
+   "name": "Box 13",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     160,
+     120,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 44,
+   "name": "Chamfer 1",
+   "kind": "fillet",
+   "style": "chamfer",
+   "plane": "top",
+   "parts": [
+    43
+   ],
+   "edges": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "radius": 2,
+   "tool": 43,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "edgeRefs": [
+    {
+     "curve": 0,
+     "mid": [
+      150,
+      120,
+      0
+     ],
+     "tangent": [
+      0,
+      1,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       -1,
+       0,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      160,
+      130,
+      0
+     ],
+     "tangent": [
+      1,
+      0,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       0,
+       1,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      170,
+      120,
+      0
+     ],
+     "tangent": [
+      0,
+      -1,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       1,
+       0,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    },
+    {
+     "curve": 0,
+     "mid": [
+      160,
+      110,
+      0
+     ],
+     "tangent": [
+      -1,
+      0,
+      0
+     ],
+     "length": 20,
+     "faces": [
+      [
+       0,
+       0,
+       -1
+      ],
+      [
+       0,
+       -1,
+       0
+      ]
+     ],
+     "span": 28.284271247461902
+    }
+   ]
+  },
+  {
+   "id": 45,
+   "name": "Face 8",
+   "kind": "face",
+   "plane": "face:44:6",
+   "parts": [
+    44
+   ],
+   "face": 6,
+   "ref": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      151,
+      120,
+      1.0000000000000002
+     ],
+     "normal": [
+      -0.7071067811865476,
+      0,
+      -0.7071067811865476
+     ],
+     "extent": 20.199009876724155
+    }
+   ]
+  },
+  {
+   "id": 46,
+   "name": "Rechamfer 1",
+   "kind": "rechamfer",
+   "plane": "top",
+   "parts": [
+    45
+   ],
+   "radius": 4,
+   "what": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 47,
+   "name": "Box 14",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     180,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 48,
+   "name": "Sketch 1",
+   "kind": "sketch",
+   "mode": "offset",
+   "base": "top",
+   "offset": 10,
+   "hinge": null,
+   "tilt": 30,
+   "path": null,
+   "face": null,
+   "mid": null,
+   "points": null,
+   "hidden": false
+  },
+  {
+   "id": 49,
+   "name": "Split 1",
+   "kind": "split",
+   "plane": "top",
+   "parts": [
+    47
+   ],
+   "cutter": 48,
+   "side": 0,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 50,
+   "name": "Split 2",
+   "kind": "split",
+   "plane": "top",
+   "parts": [
+    47
+   ],
+   "cutter": 48,
+   "side": 1,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 51,
+   "name": "Box 15",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     40,
+     180,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 52,
+   "name": "Circle 2",
+   "kind": "circle",
+   "plane": "top",
+   "shape": {
+    "cx": 50,
+    "cy": 190,
+    "r": 6
+   },
+   "hidden": false
+  },
+  {
+   "id": 53,
+   "name": "Split 3",
+   "kind": "split",
+   "plane": "top",
+   "parts": [
+    51
+   ],
+   "cutter": 52,
+   "side": 0,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 54,
+   "name": "Split 4",
+   "kind": "split",
+   "plane": "top",
+   "parts": [
+    51
+   ],
+   "cutter": 52,
+   "side": 1,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 55,
+   "name": "Box 16",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    20,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     80,
+     180,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 56,
+   "name": "Cylinder 3",
+   "kind": "cylinder",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    6,
+    30
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     90,
+     190,
+     -5
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 57,
+   "name": "Split 5",
+   "kind": "split",
+   "plane": "top",
+   "parts": [
+    55
+   ],
+   "cutter": 56,
+   "side": 0,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 58,
+   "name": "Split 6",
+   "kind": "split",
+   "plane": "top",
+   "parts": [
+    55
+   ],
+   "cutter": 56,
+   "side": 1,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ ],
+ "bodies": {
+  "Box 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -10,
+    -10,
+    0,
+    10,
+    10,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999999
+  },
+  "Box 2": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    10,
+    -5,
+    5,
+    20,
+    5,
+    15
+   ],
+   "area": 600,
+   "volume": 1000
+  },
+  "Join 1": {
+   "kind": "solid",
+   "faces": 11,
+   "edges": 24,
+   "vertices": 16,
+   "closed": true,
+   "bounds": [
+    -10,
+    -10,
+    0,
+    20,
+    10,
+    20
+   ],
+   "area": 2799.9999999999995,
+   "volume": 9000
+  },
+  "Box 3": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    50,
+    -10,
+    0,
+    70,
+    10,
+    20
+   ],
+   "area": 2400,
+   "volume": 8000
+  },
+  "Box 4": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    70,
+    -5,
+    5,
+    80,
+    5,
+    15
+   ],
+   "area": 600,
+   "volume": 1000
+  },
+  "Join 2": {
+   "kind": "solid",
+   "faces": 11,
+   "edges": 24,
+   "vertices": 16,
+   "closed": true,
+   "bounds": [
+    50,
+    -10,
+    0,
+    80,
+    10,
+    20
+   ],
+   "area": 2800,
+   "volume": 9000
+  },
+  "Box 5": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    110,
+    -10,
+    0,
+    130,
+    10,
+    20
+   ],
+   "area": 2400,
+   "volume": 7999.999999999999
+  },
+  "Cylinder 1": {
+   "kind": "solid",
+   "faces": 3,
+   "edges": 3,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    126,
+    6,
+    -5,
+    134,
+    14,
+    25
+   ],
+   "area": 854.5132017764257,
+   "volume": 1507.964473723103
+  },
+  "Cut 1": {
+   "kind": "solid",
+   "faces": 7,
+   "edges": 15,
+   "vertices": 10,
+   "closed": true,
+   "bounds": [
+    110,
+    -10,
+    0,
+    130,
+    10,
+    20
+   ],
+   "area": 2340.530964914874,
+   "volume": 7748.672587712815
+  },
+  "Box 6": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    150,
+    -10,
+    0,
+    170,
+    10,
+    20
+   ],
+   "area": 2400,
+   "volume": 8000
+  },
+  "Shell 1": {
+   "kind": "solid",
+   "faces": 11,
+   "edges": 24,
+   "vertices": 16,
+   "closed": true,
+   "bounds": [
+    150,
+    -10,
+    0,
+    170,
+    10,
+    20
+   ],
+   "area": 3658,
+   "volume": 2653.499999999999
+  },
+  "Box 7": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    190,
+    -10,
+    0,
+    210,
+    10,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999998
+  },
+  "Sphere 1": {
+   "kind": "solid",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 48,
+   "closed": true,
+   "bounds": [
+    197,
+    -3,
+    -3,
+    223,
+    23,
+    23
+   ],
+   "area": 2123.7166338266993,
+   "volume": 9202.772079915696
+  },
+  "Intersect 1": {
+   "kind": "solid",
+   "faces": 5,
+   "edges": 9,
+   "vertices": 6,
+   "closed": true,
+   "bounds": [
+    197,
+    -3,
+    -2.7556623649616085e-11,
+    210,
+    10,
+    20.000000000027555
+   ],
+   "area": 979.5655784699338,
+   "volume": 2131.0470166857103
+  },
+  "Surface 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    0,
+    60,
+    0,
+    20,
+    80,
+    0
+   ],
+   "area": 400,
+   "volume": 0
+  },
+  "Thicken 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    0,
+    60,
+    0,
+    20,
+    80,
+    2
+   ],
+   "area": 960,
+   "volume": 800
+  },
+  "Surface 2": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    40,
+    60,
+    0,
+    70,
+    80,
+    0
+   ],
+   "area": 600,
+   "volume": 0
+  },
+  "Trim 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    48.99999635787891,
+    63.99999635787908,
+    0,
+    61,
+    76.00000000000017,
+    0
+   ],
+   "area": 113.09740418161839,
+   "volume": 0
+  },
+  "Solid 1": {
+   "kind": "solid",
+   "faces": 4,
+   "edges": 4,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    48.99999635787891,
+    63.99999635787908,
+    0,
+    61,
+    76.00000000000016,
+    5
+   ],
+   "area": 414.6904247889381,
+   "volume": 565.487020908092
+  },
+  "Box 8": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    80,
+    50,
+    0,
+    100,
+    70,
+    20
+   ],
+   "area": 2400,
+   "volume": 7999.999999999999
+  },
+  "Face 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    80,
+    50,
+    20,
+    100,
+    70,
+    20
+   ],
+   "area": 399.9999999999999,
+   "volume": 0
+  },
+  "Solid 2": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    80,
+    50,
+    20,
+    100,
+    70,
+    26
+   ],
+   "area": 1279.9999999999998,
+   "volume": 2399.999999999999
+  },
+  "Box 9": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    120,
+    50,
+    0,
+    140,
+    70,
+    20
+   ],
+   "area": 2400,
+   "volume": 8000
+  },
+  "Face 2": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    120,
+    50,
+    0,
+    140,
+    50,
+    20
+   ],
+   "area": 399.99999999999994,
+   "volume": 0
+  },
+  "Cylinder 2": {
+   "kind": "solid",
+   "faces": 3,
+   "edges": 3,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    -8,
+    112,
+    0,
+    8,
+    128,
+    20
+   ],
+   "area": 1407.4335088082291,
+   "volume": 4021.2385965949306
+  },
+  "Face 3": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 3,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    -8,
+    112,
+    0,
+    8,
+    128,
+    20
+   ],
+   "area": 1005.309649148736,
+   "volume": 0
+  },
+  "Press Pull 1": {
+   "kind": "solid",
+   "faces": 3,
+   "edges": 3,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    -11,
+    109,
+    0,
+    11,
+    131,
+    20
+   ],
+   "area": 2142.566189748236,
+   "volume": 7602.654221687291
+  },
+  "Box 10": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    30,
+    110,
+    0,
+    50,
+    130,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999997
+  },
+  "Face 4": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    30,
+    110,
+    0,
+    50,
+    130,
+    0
+   ],
+   "area": 399.9999999999999,
+   "volume": 0
+  },
+  "Face 5": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    30,
+    110,
+    20,
+    50,
+    130,
+    20
+   ],
+   "area": 400,
+   "volume": 0
+  },
+  "Press Pull 2": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    30,
+    110,
+    -4,
+    50,
+    130,
+    24
+   ],
+   "area": 3040,
+   "volume": 11199.999999999996
+  },
+  "Box 11": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    70,
+    110,
+    0,
+    90,
+    130,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999997
+  },
+  "Fillet 1": {
+   "kind": "solid",
+   "faces": 10,
+   "edges": 24,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    70,
+    110,
+    0,
+    90,
+    130,
+    20
+   ],
+   "area": 2329.0619297907965,
+   "volume": 7934.395263001674
+  },
+  "Face 6": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    70,
+    110,
+    0,
+    72,
+    130,
+    2.0000000000000004
+   ],
+   "area": 58.26548245743681,
+   "volume": 0
+  },
+  "Refillet 1": {
+   "kind": "solid",
+   "faces": 10,
+   "edges": 24,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    70,
+    110,
+    0,
+    90,
+    130,
+    20
+   ],
+   "area": 2253.592894688464,
+   "volume": 7749.852455944487
+  },
+  "Box 12": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    110,
+    110,
+    0,
+    130,
+    130,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999997
+  },
+  "Fillet 2": {
+   "kind": "solid",
+   "faces": 10,
+   "edges": 24,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    110,
+    110,
+    0,
+    130,
+    130,
+    20
+   ],
+   "area": 2329.0619297977296,
+   "volume": 7934.395263029065
+  },
+  "Face 7": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    110,
+    110,
+    0,
+    112,
+    130,
+    2.0000000000000004
+   ],
+   "area": 58.26548245743681,
+   "volume": 0
+  },
+  "Unfillet 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    110,
+    110,
+    0,
+    130,
+    130,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999997
+  },
+  "Box 13": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    150,
+    110,
+    0,
+    170,
+    130,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999998
+  },
+  "Chamfer 1": {
+   "kind": "solid",
+   "faces": 10,
+   "edges": 20,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    150,
+    110,
+    0,
+    170,
+    130,
+    20
+   ],
+   "area": 2299.6467529817255,
+   "volume": 7850.666666666666
+  },
+  "Face 8": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    150,
+    110,
+    0,
+    152,
+    130,
+    2
+   ],
+   "area": 50.91168824543146,
+   "volume": 0
+  },
+  "Rechamfer 1": {
+   "kind": "solid",
+   "faces": 10,
+   "edges": 20,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    150,
+    110,
+    0,
+    170,
+    130,
+    20
+   ],
+   "area": 2186.038671967512,
+   "volume": 7445.33333333333
+  },
+  "Box 14": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -10,
+    170,
+    0,
+    10,
+    190,
+    20
+   ],
+   "area": 2400,
+   "volume": 7999.999999999999
+  },
+  "Split 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -10,
+    170,
+    10,
+    10,
+    190,
+    20
+   ],
+   "area": 1600,
+   "volume": 3999.9999999999995
+  },
+  "Split 2": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -10,
+    170,
+    0,
+    10,
+    190,
+    10
+   ],
+   "area": 1600,
+   "volume": 3999.9999999999995
+  },
+  "Box 15": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    30,
+    170,
+    0,
+    50,
+    190,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999998
+  },
+  "Split 3": {
+   "kind": "solid",
+   "faces": 7,
+   "edges": 15,
+   "vertices": 10,
+   "closed": true,
+   "bounds": [
+    30,
+    170,
+    0,
+    50,
+    190,
+    20
+   ],
+   "area": 2291.947034625814,
+   "volume": 7434.5145151503875
+  },
+  "Split 4": {
+   "kind": "solid",
+   "faces": 5,
+   "edges": 9,
+   "vertices": 6,
+   "closed": true,
+   "bounds": [
+    44.00000556737264,
+    184.0000055673729,
+    0,
+    50,
+    190,
+    20
+   ],
+   "area": 485.0436862059146,
+   "volume": 565.4854848496108
+  },
+  "Box 16": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    70,
+    170,
+    0,
+    90,
+    190,
+    20
+   ],
+   "area": 2399.9999999999995,
+   "volume": 7999.999999999997
+  },
+  "Cylinder 3": {
+   "kind": "solid",
+   "faces": 3,
+   "edges": 3,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    84,
+    184,
+    -5,
+    96,
+    196,
+    25
+   ],
+   "area": 1357.1680263507917,
+   "volume": 3392.92006587698
+  },
+  "Split 5": {
+   "kind": "solid",
+   "faces": 7,
+   "edges": 15,
+   "vertices": 10,
+   "closed": true,
+   "bounds": [
+    70,
+    170,
+    0,
+    90,
+    190,
+    20
+   ],
+   "area": 2291.9468914507715,
+   "volume": 7434.513322353837
+  },
+  "Split 6": {
+   "kind": "solid",
+   "faces": 5,
+   "edges": 9,
+   "vertices": 6,
+   "closed": true,
+   "bounds": [
+    84,
+    184,
+    0,
+    90,
+    190,
+    20
+   ],
+   "area": 485.04422698000417,
+   "volume": 565.4866776461615
+  }
+ }
+}

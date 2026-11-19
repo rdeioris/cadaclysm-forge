@@ -1,0 +1,106 @@
+{
+ "source": "a command's op",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "kind": "rect",
+     "plane": "top",
+     "shape": {
+      "x0": 0,
+      "y0": 0,
+      "x1": 10,
+      "y1": 5
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "surface",
+     "id": 2,
+     "loops": [
+      [
+       1
+      ]
+     ],
+     "plane": "top"
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      0,
+      0,
+      0,
+      10,
+      5,
+      0
+     ],
+     "area": 49.99999999999999,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "solid",
+     "id": 3,
+     "from": 2,
+     "height": 4
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      0,
+      0,
+      0,
+      10,
+      5,
+      0
+     ],
+     "area": 49.99999999999999,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      0,
+      0,
+      0,
+      10,
+      5,
+      4
+     ],
+     "area": 220,
+     "volume": 200
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,115 @@
+{
+ "source": "refused values",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "primitive",
+     "id": 1,
+     "kind": "box",
+     "plane": "top",
+     "dims": [
+      10,
+      10,
+      10
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 2,
+     "source": 1,
+     "radius": 0
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Fillet 1": {
+     "error": "i2: `radius` must be above 0, not 0"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 3,
+     "kind": "polygon",
+     "plane": "top",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 5,
+      "sides": 2.5,
+      "angle": 0
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Fillet 1": {
+     "error": "i2: `radius` must be above 0, not 0"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,78 @@
+{
+ "source": "a pivot",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "kind": "circle",
+     "plane": "top",
+     "shape": {
+      "cx": 3,
+      "cy": -2,
+      "r": 5
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 2,
+     "kind": "arc",
+     "plane": "top",
+     "shape": {
+      "x0": 0,
+      "y0": 0,
+      "xm": 4,
+      "ym": 3,
+      "x1": 8,
+      "y1": 0
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "surface",
+     "id": 3,
+     "loops": [
+      [
+       1
+      ]
+     ],
+     "plane": "top"
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -1.9999999652681915,
+      -6.999999965268192,
+      0,
+      8,
+      2.999999999999999,
+      0
+     ],
+     "area": 78.53981579417884,
+     "volume": 0
+    }
+   }
+  }
+ ]
+}

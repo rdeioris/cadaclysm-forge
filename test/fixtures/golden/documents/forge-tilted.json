@@ -1,0 +1,47 @@
+{
+ "source": "test/fixtures/forge-tilted.json",
+ "start": "test/fixtures/forge-tilted.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Line 1",
+   "kind": "line",
+   "plane": "top",
+   "shape": {
+    "x0": -20,
+    "y0": -10,
+    "x1": 20,
+    "y1": -10
+   },
+   "hidden": false
+  },
+  {
+   "id": 2,
+   "name": "Sketch 1",
+   "kind": "sketch",
+   "mode": "angle",
+   "base": "top",
+   "offset": 0,
+   "hinge": 1,
+   "tilt": 30,
+   "path": null,
+   "face": null,
+   "mid": null,
+   "points": null,
+   "hidden": false
+  },
+  {
+   "id": 3,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": 2,
+   "shape": {
+    "cx": 0,
+    "cy": 15,
+    "r": 10
+   },
+   "hidden": false
+  }
+ ],
+ "bodies": {}
+}

@@ -1,0 +1,1845 @@
+{
+ "source": "the scene's commands",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "primitive",
+     "id": 1,
+     "kind": "box",
+     "plane": "top",
+     "dims": [
+      20,
+      20,
+      20
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "primitive",
+     "id": 2,
+     "kind": "cylinder",
+     "plane": "top",
+     "dims": [
+      6,
+      30
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "join",
+     "id": 3,
+     "parts": [
+      1,
+      2
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 1,
+     "dims": [
+      20,
+      20,
+      20
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 4,
+     "source": 3,
+     "radius": 1,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 4,
+     "edges": [
+      0
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2767.977841293469,
+     "volume": 9126.681318560277
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 4,
+     "radius": 500
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "error": "fillet: the edge's rounding runs off its face"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "primitive",
+     "id": 5,
+     "kind": "box",
+     "plane": "top",
+     "dims": [
+      5,
+      5,
+      50
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "error": "fillet: the edge's rounding runs off its face"
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "join",
+     "id": 6,
+     "parts": [
+      4,
+      5
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "error": "fillet: the edge's rounding runs off its face"
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "error": "blocked by i4"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "primitive",
+     "id": 7,
+     "kind": "box",
+     "plane": "top",
+     "dims": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "error": "fillet: the edge's rounding runs off its face"
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "error": "blocked by i4"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 4,
+     "radius": 1
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2767.977841293469,
+     "volume": 9126.681318560277
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "kind": "solid",
+     "faces": 14,
+     "edges": 30,
+     "vertices": 22,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      50
+     ],
+     "area": 3167.977841293469,
+     "volume": 9626.681318560279
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "error": "fillet: the edge's rounding runs off its face"
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "error": "blocked by i4"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": "redo",
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2767.977841293469,
+     "volume": 9126.681318560277
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "kind": "solid",
+     "faces": 14,
+     "edges": 30,
+     "vertices": 22,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      50
+     ],
+     "area": 3167.977841293469,
+     "volume": 9626.681318560279
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "delete",
+     "ids": [
+      3
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Fillet 1": {
+     "error": "i4: body #3 is gone"
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "error": "blocked by i4"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      30
+     ],
+     "area": 1357.1680263507917,
+     "volume": 3392.9200658769782
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2776.9911184307757,
+     "volume": 9130.973355292326
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      30.000000000000004
+     ],
+     "area": 2767.977841293469,
+     "volume": 9126.681318560277
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "kind": "solid",
+     "faces": 14,
+     "edges": 30,
+     "vertices": 22,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      50
+     ],
+     "area": 3167.977841293469,
+     "volume": 9626.681318560279
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 2,
+     "dims": [
+      6,
+      31
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      31
+     ],
+     "area": 1394.8671381938682,
+     "volume": 3506.017401406209
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      31
+     ],
+     "area": 2814.690230273853,
+     "volume": 9244.070690821558
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      31
+     ],
+     "area": 2805.6769531365458,
+     "volume": 9239.778654089507
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "kind": "solid",
+     "faces": 14,
+     "edges": 30,
+     "vertices": 22,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      50
+     ],
+     "area": 3185.6769531365458,
+     "volume": 9714.778654089505
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 2,
+     "dims": [
+      6,
+      32
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      32
+     ],
+     "area": 1432.5662500369456,
+     "volume": 3619.114736935441
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      32
+     ],
+     "area": 2852.389342116932,
+     "volume": 9357.168026350793
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      32
+     ],
+     "area": 2843.376064979625,
+     "volume": 9352.875989618742
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "kind": "solid",
+     "faces": 14,
+     "edges": 30,
+     "vertices": 22,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      50
+     ],
+     "area": 3203.376064979625,
+     "volume": 9802.875989618744
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 8,
+     "from": 1,
+     "face": 1
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      32
+     ],
+     "area": 1432.5662500369456,
+     "volume": 3619.114736935441
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      32
+     ],
+     "area": 2852.389342116932,
+     "volume": 9357.168026350793
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      32
+     ],
+     "area": 2843.376064979625,
+     "volume": 9352.875989618742
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "kind": "solid",
+     "faces": 14,
+     "edges": 30,
+     "vertices": 22,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      50
+     ],
+     "area": 3203.376064979625,
+     "volume": 9802.875989618744
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -10,
+      -10,
+      20,
+      10,
+      10,
+      20
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 9,
+     "from": 99,
+     "face": 0
+    }
+   },
+   "refused": "face: item 99 is not there"
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 1,
+     "transform": {
+      "tx": 10,
+      "ty": 0,
+      "angle": 0,
+      "scale": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      0,
+      -10,
+      0,
+      20,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Cylinder 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -6,
+      -6,
+      0,
+      6,
+      6,
+      32
+     ],
+     "area": 1432.5662500369456,
+     "volume": 3619.114736935441
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 10,
+     "edges": 19,
+     "vertices": 15,
+     "closed": true,
+     "bounds": [
+      -6,
+      -10,
+      0,
+      20,
+      10,
+      32
+     ],
+     "area": 3102.477796076938,
+     "volume": 10488.141381643116
+    },
+    "Fillet 1": {
+     "error": "edge 0 of `edges` is gone"
+    },
+    "Box 2": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -2.5,
+      -2.5,
+      0,
+      2.5,
+      2.5,
+      50
+     ],
+     "area": 1050,
+     "volume": 1249.9999999999998
+    },
+    "Join 2": {
+     "error": "blocked by i4"
+    },
+    "Box 3": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -1.5,
+      -1.5,
+      0,
+      1.5,
+      1.5,
+      3
+     ],
+     "area": 54,
+     "volume": 27
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      0,
+      -10,
+      20,
+      20,
+      10,
+      20
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    }
+   }
+  }
+ ]
+}

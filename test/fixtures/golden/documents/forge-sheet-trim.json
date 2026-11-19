@@ -1,0 +1,164 @@
+{
+ "source": "examples/sheet-trim.json",
+ "start": "examples/sheet-trim.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Rectangle 1",
+   "kind": "rect",
+   "plane": "top",
+   "shape": {
+    "x0": -20,
+    "y0": -20,
+    "x1": 20,
+    "y1": 20
+   },
+   "hidden": true
+  },
+  {
+   "id": 2,
+   "name": "Surface 1",
+   "kind": "surface",
+   "plane": "top",
+   "loops": [
+    [
+     1
+    ]
+   ],
+   "source": null,
+   "hidden": true,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0
+  },
+  {
+   "id": 3,
+   "name": "Circle 1",
+   "kind": "circle",
+   "plane": "top",
+   "shape": {
+    "cx": 0,
+    "cy": 0,
+    "r": 8
+   },
+   "hidden": false
+  },
+  {
+   "id": 4,
+   "name": "Trim 1",
+   "kind": "trim",
+   "plane": "top",
+   "parts": [
+    2,
+    3
+   ],
+   "drop": [
+    0
+   ],
+   "tool": 3,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": [
+    {
+     "surface": 0,
+     "at": [
+      14,
+      0,
+      0
+     ],
+     "normal": [
+      0,
+      0,
+      1
+     ],
+     "extent": 56.568542494923804
+    }
+   ]
+  }
+ ],
+ "bodies": {
+  "Surface 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 4,
+   "vertices": 4,
+   "closed": false,
+   "bounds": [
+    -20,
+    -20,
+    0,
+    20,
+    20,
+    0
+   ],
+   "area": 1599.9999999999998,
+   "volume": 0
+  },
+  "Trim 1": {
+   "kind": "sheet",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 2,
+   "closed": false,
+   "bounds": [
+    -8.00000051604557,
+    -8.000000516045569,
+    0,
+    8,
+    8.000000000000002,
+    0
+   ],
+   "area": 201.0619427993871,
+   "volume": 0
+  }
+ }
+}

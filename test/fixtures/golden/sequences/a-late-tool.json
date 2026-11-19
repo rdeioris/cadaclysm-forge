@@ -1,0 +1,222 @@
+{
+ "source": "a late tool",
+ "start": null,
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 1,
+     "kind": "rect",
+     "plane": "top",
+     "shape": {
+      "x0": -20,
+      "y0": -20,
+      "x1": 20,
+      "y1": 20
+     }
+    }
+   },
+   "bodies": {}
+  },
+  {
+   "do": {
+    "command": {
+     "op": "surface",
+     "id": 2,
+     "plane": "top",
+     "loops": [
+      [
+       1
+      ]
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 3,
+     "kind": "line",
+     "plane": "top",
+     "shape": {
+      "x0": 5,
+      "y0": -30,
+      "x1": 5,
+      "y1": 30
+     }
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "trim",
+     "id": 4,
+     "sheet": 2,
+     "tool": 3
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 2,
+     "edges": 5,
+     "vertices": 6,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1600,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 4,
+     "drop": [
+      0
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      5,
+      20,
+      0
+     ],
+     "area": 1000,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "op": {
+     "op": "batch",
+     "ops": [
+      {
+       "op": "add",
+       "node": {
+        "id": "late_tool",
+        "kind": "forge.curve_tool",
+        "curve": "i3",
+        "sheet": "i2"
+       }
+      },
+      {
+       "op": "set",
+       "id": "i4_split",
+       "fields": {
+        "tool": "late_tool"
+       }
+      },
+      {
+       "op": "remove",
+       "id": "i4_tool"
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "(unreadable)": {
+     "error": "forge_document_items: i4: no node gives `.parts`"
+    }
+   }
+  }
+ ]
+}

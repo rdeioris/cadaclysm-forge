@@ -1,0 +1,5199 @@
+{
+ "source": "examples/face-sketch.json",
+ "start": "examples/face-sketch.json",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 1,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      0
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "face",
+     "face": {
+      "body": 1,
+      "index": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 1,
+       "index": 0
+      },
+      {
+       "body": 1,
+       "index": 1
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 1,
+       "index": 5
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 7,
+     "kind": "circle",
+     "plane": "face:1:1",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 7,
+     "source": 1,
+     "thickness": 0.5,
+     "open": [
+      5
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Shell 1": {
+     "kind": "solid",
+     "faces": 11,
+     "edges": 24,
+     "vertices": 16,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 3882,
+     "volume": 960.4999999999993
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 7,
+     "source": 1,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 7,
+     "edges": [
+      0,
+      11
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 18,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2396.532034320503,
+     "volume": 7999.656637061436
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 1,
+     "face": 5,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 8,
+     "from": 7,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10.5,
+      10,
+      20
+     ],
+     "area": 2439.9999999999995,
+     "volume": 8200
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "refillet: the face is not a round -- a fillet's band or ball"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "rechamfer: the face is not a chamfer -- a flat bevel between two planes, or a cone round a rim"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 8,
+     "from": 7,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 399.99999999999994,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "unfillet: the face is not a round -- a fillet's band or ball"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 4,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "face",
+     "face": {
+      "body": 4,
+      "index": 0
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 4,
+       "index": 0
+      },
+      {
+       "body": 4,
+       "index": 0
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 4,
+       "index": 0
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 7,
+     "kind": "circle",
+     "plane": "face:4:0",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 7,
+     "source": 4,
+     "thickness": 0.5,
+     "open": [
+      0
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Shell 1": {
+     "error": "i7: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 7,
+     "source": 4,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "error": "i7: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 7,
+     "edges": [
+      0,
+      0
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "error": "i7: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 4,
+     "face": 0,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 8,
+     "from": 7,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "error": "i8: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "i8: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "i8: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 8,
+     "from": 7,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "i8: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 5,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "face",
+     "face": {
+      "body": 5,
+      "index": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 5,
+       "index": 0
+      },
+      {
+       "body": 5,
+       "index": 1
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 5,
+       "index": 3
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 7,
+     "kind": "circle",
+     "plane": "face:5:1",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 7,
+     "source": 5,
+     "thickness": 0.5,
+     "open": [
+      3
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Shell 1": {
+     "error": "shell: a rounding runs tangent into an open face -- shell first, then round the rim -- at (0.00, 4.00, 0.00), where a plane, a cylinder, a cylinder (open) meet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 7,
+     "source": 5,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 7,
+     "edges": [
+      0,
+      3
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "error": "fillet: a straight edge to round must lie between two planes"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 5,
+     "face": 3,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      0,
+      4,
+      0
+     ],
+     "area": 75.39822611796242,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 8,
+     "from": 7,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      0,
+      4,
+      0
+     ],
+     "area": 75.39822611796242,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "kind": "solid",
+     "faces": 3,
+     "edges": 3,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.5000002580227845,
+      -4.500000258022785,
+      -6,
+      4.500000000000001,
+      4.5,
+      0
+     ],
+     "area": 296.8805179232732,
+     "volume": 381.7035292974282
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      0,
+      4,
+      0
+     ],
+     "area": 75.39822611796242,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "refillet: a band of the round does not lie between two planes it is tangent to"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      0,
+      4,
+      0
+     ],
+     "area": 75.39822611796242,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "rechamfer: the face is not a chamfer -- a flat bevel between two planes, or a cone round a rim"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 8,
+     "from": 7,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      0,
+      4,
+      0
+     ],
+     "area": 75.39822611796242,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "unfillet: a band of the round does not lie between two planes it is tangent to"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 6,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 5,
+     "vertices": 6,
+     "closed": false,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      0
+     ],
+     "area": 349.7345143001532,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "face",
+     "face": {
+      "body": 6,
+      "index": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 6,
+       "index": 0
+      },
+      {
+       "body": 6,
+       "index": 1
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 7,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 6,
+       "index": 7
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 7,
+     "kind": "circle",
+     "plane": "face:6:1",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 7,
+     "source": 6,
+     "thickness": 0.5,
+     "open": [
+      7
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Shell 1": {
+     "kind": "solid",
+     "faces": 15,
+     "edges": 30,
+     "vertices": 24,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 4578.56637101966,
+     "volume": 1157.7551618999478
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 7,
+     "source": 6,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 7,
+     "edges": [
+      0,
+      14
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 9,
+     "edges": 18,
+     "vertices": 14,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2549.0624693961763,
+     "volume": 8301.4212327298
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 7,
+     "from": 6,
+     "face": 7,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 3,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 150.79645223592485,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 8,
+     "from": 7,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 3,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 150.79645223592485,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2569.6460081574637,
+     "volume": 8381.703529297427
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 3,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 150.79645223592485,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "refillet: a band of the round does not lie between two planes it is tangent to"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 8,
+     "from": 7,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 3,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 150.79645223592485,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "rechamfer: the face is not a chamfer -- a flat bevel between two planes, or a cone round a rim"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 8,
+     "from": 7,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      0,
+      10,
+      10,
+      20
+     ],
+     "area": 2399.9999999999995,
+     "volume": 7999.999999999999
+    },
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      0,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 50.26548569984672,
+     "volume": 0
+    },
+    "Solid 1": {
+     "kind": "solid",
+     "faces": 4,
+     "edges": 4,
+     "vertices": 4,
+     "closed": true,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 251.3274236356183,
+     "volume": 301.59291419908106
+    },
+    "Join 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 15,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -10,
+      -10,
+      -6,
+      10,
+      10,
+      20
+     ],
+     "area": 2550.796452235925,
+     "volume": 8301.59291419908
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 3,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -4.0000002580227845,
+      -4.000000258022785,
+      -6,
+      4.000000000000001,
+      4,
+      0
+     ],
+     "area": 150.79645223592485,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "unfillet: a band of the round does not lie between two planes it is tangent to"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  }
+ ]
+}

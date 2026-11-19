@@ -1,0 +1,483 @@
+{
+ "sequences": [
+  {
+   "file": "sequences/a-pick-past-the-solid.json",
+   "source": "a pick past the solid",
+   "start": null,
+   "steps": 5,
+   "ms": 101
+  },
+  {
+   "file": "sequences/a-broken-pick.json",
+   "source": "a broken pick",
+   "start": "inline",
+   "steps": 7,
+   "ms": 39513
+  },
+  {
+   "file": "sequences/renumbering.json",
+   "source": "renumbering",
+   "start": null,
+   "steps": 8,
+   "ms": 143
+  },
+  {
+   "file": "sequences/the-page-s-own-reference.json",
+   "source": "the page's own reference",
+   "start": null,
+   "steps": 3,
+   "ms": 14
+  },
+  {
+   "file": "sequences/a-replica.json",
+   "source": "a replica",
+   "start": null,
+   "steps": 4,
+   "ms": 5579
+  },
+  {
+   "file": "sequences/a-line-trims-a-sheet.json",
+   "source": "a line trims a sheet",
+   "start": null,
+   "steps": 7,
+   "ms": 52
+  },
+  {
+   "file": "sequences/a-late-tool.json",
+   "source": "a late tool",
+   "start": null,
+   "steps": 7,
+   "ms": 36
+  },
+  {
+   "file": "sequences/busy.json",
+   "source": "busy",
+   "start": null,
+   "steps": 6,
+   "ms": 608
+  },
+  {
+   "file": "sequences/a-command-s-op.json",
+   "source": "a command's op",
+   "start": null,
+   "steps": 4,
+   "ms": 12
+  },
+  {
+   "file": "sequences/a-join.json",
+   "source": "a join",
+   "start": null,
+   "steps": 4,
+   "ms": 217
+  },
+  {
+   "file": "sequences/needs-geometry.json",
+   "source": "needs geometry",
+   "start": null,
+   "steps": 5,
+   "ms": 23
+  },
+  {
+   "file": "sequences/box-fillet-resized.json",
+   "source": "box-fillet resized",
+   "start": "inline",
+   "steps": 2,
+   "ms": 9299
+  },
+  {
+   "file": "sequences/a-guarded-turn.json",
+   "source": "a guarded turn",
+   "start": null,
+   "steps": 3,
+   "ms": 9
+  },
+  {
+   "file": "sequences/a-gone-curve.json",
+   "source": "a gone curve",
+   "start": null,
+   "steps": 5,
+   "ms": 16
+  },
+  {
+   "file": "sequences/refused-values.json",
+   "source": "refused values",
+   "start": null,
+   "steps": 4,
+   "ms": 17
+  },
+  {
+   "file": "sequences/turned-bodies.json",
+   "source": "turned bodies",
+   "start": null,
+   "steps": 10,
+   "ms": 1572
+  },
+  {
+   "file": "sequences/a-polyline-fillet.json",
+   "source": "a polyline fillet",
+   "start": null,
+   "steps": 3,
+   "ms": 9
+  },
+  {
+   "file": "sequences/a-polyline-fillet-2.json",
+   "source": "a polyline fillet",
+   "start": null,
+   "steps": 3,
+   "ms": 5
+  },
+  {
+   "file": "sequences/a-rect-fillet.json",
+   "source": "a rect fillet",
+   "start": null,
+   "steps": 3,
+   "ms": 4
+  },
+  {
+   "file": "sequences/a-polygon-fillet.json",
+   "source": "a polygon fillet",
+   "start": null,
+   "steps": 3,
+   "ms": 5
+  },
+  {
+   "file": "sequences/a-polycurve-fillet.json",
+   "source": "a polycurve fillet",
+   "start": null,
+   "steps": 3,
+   "ms": 4
+  },
+  {
+   "file": "sequences/two-lines-rounded.json",
+   "source": "two lines rounded",
+   "start": null,
+   "steps": 7,
+   "ms": 17
+  },
+  {
+   "file": "sequences/a-pivot.json",
+   "source": "a pivot",
+   "start": null,
+   "steps": 4,
+   "ms": 24
+  },
+  {
+   "file": "sequences/an-image-duplicated.json",
+   "source": "an image duplicated",
+   "start": null,
+   "steps": 4,
+   "ms": 3
+  },
+  {
+   "file": "sequences/runtime-keys.json",
+   "source": "runtime keys",
+   "start": null,
+   "steps": 4,
+   "ms": 3
+  },
+  {
+   "file": "sequences/an-unknown-op.json",
+   "source": "an unknown op",
+   "start": null,
+   "steps": 4,
+   "ms": 0
+  },
+  {
+   "file": "sequences/every-command.json",
+   "source": "every command",
+   "start": null,
+   "steps": 64,
+   "ms": 32635
+  },
+  {
+   "file": "sequences/the-scene-s-commands.json",
+   "source": "the scene's commands",
+   "start": null,
+   "steps": 21,
+   "ms": 3534
+  },
+  {
+   "file": "sequences/a-fillet-s-life.json",
+   "source": "a fillet's life",
+   "start": null,
+   "steps": 9,
+   "ms": 5600
+  },
+  {
+   "file": "sequences/sheet-trim.json",
+   "source": "sheet-trim",
+   "start": "inline",
+   "steps": 4,
+   "ms": 193
+  },
+  {
+   "file": "sequences/held-bodies.json",
+   "source": "held bodies",
+   "start": null,
+   "steps": 10,
+   "ms": 1087
+  },
+  {
+   "file": "sequences/a-held-node-s-last-item.json",
+   "source": "a held node's last item",
+   "start": null,
+   "steps": 8,
+   "ms": 44
+  },
+  {
+   "file": "sequences/a-notebook-to-open.json",
+   "source": "a notebook to open",
+   "start": null,
+   "steps": 5,
+   "ms": 12
+  },
+  {
+   "file": "sequences/a-notebook-opened.json",
+   "source": "a notebook opened",
+   "start": "inline",
+   "steps": 3,
+   "ms": 40
+  },
+  {
+   "file": "sequences/a-shown-node.json",
+   "source": "a shown node",
+   "start": null,
+   "steps": 5,
+   "ms": 5
+  },
+  {
+   "file": "sequences/a-shown-node-opened.json",
+   "source": "a shown node opened",
+   "start": "inline",
+   "steps": 1,
+   "ms": 2
+  },
+  {
+   "file": "sequences/forge-document-s-notebook.json",
+   "source": "forge-document's notebook",
+   "start": null,
+   "steps": 5,
+   "ms": 33
+  },
+  {
+   "file": "sequences/website-demo.json",
+   "source": "the website's demo document",
+   "start": "inline",
+   "steps": 27,
+   "ms": 1024,
+   "startText": "{\n  \"format\": \"cadaclysm-blacksmith\",\n  \"version\": 1,\n  \"units\": \"mm\",\n  \"params\": {},\n  \"nodes\": [\n    {\"id\": \"forge\", \"kind\": \"forge.counters\", \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 3, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 7},\n    {\"id\": \"i1\", \"kind\": \"curve.rect\", \"name\": \"Rectangle 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"x0\": \"@node\", \"y0\": \"@node\", \"x1\": \"@node\", \"y1\": \"@node\"}, \"hidden\": \"@node\"}}, \"x0\": -30, \"y0\": -20, \"x1\": 30, \"y1\": 20, \"frame\": \"xy\"},\n    {\"id\": \"i2_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i1\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true},\n    {\"id\": \"i2\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i2_src\", \"frame\": \"xy\", \"distance\": 20},\n    {\"id\": \"i3\", \"kind\": \"curve.circle\", \"name\": \"Circle 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"frame\": \"xy\"},\n    {\"id\": \"i4_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i3\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true},\n    {\"id\": \"i4\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i4_src\", \"frame\": \"xy\", \"distance\": 40},\n    {\"id\": \"i5\", \"kind\": \"curve.polygon\", \"name\": \"Polygon 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\", \"sides\": \"@node\", \"angle\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"sides\": 6, \"angle\": 0, \"frame\": \"xy\"},\n    {\"id\": \"i6_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i5\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true},\n    {\"id\": \"i6\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 3\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i6_src\", \"frame\": \"xy\", \"distance\": 15}\n  ],\n  \"commits\": [\n    {\"id\": \"c0\", \"parents\": [], \"ops\": [], \"inverses\": []},\n    {\"id\": \"c1\", \"parents\": [\"c0\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"forge\", \"kind\": \"forge.counters\", \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 2}, \"at\": 0}, {\"op\": \"add\", \"node\": {\"id\": \"i1\", \"kind\": \"curve.rect\", \"name\": \"Rectangle 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"x0\": \"@node\", \"y0\": \"@node\", \"x1\": \"@node\", \"y1\": \"@node\"}, \"hidden\": \"@node\"}}, \"x0\": -30, \"y0\": -20, \"x1\": 30, \"y1\": 20, \"frame\": \"xy\"}, \"at\": 1}], \"message\": \"forge: add\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i1\"}, {\"op\": \"remove\", \"id\": \"forge\"}]}], \"message\": \"forge: add\"},\n    {\"id\": \"c2\", \"parents\": [\"c1\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 3}}, {\"op\": \"set\", \"id\": \"i1\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i2_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i1\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true}, \"at\": 2}, {\"op\": \"add\", \"node\": {\"id\": \"i2\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i2_src\", \"frame\": \"xy\", \"distance\": 20}, \"at\": 3}], \"message\": \"forge: sweep\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i2\"}, {\"op\": \"remove\", \"id\": \"i2_src\"}, {\"op\": \"set\", \"id\": \"i1\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 2, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: sweep\"},\n    {\"id\": \"c3\", \"parents\": [\"c2\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 4}}, {\"op\": \"add\", \"node\": {\"id\": \"i3\", \"kind\": \"curve.circle\", \"name\": \"Circle 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"frame\": \"xy\"}, \"at\": 4}], \"message\": \"forge: add\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i3\"}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 3, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: add\"},\n    {\"id\": \"c4\", \"parents\": [\"c3\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 5}}, {\"op\": \"set\", \"id\": \"i3\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i4_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i3\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true}, \"at\": 5}, {\"op\": \"add\", \"node\": {\"id\": \"i4\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i4_src\", \"frame\": \"xy\", \"distance\": 40}, \"at\": 6}], \"message\": \"forge: sweep\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i4\"}, {\"op\": \"remove\", \"id\": \"i4_src\"}, {\"op\": \"set\", \"id\": \"i3\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 4, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: sweep\"},\n    {\"id\": \"c5\", \"parents\": [\"c4\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 6}}, {\"op\": \"add\", \"node\": {\"id\": \"i5\", \"kind\": \"curve.polygon\", \"name\": \"Polygon 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\", \"sides\": \"@node\", \"angle\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"sides\": 6, \"angle\": 0, \"frame\": \"xy\"}, \"at\": 7}], \"message\": \"forge: add\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i5\"}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 5, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: add\"},\n    {\"id\": \"c6\", \"parents\": [\"c5\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 3, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 7}}, {\"op\": \"set\", \"id\": \"i5\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i6_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i5\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true}, \"at\": 8}, {\"op\": \"add\", \"node\": {\"id\": \"i6\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 3\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i6_src\", \"frame\": \"xy\", \"distance\": 15}, \"at\": 9}], \"message\": \"forge: sweep\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i6\"}, {\"op\": \"remove\", \"id\": \"i6_src\"}, {\"op\": \"set\", \"id\": \"i5\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 6, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: sweep\"}\n  ],\n  \"branches\": {\"main\": \"c6\"},\n  \"branch\": \"main\",\n  \"head\": \"c6\"\n}\n"
+  },
+  {
+   "file": "sequences/three-bodies.json",
+   "source": "a document of three bodies",
+   "start": "inline",
+   "steps": 27,
+   "ms": 1092,
+   "startText": "{\n  \"format\": \"cadaclysm-blacksmith\",\n  \"version\": 1,\n  \"units\": \"mm\",\n  \"params\": {},\n  \"nodes\": [\n    {\"id\": \"forge\", \"kind\": \"forge.counters\", \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 3, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 7},\n    {\"id\": \"i1\", \"kind\": \"curve.rect\", \"name\": \"Rectangle 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"x0\": \"@node\", \"y0\": \"@node\", \"x1\": \"@node\", \"y1\": \"@node\"}, \"hidden\": \"@node\"}}, \"x0\": -30, \"y0\": -20, \"x1\": 30, \"y1\": 20, \"frame\": \"xy\"},\n    {\"id\": \"i2_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i1\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true},\n    {\"id\": \"i2\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i2_src\", \"frame\": \"xy\", \"distance\": 20},\n    {\"id\": \"i3\", \"kind\": \"curve.circle\", \"name\": \"Circle 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"frame\": \"xy\"},\n    {\"id\": \"i4_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i3\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true},\n    {\"id\": \"i4\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i4_src\", \"frame\": \"xy\", \"distance\": 40},\n    {\"id\": \"i5\", \"kind\": \"curve.polygon\", \"name\": \"Polygon 1\", \"hidden\": true, \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\", \"sides\": \"@node\", \"angle\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"sides\": 6, \"angle\": 0, \"frame\": \"xy\"},\n    {\"id\": \"i6_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i5\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true},\n    {\"id\": \"i6\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 3\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i6_src\", \"frame\": \"xy\", \"distance\": 15}\n  ],\n  \"commits\": [\n    {\"id\": \"c0\", \"parents\": [], \"ops\": [], \"inverses\": []},\n    {\"id\": \"c1\", \"parents\": [\"c0\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"add\", \"node\": {\"id\": \"forge\", \"kind\": \"forge.counters\", \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 2}, \"at\": 0}, {\"op\": \"add\", \"node\": {\"id\": \"i1\", \"kind\": \"curve.rect\", \"name\": \"Rectangle 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"x0\": \"@node\", \"y0\": \"@node\", \"x1\": \"@node\", \"y1\": \"@node\"}, \"hidden\": \"@node\"}}, \"x0\": -30, \"y0\": -20, \"x1\": 30, \"y1\": 20, \"frame\": \"xy\"}, \"at\": 1}], \"message\": \"forge: add\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i1\"}, {\"op\": \"remove\", \"id\": \"forge\"}]}], \"message\": \"forge: add\"},\n    {\"id\": \"c2\", \"parents\": [\"c1\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 3}}, {\"op\": \"set\", \"id\": \"i1\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i2_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i1\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true}, \"at\": 2}, {\"op\": \"add\", \"node\": {\"id\": \"i2\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i2_src\", \"frame\": \"xy\", \"distance\": 20}, \"at\": 3}], \"message\": \"forge: sweep\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i2\"}, {\"op\": \"remove\", \"id\": \"i2_src\"}, {\"op\": \"set\", \"id\": \"i1\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 2, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 0, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: sweep\"},\n    {\"id\": \"c3\", \"parents\": [\"c2\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 4}}, {\"op\": \"add\", \"node\": {\"id\": \"i3\", \"kind\": \"curve.circle\", \"name\": \"Circle 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"frame\": \"xy\"}, \"at\": 4}], \"message\": \"forge: add\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i3\"}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 3, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 0, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: add\"},\n    {\"id\": \"c4\", \"parents\": [\"c3\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 5}}, {\"op\": \"set\", \"id\": \"i3\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i4_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i3\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true}, \"at\": 5}, {\"op\": \"add\", \"node\": {\"id\": \"i4\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 2\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i4_src\", \"frame\": \"xy\", \"distance\": 40}, \"at\": 6}], \"message\": \"forge: sweep\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i4\"}, {\"op\": \"remove\", \"id\": \"i4_src\"}, {\"op\": \"set\", \"id\": \"i3\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 4, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 1, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: sweep\"},\n    {\"id\": \"c5\", \"parents\": [\"c4\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 6}}, {\"op\": \"add\", \"node\": {\"id\": \"i5\", \"kind\": \"curve.polygon\", \"name\": \"Polygon 1\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"@node\", \"plane\": \"@node\", \"shape\": {\"cx\": \"@node\", \"cy\": \"@node\", \"r\": \"@node\", \"sides\": \"@node\", \"angle\": \"@node\"}, \"hidden\": \"@node\"}}, \"cx\": 0, \"cy\": 0, \"r\": 20, \"sides\": 6, \"angle\": 0, \"frame\": \"xy\"}, \"at\": 7}], \"message\": \"forge: add\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i5\"}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 5, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 0, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: add\"},\n    {\"id\": \"c6\", \"parents\": [\"c5\"], \"ops\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 3, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}, \"next_id\": 7}}, {\"op\": \"set\", \"id\": \"i5\", \"fields\": {\"hidden\": true}}, {\"op\": \"add\", \"node\": {\"id\": \"i6_src\", \"kind\": \"profile.from_curves\", \"curves\": [\"i5\"], \"per_loop\": [1], \"pivot\": [0, 0], \"move\": [0, 0], \"turn\": 0, \"scale\": 1, \"open\": true}, \"at\": 8}, {\"op\": \"add\", \"node\": {\"id\": \"i6\", \"kind\": \"solid.extrude_open\", \"name\": \"Extrusion 3\", \"meta\": {\"forge\": {\"id\": \"@node\", \"name\": \"@node\", \"kind\": \"extrusion\", \"plane\": \"@node\", \"loops\": \"@node\", \"source\": null, \"hidden\": \"@node\", \"pivot\": \"@node\", \"transform\": {\"tx\": \"@node\", \"ty\": \"@node\", \"angle\": \"@node\", \"scale\": \"@node\"}, \"place\": {\"offset\": [0, 0, 0], \"turn\": [0, 0, 0]}, \"holes\": 0, \"height\": \"@node\", \"axis\": null, \"angle\": 0, \"taper\": 0}}, \"profile\": \"i6_src\", \"frame\": \"xy\", \"distance\": 15}, \"at\": 9}], \"message\": \"forge: sweep\"}], \"inverses\": [{\"op\": \"batch\", \"ops\": [{\"op\": \"remove\", \"id\": \"i6\"}, {\"op\": \"remove\", \"id\": \"i6_src\"}, {\"op\": \"set\", \"id\": \"i5\", \"fields\": {\"hidden\": null}}, {\"op\": \"set\", \"id\": \"forge\", \"fields\": {\"next_id\": 6, \"counters\": {\"image\": 0, \"line\": 0, \"polyline\": 0, \"rect\": 1, \"circle\": 1, \"arc\": 0, \"ellipse\": 0, \"polygon\": 1, \"nurbs\": 0, \"polycurve\": 0, \"surface\": 0, \"extrusion\": 2, \"revolution\": 0, \"solid\": 0, \"sweep\": 0, \"loft\": 0, \"join\": 0, \"cut\": 0, \"intersect\": 0, \"chamfer\": 0, \"shell\": 0, \"thicken\": 0, \"trim\": 0, \"prism\": 0, \"press\": 0, \"refillet\": 0, \"rechamfer\": 0, \"remove\": 0, \"fillet\": 0, \"sketch\": 0, \"face\": 0, \"box\": 0, \"cylinder\": 0, \"sphere\": 0, \"cone\": 0, \"pyramid\": 0, \"torus\": 0, \"coil\": 0, \"pipe\": 0, \"split\": 0}}}]}], \"message\": \"forge: sweep\"}\n  ],\n  \"branches\": {\"main\": \"c6\"},\n  \"branch\": \"main\",\n  \"head\": \"c6\"\n}\n"
+  },
+  {
+   "file": "sequences/forge-constraints.json",
+   "source": "test/fixtures/forge-constraints.json",
+   "start": "test/fixtures/forge-constraints.json",
+   "steps": 1,
+   "ms": 1
+  },
+  {
+   "file": "sequences/forge-tilted.json",
+   "source": "test/fixtures/forge-tilted.json",
+   "start": "test/fixtures/forge-tilted.json",
+   "steps": 1,
+   "ms": 1
+  },
+  {
+   "file": "sequences/forge-v1.json",
+   "source": "test/fixtures/forge-v1.json",
+   "start": "test/fixtures/forge-v1.json",
+   "steps": 53,
+   "ms": 2971
+  },
+  {
+   "file": "sequences/forge-box-fillet.json",
+   "source": "examples/box-fillet.json",
+   "start": "examples/box-fillet.json",
+   "steps": 54,
+   "ms": 153342
+  },
+  {
+   "file": "sequences/forge-cut-shell.json",
+   "source": "examples/cut-shell.json",
+   "start": "examples/cut-shell.json",
+   "steps": 89,
+   "ms": 28390
+  },
+  {
+   "file": "sequences/forge-extrusions.json",
+   "source": "examples/extrusions.json",
+   "start": "examples/extrusions.json",
+   "steps": 27,
+   "ms": 1186
+  },
+  {
+   "file": "sequences/forge-face-sketch.json",
+   "source": "examples/face-sketch.json",
+   "start": "examples/face-sketch.json",
+   "steps": 105,
+   "ms": 9702
+  },
+  {
+   "file": "sequences/forge-kinds-curves.json",
+   "source": "examples/kinds-curves.json",
+   "start": "examples/kinds-curves.json",
+   "steps": 27,
+   "ms": 2493
+  },
+  {
+   "file": "sequences/forge-kinds-history.json",
+   "source": "examples/kinds-history.json",
+   "start": "examples/kinds-history.json",
+   "steps": 27,
+   "ms": 183
+  },
+  {
+   "file": "sequences/forge-kinds-made.json",
+   "source": "examples/kinds-made.json",
+   "start": "examples/kinds-made.json",
+   "steps": 473,
+   "ms": 5374875
+  },
+  {
+   "file": "sequences/forge-kinds-quick.json",
+   "source": "examples/kinds-quick.json",
+   "start": "examples/kinds-quick.json",
+   "steps": 167,
+   "ms": 455465
+  },
+  {
+   "file": "sequences/forge-kinds-sketches.json",
+   "source": "examples/kinds-sketches.json",
+   "start": "examples/kinds-sketches.json",
+   "steps": 79,
+   "ms": 18147
+  },
+  {
+   "file": "sequences/forge-kinds-sweeps.json",
+   "source": "examples/kinds-sweeps.json",
+   "start": "examples/kinds-sweeps.json",
+   "steps": 183,
+   "ms": 177097
+  },
+  {
+   "file": "sequences/forge-kinds-v2-spline-fillet.json",
+   "source": "examples/kinds-v2-spline-fillet.json",
+   "start": "examples/kinds-v2-spline-fillet.json",
+   "steps": 105,
+   "ms": 176484
+  },
+  {
+   "file": "sequences/forge-plate-peg.json",
+   "source": "examples/plate-peg.json",
+   "start": "examples/plate-peg.json",
+   "steps": 53,
+   "ms": 3203
+  },
+  {
+   "file": "sequences/forge-sheet-trim.json",
+   "source": "examples/sheet-trim.json",
+   "start": "examples/sheet-trim.json",
+   "steps": 53,
+   "ms": 794
+  }
+ ],
+ "documents": [
+  {
+   "file": "documents/website-demo.json",
+   "source": "the website's demo document",
+   "bodies": 3
+  },
+  {
+   "file": "documents/three-bodies.json",
+   "source": "a document of three bodies",
+   "bodies": 3
+  },
+  {
+   "file": "documents/forge-constraints.json",
+   "source": "test/fixtures/forge-constraints.json",
+   "bodies": 0
+  },
+  {
+   "file": "documents/forge-tilted.json",
+   "source": "test/fixtures/forge-tilted.json",
+   "bodies": 0
+  },
+  {
+   "file": "documents/forge-v1.json",
+   "source": "test/fixtures/forge-v1.json",
+   "bodies": 2
+  },
+  {
+   "file": "documents/forge-box-fillet.json",
+   "source": "examples/box-fillet.json",
+   "bodies": 2
+  },
+  {
+   "file": "documents/forge-cut-shell.json",
+   "source": "examples/cut-shell.json",
+   "bodies": 4
+  },
+  {
+   "file": "documents/forge-extrusions.json",
+   "source": "examples/extrusions.json",
+   "bodies": 3
+  },
+  {
+   "file": "documents/forge-face-sketch.json",
+   "source": "examples/face-sketch.json",
+   "bodies": 4
+  },
+  {
+   "file": "documents/forge-kinds-curves.json",
+   "source": "examples/kinds-curves.json",
+   "bodies": 1
+  },
+  {
+   "file": "documents/forge-kinds-history.json",
+   "source": "examples/kinds-history.json",
+   "bodies": 2
+  },
+  {
+   "file": "documents/forge-kinds-made.json",
+   "source": "examples/kinds-made.json",
+   "bodies": 53
+  },
+  {
+   "file": "documents/forge-kinds-quick.json",
+   "source": "examples/kinds-quick.json",
+   "bodies": 8
+  },
+  {
+   "file": "documents/forge-kinds-sketches.json",
+   "source": "examples/kinds-sketches.json",
+   "bodies": 11
+  },
+  {
+   "file": "documents/forge-kinds-sweeps.json",
+   "source": "examples/kinds-sweeps.json",
+   "bodies": 20
+  },
+  {
+   "file": "documents/forge-kinds-v2-spline-fillet.json",
+   "source": "examples/kinds-v2-spline-fillet.json",
+   "bodies": 6
+  },
+  {
+   "file": "documents/forge-plate-peg.json",
+   "source": "examples/plate-peg.json",
+   "bodies": 4
+  },
+  {
+   "file": "documents/forge-sheet-trim.json",
+   "source": "examples/sheet-trim.json",
+   "bodies": 2
+  }
+ ]
+}

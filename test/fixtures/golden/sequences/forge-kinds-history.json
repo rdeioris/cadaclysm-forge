@@ -1,0 +1,904 @@
+{
+ "source": "examples/kinds-history.json",
+ "start": "examples/kinds-history.json",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 6,
+     "from": 3,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      0
+     ],
+     "area": 99.99999999999999,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 6,
+     "mode": "face",
+     "face": {
+      "body": 3,
+      "index": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 6,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 3,
+       "index": 0
+      },
+      {
+       "body": 3,
+       "index": 1
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 6,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 3,
+       "index": 5
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 6,
+     "kind": "circle",
+     "plane": "face:3:1",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 6,
+     "source": 3,
+     "thickness": 0.5,
+     "open": [
+      5
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Shell 1": {
+     "kind": "solid",
+     "faces": 11,
+     "edges": 24,
+     "vertices": 16,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 942,
+     "volume": 230.4999999999999
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 6,
+     "source": 3,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 6,
+     "edges": [
+      0,
+      11
+     ]
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Fillet 1": {
+     "kind": "solid",
+     "faces": 8,
+     "edges": 18,
+     "vertices": 12,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 598.2488490133231,
+     "volume": 999.828318530718
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 6,
+     "from": 3,
+     "face": 5,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 99.99999999999999,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 7,
+     "from": 6,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 99.99999999999999,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5.5,
+      5,
+      10
+     ],
+     "area": 620,
+     "volume": 1050
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 7,
+     "from": 6,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 99.99999999999999,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "refillet: the face is not a round -- a fillet's band or ball"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 7,
+     "from": 6,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 99.99999999999999,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "rechamfer: the face is not a chamfer -- a flat bevel between two planes, or a cone round a rim"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 7,
+     "from": 6,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Box 1": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      -5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 599.9999999999999,
+     "volume": 999.9999999999999
+    },
+    "Moved box": {
+     "kind": "solid",
+     "faces": 6,
+     "edges": 12,
+     "vertices": 8,
+     "closed": true,
+     "bounds": [
+      25,
+      -5,
+      0,
+      35,
+      5,
+      10
+     ],
+     "area": 600,
+     "volume": 1000
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      5,
+      -5,
+      0,
+      5,
+      5,
+      10
+     ],
+     "area": 99.99999999999999,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "unfillet: the face is not a round -- a fillet's band or ball"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  }
+ ]
+}

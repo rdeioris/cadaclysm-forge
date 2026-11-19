@@ -1,0 +1,460 @@
+{
+ "source": "examples/kinds-quick.json",
+ "start": "examples/kinds-quick.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Box 1",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    20,
+    14,
+    10
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 3,
+    "ty": -2,
+    "angle": 25,
+    "scale": 1.2
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     2
+    ],
+    "turn": [
+     0,
+     15,
+     20
+    ]
+   }
+  },
+  {
+   "id": 2,
+   "name": "Cylinder 1",
+   "kind": "cylinder",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    6,
+    16
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     40,
+     0,
+     2
+    ],
+    "turn": [
+     0,
+     30,
+     20
+    ]
+   }
+  },
+  {
+   "id": 3,
+   "name": "Sphere 1",
+   "kind": "sphere",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    9
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     80,
+     0,
+     2
+    ],
+    "turn": [
+     0,
+     45,
+     20
+    ]
+   }
+  },
+  {
+   "id": 4,
+   "name": "Cone 1",
+   "kind": "cone",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    8,
+    18
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 3,
+    "ty": -2,
+    "angle": 25,
+    "scale": 1.2
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     120,
+     0,
+     2
+    ],
+    "turn": [
+     0,
+     60,
+     20
+    ]
+   }
+  },
+  {
+   "id": 5,
+   "name": "Pyramid 1",
+   "kind": "pyramid",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    5,
+    9,
+    15
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     160,
+     0,
+     2
+    ],
+    "turn": [
+     0,
+     75,
+     20
+    ]
+   }
+  },
+  {
+   "id": 6,
+   "name": "Torus 1",
+   "kind": "torus",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    12,
+    3
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 3,
+    "ty": -2,
+    "angle": 25,
+    "scale": 1.2
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     200,
+     0,
+     2
+    ],
+    "turn": [
+     0,
+     90,
+     20
+    ]
+   }
+  },
+  {
+   "id": 7,
+   "name": "Coil 1",
+   "kind": "coil",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    10,
+    1.5,
+    6,
+    3
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     240,
+     0,
+     2
+    ],
+    "turn": [
+     0,
+     105,
+     20
+    ]
+   }
+  },
+  {
+   "id": 8,
+   "name": "Box 2",
+   "kind": "box",
+   "plane": "front",
+   "parts": [],
+   "dims": [
+    10,
+    10,
+    10
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ ],
+ "bodies": {
+  "Box 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -7.9817078032424735,
+    -10.856951826852944,
+    -0.805207727740048,
+    16.413811271259412,
+    7.742165095866711,
+    14.464465990630732
+   ],
+   "area": 1240,
+   "volume": 2799.9999999999995
+  },
+  "Cylinder 1": {
+   "kind": "solid",
+   "faces": 3,
+   "edges": 3,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    34.70358121726183,
+    -5.9112693082901675,
+    -0.9999999999999996,
+    52.813959749025436,
+    8.647430454895517,
+    18.856406460551018
+   ],
+   "area": 829.3804605477051,
+   "volume": 1809.5573684677202
+  },
+  "Sphere 1": {
+   "kind": "solid",
+   "faces": 1,
+   "edges": 1,
+   "vertices": 48,
+   "closed": true,
+   "bounds": [
+    71.00100863147848,
+    -8.999816961657078,
+    -7,
+    88.99899136852152,
+    8.999816961657078,
+    11
+   ],
+   "area": 1017.8760197630928,
+   "volume": 3053.6280592892776
+  },
+  "Cone 1": {
+   "kind": "solid",
+   "faces": 2,
+   "edges": 2,
+   "vertices": 26,
+   "closed": true,
+   "bounds": [
+    118.35088705120933,
+    -9.640203469117548,
+    -4.928191482642531,
+    137.64835826323267,
+    5.640203469117549,
+    10.999999998413278
+   ],
+   "area": 696.1195188917179,
+   "volume": 1206.3715789784812
+  },
+  "Pyramid 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 10,
+   "vertices": 6,
+   "closed": true,
+   "bounds": [
+    156.41983869996238,
+    -7.797115763421871,
+    -6.693332436601615,
+    173.61510056785554,
+    8.28949846221049,
+    9.033053678961677
+   ],
+   "area": 633.6162311565627,
+   "volume": 962.9447227488433
+  },
+  "Torus 1": {
+   "kind": "solid",
+   "faces": 1,
+   "edges": 2,
+   "vertices": 3,
+   "closed": true,
+   "bounds": [
+    195.89908770894786,
+    -16.271992705779546,
+    -12.999974565628525,
+    210.10091229105214,
+    12.271992705779546,
+    16.999974565628527
+   ],
+   "area": 1421.223033756868,
+   "volume": 2131.8345506353
+  },
+  "Coil 1": {
+   "kind": "solid",
+   "faces": 50,
+   "edges": 100,
+   "vertices": 52,
+   "closed": true,
+   "bounds": [
+    236.48654879296814,
+    -9.425219812319634,
+    -13.817826492906088,
+    260.22028565631774,
+    17.33263847728709,
+    12.382626545753153
+   ],
+   "area": 1794.7258270362004,
+   "volume": 1332.390479638203
+  },
+  "Box 2": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -5,
+    -10,
+    -5,
+    5,
+    0,
+    5
+   ],
+   "area": 599.9999999999999,
+   "volume": 999.9999999999999
+  }
+ }
+}

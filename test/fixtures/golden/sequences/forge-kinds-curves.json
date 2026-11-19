@@ -1,0 +1,610 @@
+{
+ "source": "examples/kinds-curves.json",
+ "start": "examples/kinds-curves.json",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 26,
+     "from": 25,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      73,
+      80,
+      0,
+      87,
+      80,
+      5
+     ],
+     "area": 70,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 26,
+     "mode": "face",
+     "face": {
+      "body": 25,
+      "index": 1
+     }
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 26,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 25,
+       "index": 0
+      },
+      {
+       "body": 25,
+       "index": 1
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 26,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 25,
+       "index": 7
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 26,
+     "kind": "circle",
+     "plane": "face:25:1",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 26,
+     "source": 25,
+     "thickness": 0.5,
+     "open": [
+      7
+     ]
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Shell 1": {
+     "error": "i26: `solid` wants a solid, `i25` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 26,
+     "source": 25,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Fillet 1": {
+     "error": "i26: `solid` wants a solid, `i25` is a sheet"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 26,
+     "edges": [
+      0,
+      23
+     ]
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Fillet 1": {
+     "error": "i26: `solid` wants a solid, `i25` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 26,
+     "from": 25,
+     "face": 7,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      73,
+      83,
+      5
+     ],
+     "area": 23.561970015206526,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 27,
+     "from": 26,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      73,
+      83,
+      5
+     ],
+     "area": 23.561970015206526,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "error": "i27: `solid` wants a solid, `i25` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 27,
+     "from": 26,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      73,
+      83,
+      5
+     ],
+     "area": 23.561970015206526,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "i27: `solid` wants a solid, `i25` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 27,
+     "from": 26,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      73,
+      83,
+      5
+     ],
+     "area": 23.561970015206526,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "i27: `solid` wants a solid, `i25` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 27,
+     "from": 26,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Extrusion 1": {
+     "kind": "sheet",
+     "faces": 8,
+     "edges": 24,
+     "vertices": 16,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      90,
+      95,
+      5
+     ],
+     "area": 324.2478628753955,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      70,
+      80,
+      0,
+      73,
+      83,
+      5
+     ],
+     "area": 23.561970015206526,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "i27: `solid` wants a solid, `i25` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  }
+ ]
+}

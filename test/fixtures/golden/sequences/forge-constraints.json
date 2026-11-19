@@ -1,0 +1,10 @@
+{
+ "source": "test/fixtures/forge-constraints.json",
+ "start": "test/fixtures/forge-constraints.json",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {}
+  }
+ ]
+}

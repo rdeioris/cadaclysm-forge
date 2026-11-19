@@ -1,0 +1,1651 @@
+{
+ "source": "examples/sheet-trim.json",
+ "start": "examples/sheet-trim.json",
+ "steps": [
+  {
+   "do": "open",
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 5,
+     "from": 2,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 5,
+     "mode": "face",
+     "face": {
+      "body": 2,
+      "index": 0
+     }
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 5,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 2,
+       "index": 0
+      },
+      {
+       "body": 2,
+       "index": 0
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 5,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 2,
+       "index": 0
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 5,
+     "kind": "circle",
+     "plane": "face:2:0",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 5,
+     "source": 2,
+     "thickness": 0.5,
+     "open": [
+      0
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Shell 1": {
+     "error": "i5: `solid` wants a solid, `i2` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 5,
+     "source": 2,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Fillet 1": {
+     "error": "i5: `solid` wants a solid, `i2` is a sheet"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 5,
+     "edges": [
+      0,
+      3
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Fillet 1": {
+     "error": "i5: `solid` wants a solid, `i2` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 5,
+     "from": 2,
+     "face": 0,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 6,
+     "from": 5,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "error": "i6: `solid` wants a solid, `i2` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 6,
+     "from": 5,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "i6: `solid` wants a solid, `i2` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 6,
+     "from": 5,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "i6: `solid` wants a solid, `i2` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 6,
+     "from": 5,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "i6: `solid` wants a solid, `i2` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 5,
+     "from": 4,
+     "face": 0
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 5,
+     "mode": "face",
+     "face": {
+      "body": 4,
+      "index": 0
+     }
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 5,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 4,
+       "index": 0
+      },
+      {
+       "body": 4,
+       "index": 0
+      }
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "sketch",
+     "id": 5,
+     "mode": "mid",
+     "mid": [
+      {
+       "body": 4,
+       "index": 0
+      },
+      "top"
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "add",
+     "id": 5,
+     "kind": "circle",
+     "plane": "face:4:0",
+     "shape": {
+      "cx": 0,
+      "cy": 0,
+      "r": 1
+     }
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "shell",
+     "id": 5,
+     "source": 4,
+     "thickness": 0.5,
+     "open": [
+      0
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Shell 1": {
+     "error": "i5: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "fillet",
+     "id": 5,
+     "source": 4,
+     "radius": 0.2,
+     "style": "round"
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Fillet 1": {
+     "error": "i5: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "set",
+     "id": 5,
+     "edges": [
+      0,
+      0
+     ]
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Fillet 1": {
+     "error": "i5: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "face",
+     "id": 5,
+     "from": 4,
+     "face": 0,
+     "curved": true
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    }
+   }
+  },
+  {
+   "do": {
+    "command": {
+     "op": "press",
+     "id": 6,
+     "from": 5,
+     "height": 0.5
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Press Pull 1": {
+     "error": "i6: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "refillet",
+     "id": 6,
+     "from": 5,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Refillet 1": {
+     "error": "i6: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "rechamfer",
+     "id": 6,
+     "from": 5,
+     "radius": 0.5
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Rechamfer 1": {
+     "error": "i6: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": {
+    "command": {
+     "op": "remove",
+     "id": 6,
+     "from": 5,
+     "what": "fillet"
+    }
+   },
+   "bodies": {
+    "Surface 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 4,
+     "vertices": 4,
+     "closed": false,
+     "bounds": [
+      -20,
+      -20,
+      0,
+      20,
+      20,
+      0
+     ],
+     "area": 1599.9999999999998,
+     "volume": 0
+    },
+    "Trim 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Face 1": {
+     "kind": "sheet",
+     "faces": 1,
+     "edges": 1,
+     "vertices": 2,
+     "closed": false,
+     "bounds": [
+      -8.00000051604557,
+      -8.000000516045569,
+      0,
+      8,
+      8.000000000000002,
+      0
+     ],
+     "area": 201.0619427993871,
+     "volume": 0
+    },
+    "Unfillet 1": {
+     "error": "i6: `solid` wants a solid, `i4` is a sheet"
+    }
+   }
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  },
+  {
+   "do": "undo",
+   "bodies": null
+  }
+ ]
+}

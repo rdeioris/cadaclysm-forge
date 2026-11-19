@@ -1,0 +1,235 @@
+{
+ "source": "examples/cut-shell.json",
+ "start": "examples/cut-shell.json",
+ "items": [
+  {
+   "id": 1,
+   "name": "Box 1",
+   "kind": "box",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    30,
+    30,
+    20
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 2,
+   "name": "Cylinder 1",
+   "kind": "cylinder",
+   "plane": "top",
+   "parts": [],
+   "dims": [
+    6,
+    40
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     -10
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "id": 3,
+   "name": "Cut 1",
+   "kind": "cut",
+   "plane": "top",
+   "parts": [
+    1,
+    2
+   ],
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": true,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "flush": true
+  },
+  {
+   "id": 4,
+   "name": "Shell 1",
+   "kind": "shell",
+   "plane": "top",
+   "parts": [
+    3
+   ],
+   "thickness": 1.5,
+   "open": [],
+   "openRefs": null,
+   "pivot": [
+    0,
+    0
+   ],
+   "transform": {
+    "tx": 0,
+    "ty": 0,
+    "angle": 0,
+    "scale": 1
+   },
+   "holes": 0,
+   "height": 0,
+   "axis": null,
+   "angle": 0,
+   "source": null,
+   "hidden": false,
+   "place": {
+    "offset": [
+     0,
+     0,
+     0
+    ],
+    "turn": [
+     0,
+     0,
+     0
+    ]
+   },
+   "faceRefs": []
+  }
+ ],
+ "bodies": {
+  "Box 1": {
+   "kind": "solid",
+   "faces": 6,
+   "edges": 12,
+   "vertices": 8,
+   "closed": true,
+   "bounds": [
+    -15,
+    -15,
+    0,
+    15,
+    15,
+    20
+   ],
+   "area": 4200,
+   "volume": 18000
+  },
+  "Cylinder 1": {
+   "kind": "solid",
+   "faces": 3,
+   "edges": 3,
+   "vertices": 4,
+   "closed": true,
+   "bounds": [
+    -6,
+    -6,
+    -10,
+    6,
+    6,
+    30
+   ],
+   "area": 1734.15914478157,
+   "volume": 4523.89342116931
+  },
+  "Cut 1": {
+   "kind": "solid",
+   "faces": 7,
+   "edges": 15,
+   "vertices": 12,
+   "closed": true,
+   "bounds": [
+    -15,
+    -15,
+    0,
+    15,
+    15,
+    20
+   ],
+   "area": 4727.787565803087,
+   "volume": 15738.053289415346
+  },
+  "Shell 1": {
+   "kind": "solid",
+   "faces": 14,
+   "edges": 30,
+   "vertices": 24,
+   "closed": true,
+   "bounds": [
+    -15,
+    -15,
+    0,
+    15,
+    15,
+    20
+   ],
+   "area": 8469.464518939636,
+   "volume": 6349.2012644105735
+  }
+ }
+}
