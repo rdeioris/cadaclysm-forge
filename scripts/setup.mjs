@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { unzipSync } from "fflate";
 
 // The release whose web package the forge is built against.
-const VERSION = "0.14.2";
+const VERSION = "0.15.0";
 const ASSET = `cadaclysm-${VERSION}-web.zip`;
 const URL = `https://github.com/rdeioris/cadaclysm-sdk/releases/download/v${VERSION}/${ASSET}`;
 // What the forge loads from the package.
