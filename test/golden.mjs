@@ -74,22 +74,46 @@ function bodies(doc, model) {
 
 const near = (a, b) => a === b || Math.abs(a - b) <= 1e-6 * Math.max(Math.abs(a), Math.abs(b), 1);
 
-function compare(where, got, want) {
-    assert.deepStrictEqual(Object.keys(got).sort(), Object.keys(want).sort(), `${where}: the bodies`);
+// The differences ACCEPTED.md lists, by sequence: from step `from` on, body `body` may
+// differ as `allow` says -- "builds" (it builds where the 0.14 layer failed) or "placed"
+// (only where it is: its counts, closure, area and volume still hold); step `step`'s
+// command may be "refused" where the 0.14 layer did nothing.
+const ACCEPTED = {
+    // A sketch fillet that cannot be done is refused.
+    "two-lines-rounded.json": [{ step: 6, allow: "refused" }],
+    // A revolution of a curve builds.
+    "every-command.json": [{ from: 7, body: "Revolution 1", allow: "builds" }],
+};
+
+function accepted(file, k, name) {
+    return (ACCEPTED[file] ?? []).find((a) => k >= a.from && a.body === name)?.allow;
+}
+
+const acceptedRefusal = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && a.allow === "refused");
+
+// Each difference between the bodies `got` and the recorded `want`.
+function differences(got, want, allow = () => undefined) {
+    const out = [];
+    const check = (ok, why) => { if (!ok) out.push(why); };
+    const gk = Object.keys(got).sort(), wk = Object.keys(want).sort();
+    check(JSON.stringify(gk) === JSON.stringify(wk), `the bodies: ${gk.join(", ")} != ${wk.join(", ")}`);
     for (const [name, w] of Object.entries(want)) {
         const g = got[name];
-        const at = `${where}: ${name}`;
+        if (!g) continue;
+        const ok = allow(name);
         if (w.error !== undefined) {
-            assert.ok(g.error !== undefined, `${at} must fail (${w.error}), it builds`);
+            if (ok !== "builds") check(g.error !== undefined, `${name} must fail (${w.error}), it builds`);
             continue;
         }
-        assert.ok(g.error === undefined, `${at} must build, it fails: ${g.error}`);
-        for (const k of ["kind", "faces", "edges", "vertices", "closed"]) assert.strictEqual(g[k], w[k], `${at}: ${k}`);
-        assert.strictEqual(g.mass !== undefined, w.mass !== undefined, `${at}: measured`);
-        for (const k of ["area", "volume"]) if (w[k] !== undefined) assert.ok(near(g[k], w[k]), `${at}: ${k} ${g[k]} != ${w[k]}`);
-        assert.strictEqual(g.bounds.length, w.bounds.length, `${at}: bounds`);
-        g.bounds.forEach((v, i) => assert.ok(near(v, w.bounds[i]), `${at}: bounds[${i}] ${v} != ${w.bounds[i]}`));
+        if (g.error !== undefined) { out.push(`${name} must build, it fails: ${g.error}`); continue; }
+        for (const k of ["kind", "faces", "edges", "vertices", "closed"]) check(g[k] === w[k], `${name}: ${k} ${g[k]} != ${w[k]}`);
+        check((g.mass !== undefined) === (w.mass !== undefined), `${name}: measured`);
+        for (const k of ["area", "volume"]) if (w[k] !== undefined) check(near(g[k], w[k]), `${name}: ${k} ${g[k]} != ${w[k]}`);
+        if (ok === "placed") continue;
+        check(g.bounds.length === w.bounds.length, `${name}: bounds`);
+        g.bounds.forEach((v, i) => check(near(v, w.bounds[i]), `${name}: bounds[${i}] ${v} != ${w.bounds[i]}`));
     }
+    return out;
 }
 
 let sequences = 0, whole = 0, steps = 0;
@@ -126,9 +150,13 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
                     ran++;
                     continue;
                 }
-                assert.ok(refused === undefined, `${where}: refused: ${refused}`);
+                assert.ok(refused === undefined || acceptedRefusal(file, k), `${where}: refused: ${refused}`);
             }
-            if (st.bodies) compare(where, bodies(doc, model), st.bodies);
+            if (st.bodies) {
+                const diff = differences(bodies(doc, model), st.bodies, (name) => accepted(file, k, name));
+                if (diff.length && process.env.GOLDEN_ALL) console.log(`${where}:\n  ${diff.join("\n  ")}`);
+                else assert.deepStrictEqual(diff, [], where);
+            }
             // The model kept by changed sets reads as a fresh one does.
             assert.deepStrictEqual(model.items(), new Model(wasm, doc).items(), `${where}: the model's items`);
             ran++;
