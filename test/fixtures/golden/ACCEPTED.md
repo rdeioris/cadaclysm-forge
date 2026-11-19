@@ -49,6 +49,51 @@ replay (`test/golden.mjs`) may differ from a recording only as listed.
   quick solid without dims": `itemFromV1` drops a box's dims). `golden.mjs`:
   `{ step: 63, allow: "unsupported" }` (refused, that step's recording not compared).
 
+- **A sequence that starts from a file starts from it converted.** The 0.14 files the corpus
+  opens (`examples/`, `test/fixtures/forge-*.json`, and the inline `startText` of
+  `a-broken-pick.json`, `box-fillet-resized.json`, `sheet-trim.json`, `three-bodies.json` and
+  `website-demo.json` -- `a-notebook-opened.json` and `a-shown-node-opened.json` hold no forge
+  node and are kept as they were) were converted once (`scripts/convert-examples.mjs`, gone
+  since): each file's items read by the 0.14 layer on the 0.15 package and written, in item
+  order, as the node layer writes them, the counters and the next id in the `forge` meta. A
+  converted file is a fresh document: its nodes added in one commit, none of the 0.14
+  history (no recorded step undoes past the file's own state). A 0.14 stand-in
+  (`forge.broken_<type>`) is a `value.unresolved` in the 0.14 words. The 0.14 copies stay in
+  `test/fixtures/v014/` for the 0.14 layer's own tests until that layer goes.
+- **A version-1 file's parts are not on nodes.** `forge-v1.json`'s join holds its parts
+  inline, as a version-1 file had them (bodies of their own inside the item, no item of
+  their own). The node layer has no such part (`"a version-1 part is not on nodes"`, spec
+  decision 2), so the converted join is a stand-in: `forge-v1.json`'s "Join 1" fails from the
+  open on, and so do what is made of it -- "Face 1" from step 27, "Fillet 1" from 39, "Press
+  Pull 1" from 44 -- and the sketches and the curve on its faces (steps 29, 31, 33, 35) are
+  refused ("#2 has not been built"). The surface beside it converts and builds as recorded.
+  `golden.mjs`: `allow: "fails"`, `allow: "refused"`.
+- **A pick on a body that has not built is a stand-in.** The 0.14 layer refused a command
+  whose pick it could not resolve because the body it picks on does not build, unless the
+  item was a stand-in already. The node layer writes the item as a stand-in in those words
+  (5.3c: it builds again once a write finds the body; `test/forge-commands.mjs` pins it).
+  `a-broken-pick.json` step 3 sets the edges of "Fillet 3", a fillet of the cut that leaves
+  nothing: the 0.14 layer refused it (and its fillet of no edges built once the cut did, step
+  4); here "Fillet 3" is a stand-in from step 3 on. The 0.14 layer on the 0.15 package
+  refuses it too, so this is the port. `golden.mjs`: `{ step: 3, allow: "stands-in" }`,
+  `{ from: 4, body: "Fillet 3", allow: "fails" }`.
+- **A trim by a closed curve.** A trim is `curve.as_nurbs` -> `sheet.split_by_curve` (plan
+  2.5) where the 0.14 layer cut by a `forge.curve_tool` sheet (`sheet.split_sheet`). By a
+  circle, the cut edge is one closed edge with one vertex, where the 0.14 trim had two:
+  "Trim 1" counts one vertex fewer (`sheet-trim.json`, `forge-sheet-trim.json`,
+  `forge-kinds-made.json`), and so does a face item of it ("Face 1" in
+  `forge-sheet-trim.json`, "Face 9" in `forge-kinds-made.json` steps 241-264). Area and
+  bounds agree. The prism of it ("Solid 1" in `forge-kinds-made.json`) has one side face
+  where it had two: 3 faces and 5 edges, not 4 and 4, and its volume 565.4863651654339
+  where 0.14 measured 565.487020908092 -- the cylinder's exact 565.4866776 lies between
+  them, each 5.8e-7 off, so the two differ by 1.2e-6 relative. A fillet of it with no edges
+  (step 279, "Fillet 3") is the same solid, its cap face (step 267, "Face 9") another face
+  index. Its face 3 is gone, so the commands that pick it (steps 273, 277, 283) are refused,
+  and those that read the face item step 283 would have made (284, 286, 288, 290) too: the
+  bodies they made are missing there (`lacks`). The 0.14 layer on the 0.15 package builds
+  the trim as recorded, so this is the port. `golden.mjs`: `allow: "differs"` (named keys),
+  `allow: "refused"`.
+
 ## The 0.15 kernel
 
 Where the 0.15 kernel answers otherwise than the 0.14 one did. The 0.14 layer itself, run on
@@ -59,7 +104,12 @@ the 0.15 package over the same sequences, gives these very answers, so they are 
 - **A box's rounded edges.** Rounding two or four edges of a box meets in fewer edges than
   0.14 counted (the 0.15.0 package's fillet edge pins moved 24 -> 20 with it): `edges` in
   `a-fillet-s-life.json` step 3, `a-replica.json` from step 3, `busy.json` from step 5 and
-  `held-bodies.json` from step 8 ("Fillet 1"). Faces, area and volume agree.
+  `held-bodies.json` from step 8 ("Fillet 1"); in the converted files, `a-broken-pick.json`
+  ("Fillet 2", and "Fillet 1" from step 6, 17 not 18), `box-fillet-resized.json`,
+  `forge-box-fillet.json` and `forge-kinds-made.json` (each box's fillet, refillet and the
+  fillets the sequence makes of them). Faces, area and volume agree.
+- **A press of a cone's curved face** counts 28 vertices, not 10 (`forge-kinds-quick.json`
+  step 96, "Press Pull 1", `vertices`).
 - **A box less a sphere counts 34 vertices**, not 16: `every-command.json` "Cut 1" from step
   19 and "Cut 1 copy" from step 58 (`vertices`).
 - **The shell of that cut.** Its shell with face 0 open counts 68 vertices, not 32

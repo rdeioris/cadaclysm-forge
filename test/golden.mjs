@@ -4,8 +4,10 @@
 // every body item's summary is compared with the recorded one -- face, edge and vertex
 // counts and closure exact; area, volume and bounds to 1e-6 relative. A body that failed
 // must fail again (its words may differ: the node layout did). A refused command must be
-// refused again. Every sequence that starts from a new document is replayed whole; those
-// that start from a 0.14 file wait for the converted files (task 5.4).
+// refused again. A sequence that starts from a file starts from it as converted to nodes
+// (examples/, test/fixtures/, the corpus's own `startText`: scripts/convert-examples.mjs,
+// run once and gone, wrote them from the 0.14 files' items). Every sequence is replayed
+// whole.
 //
 //     node test/golden.mjs            # every sequence
 //     node test/golden.mjs a-rect     # those whose file name contains a word, each listed
@@ -20,7 +22,8 @@ import { command } from "../forge-commands.js";
 
 const wasm = await loadWasm();
 const K = "cadaclysm_blacksmith_";
-const dir = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "golden", "sequences");
+const here = dirname(fileURLToPath(import.meta.url));
+const dir = join(here, "fixtures", "golden", "sequences");
 const words = process.argv.slice(2);
 
 // A body's summary, as scripts/forge-golden.mjs recorded it.
@@ -51,7 +54,8 @@ function summary(doc, id) {
     }
 }
 
-// Summaries by the kernel's hash of a result: a body no step changed is not measured again.
+// Summaries by the kernel's hash of a result and its kind: a body no step changed is not
+// measured again. (The hash is the shape's: a sphere and the sheet of its one face share it.)
 const summaries = new Map();
 
 // Every body item by name (`name #id` where a name repeats): its summary or its error.
@@ -66,9 +70,10 @@ function bodies(doc, model) {
         const st = statuses.find((s) => s.id === id);
         let s = null;
         if (st?.state === "ok") {
-            if (!st.hash || !summaries.has(st.hash)) summaries.set(st.hash ?? "", summary(doc, id));
-            s = structuredClone(summaries.get(st.hash ?? ""));
-            if (!st.hash) summaries.delete("");
+            const hk = st.hash ? `${wasm[K + "document_result_kind"](doc, id)} ${st.hash}` : "";
+            if (!hk || !summaries.has(hk)) summaries.set(hk, summary(doc, id));
+            s = structuredClone(summaries.get(hk));
+            if (!hk) summaries.delete("");
         }
         const key = names.get(it.name) > 1 ? `${it.name} #${it.id}` : it.name;
         if (s) out[key] = s;
@@ -90,11 +95,14 @@ const near = (a, b) => a === b || Math.abs(a - b) <= 1e-6 * Math.max(Math.abs(a)
 // failed), "placed" (only where it is: its counts, closure, area and volume still hold),
 // "fails" (it fails where the 0.14 layer built: the 0.15 kernel refuses it, the 0.14 layer
 // on the 0.15 package too) or "kernel" (its `keys` differ: the 0.15 kernel answers
-// otherwise, the 0.14 layer on the 0.15 package the same); where two cover a step, the
-// later one in the list. Step `step`'s command may be "refused" where the 0.14 layer did
-// nothing; "unsupported" where the node layer refuses what the 0.14 layer did (the document
-// stays as it was, so the recording of that step is not compared); its raw op "raw-refused"
-// where it names the 0.14 layout's nodes.
+// otherwise, the 0.14 layer on the 0.15 package the same) or "differs" (its `keys` differ:
+// the node layer builds it otherwise, the 0.14 layer on the 0.15 package as recorded); where
+// two cover a step, the later one in the list. Step `step`'s command may be "refused" where
+// the 0.14 layer did nothing or did what the node layer refuses (the bodies it made, `lacks`,
+// missing; undoing it is nothing); "unsupported" where the node layer refuses what the 0.14
+// layer did (the document stays as it was, so the recording of that step is not compared);
+// "stands-in" where the 0.14 layer refused and the node layer writes a stand-in; its raw op
+// "raw-refused" where it names the 0.14 layout's nodes.
 const ACCEPTED = {
     // A sketch fillet that cannot be done is refused.
     "two-lines-rounded.json": [{ step: 6, allow: "refused" }],
@@ -123,6 +131,59 @@ const ACCEPTED = {
     "the-scene-s-commands.json": [{ from: 20, body: "Join 1", allow: "kernel", keys: ["edges"] }],
     // A raw op on the 0.14 trim's nodes.
     "a-late-tool.json": [{ step: 6, allow: "raw-refused" }],
+    // The 0.15 kernel: a box's rounded edges meet in fewer edges. A pick on a body that has
+    // not built is a stand-in.
+    "a-broken-pick.json": [
+        { from: 0, body: "Fillet 2", allow: "kernel", keys: ["edges"] },
+        { from: 6, body: "Fillet 1", allow: "kernel", keys: ["edges"] },
+        { step: 3, allow: "stands-in" },
+        { from: 4, body: "Fillet 3", allow: "fails" },
+    ],
+    "box-fillet-resized.json": [{ from: 0, body: "Fillet 1", allow: "kernel", keys: ["edges"] }],
+    "forge-box-fillet.json": [
+        { from: 0, body: "Fillet 1", allow: "kernel", keys: ["edges"] },
+        { from: 0, body: "Fillet 2", allow: "kernel", keys: ["edges"] },
+        { from: 0, body: "Refillet 1", allow: "kernel", keys: ["edges"] },
+    ],
+    "forge-kinds-made.json": [
+        { from: 0, body: "Fillet 1", allow: "kernel", keys: ["edges"] },
+        { from: 0, body: "Fillet 2", allow: "kernel", keys: ["edges"] },
+        { from: 0, body: "Refillet 1", allow: "kernel", keys: ["edges"] },
+        { from: 0, body: "Fillet 3", allow: "kernel", keys: ["edges"] },
+        { from: 0, body: "Refillet 2", allow: "kernel", keys: ["edges"] },
+        // A trim by a closed curve: its edge has one vertex; the prism of it three faces.
+        { from: 0, body: "Trim 1", allow: "differs", keys: ["vertices"] },
+        { from: 0, body: "Solid 1", allow: "differs", keys: ["faces", "edges", "volume"] },
+        { from: 241, to: 264, body: "Face 9", allow: "differs", keys: ["vertices"] },
+        { from: 267, to: 267, body: "Face 9", allow: "differs", keys: ["edges"] },
+        { from: 279, to: 279, body: "Fillet 3", allow: "differs", keys: ["faces", "edges", "volume"] },
+        { step: 273, allow: "refused" },
+        { step: 277, allow: "refused", lacks: ["Shell 2"] },
+        { step: 283, allow: "refused", lacks: ["Face 9"] },
+        { step: 284, allow: "refused", lacks: ["Face 9", "Press Pull 3"] },
+        { step: 286, allow: "refused", lacks: ["Face 9", "Refillet 2"] },
+        { step: 288, allow: "refused", lacks: ["Face 9", "Rechamfer 2"] },
+        { step: 290, allow: "refused", lacks: ["Face 9", "Unfillet 2"] },
+    ],
+    // The 0.15 kernel: a press of a cone's face counts 28 vertices.
+    "forge-kinds-quick.json": [{ from: 96, to: 96, body: "Press Pull 1", allow: "kernel", keys: ["vertices"] }],
+    // A trim by a closed curve: its edge has one vertex.
+    "forge-sheet-trim.json": [
+        { from: 0, body: "Trim 1", allow: "differs", keys: ["vertices"] },
+        { from: 0, body: "Face 1", allow: "differs", keys: ["vertices"] },
+    ],
+    "sheet-trim.json": [{ from: 0, body: "Trim 1", allow: "differs", keys: ["vertices"] }],
+    // A version-1 file's parts are not on nodes: its join is a stand-in.
+    "forge-v1.json": [
+        { from: 0, body: "Join 1", allow: "fails" },
+        { from: 27, body: "Face 1", allow: "fails" },
+        { from: 39, body: "Fillet 1", allow: "fails" },
+        { from: 44, body: "Press Pull 1", allow: "fails" },
+        { step: 29, allow: "refused" },
+        { step: 31, allow: "refused" },
+        { step: 33, allow: "refused" },
+        { step: 35, allow: "refused" },
+    ],
 };
 
 function accepted(file, k, name) {
@@ -130,20 +191,22 @@ function accepted(file, k, name) {
 }
 
 const acceptedRefusal = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && (a.allow === "refused" || a.allow === "unsupported"));
+const lacks = (file, k) => (ACCEPTED[file] ?? []).filter((a) => a.step === k && a.allow === "refused").flatMap((a) => a.lacks ?? []);
+const standsIn = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && a.allow === "stands-in");
 const unsupported = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && a.allow === "unsupported");
 const acceptedRaw = (file, k) => (ACCEPTED[file] ?? []).some((a) => a.step === k && a.allow === "raw-refused");
 
 // Each difference between the bodies `got` and the recorded `want`.
-function differences(got, want, allow = () => undefined) {
+function differences(got, want, allow = () => undefined, lacking = []) {
     const out = [];
     const check = (ok, why) => { if (!ok) out.push(why); };
-    const gk = Object.keys(got).sort(), wk = Object.keys(want).sort();
+    const gk = Object.keys(got).sort(), wk = Object.keys(want).filter((n) => !lacking.includes(n)).sort();
     check(JSON.stringify(gk) === JSON.stringify(wk), `the bodies: ${gk.join(", ")} != ${wk.join(", ")}`);
     for (const [name, w] of Object.entries(want)) {
         const g = got[name];
         if (!g) continue;
         const a = allow(name), ok = a?.allow;
-        const free = (k) => ok === "kernel" && a.keys.includes(k);
+        const free = (k) => (ok === "kernel" || ok === "differs") && a.keys.includes(k);
         if (w.error !== undefined) {
             if (ok !== "builds") check(g.error !== undefined, `${name} must fail (${w.error}), it builds`);
             continue;
@@ -163,30 +226,42 @@ function differences(got, want, allow = () => undefined) {
     return out;
 }
 
-let sequences = 0, steps = 0;
+let sequences = 0, steps = 0, files = 0;
 const started = Date.now();
 for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
     if (words.length && !words.some((w) => file.includes(w))) continue;
     const seq = JSON.parse(readFileSync(join(dir, file), "utf8"));
-    if (seq.start !== null) continue;
-    const doc = wasm[K + "document_new"](UNITS);
+    files++;
+    // A new document, or the file it was opened from (converted: the 0.14 file's items as
+    // nodes, no history), as the page opens one.
+    const doc = seq.start === null ? wasm[K + "document_new"](UNITS)
+        : wasm[K + "document_load"](seq.start === "inline" ? seq.startText : readFileSync(join(here, "..", seq.start), "utf8"));
     let model = new Model(wasm, doc);
     let ran = 0;
+    // The recording's commits as the replay has them, for its undo and redo: true where the
+    // replay committed too, false where it refuses what the 0.14 layer did (an accepted
+    // difference) -- undoing or redoing that is nothing.
+    const done = [], undone = [];
+    const commit = (real) => { done.push(real); undone.length = 0; };
     try {
         for (const [k, st] of seq.steps.entries()) {
             const where = `${file} step ${k}`;
             const what = st.do;
             if (what === "open") {
-                // A new document: nothing to do.
+                // Opened above.
             } else if (what === "undo" || what === "redo") {
-                model.refresh(wasm[K + `document_${what}`](doc));
+                const real = (what === "undo" ? done : undone).pop();
+                if (real !== undefined) (what === "undo" ? undone : done).push(real);
+                if (real !== false) model.refresh(wasm[K + `document_${what}`](doc));
             } else if (what.op !== undefined) {
                 const op = typeof what.op === "string" ? what.op : JSON.stringify(what.op);
                 try {
                     model.refresh(wasm[K + "document_apply"](doc, op, undefined), typeof what.op === "string" ? JSON.parse(what.op) : what.op);
+                    commit(true);
                 } catch (e) {
                     // A raw op written for the 0.14 layout may name nodes this one does not have.
                     if (!acceptedRaw(file, k)) throw e;
+                    commit(false);
                     ran++;
                     continue;
                 }
@@ -206,12 +281,21 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
                 } catch (e) {
                     refused = e.message;
                 }
-                if (st.refused !== undefined) {
+                if (st.refused !== undefined && !standsIn(file, k)) {
                     assert.ok(refused !== undefined, `${where}: must be refused (${st.refused})`);
                     ran++;
                     continue;
                 }
+                if (st.refused !== undefined) {
+                    // Refused by the 0.14 layer, written as a stand-in here: a commit the
+                    // recording has not (no later step of such a sequence undoes past it).
+                    assert.ok(refused === undefined, `${where}: refused: ${refused}`);
+                    done.push(true);
+                    ran++;
+                    continue;
+                }
                 assert.ok(refused === undefined || acceptedRefusal(file, k), `${where}: refused: ${refused}`);
+                commit(refused === undefined);
                 if (unsupported(file, k)) {
                     assert.ok(refused !== undefined, `${where}: must be refused (not supported)`);
                     ran++;
@@ -219,7 +303,7 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
                 }
             }
             if (st.bodies) {
-                const diff = differences(bodies(doc, model), st.bodies, (name) => accepted(file, k, name));
+                const diff = differences(bodies(doc, model), st.bodies, (name) => accepted(file, k, name), lacks(file, k));
                 if (diff.length && process.env.GOLDEN_ALL) console.log(`${where}:\n  ${diff.join("\n  ")}`);
                 else assert.deepStrictEqual(diff, [], where);
             }
@@ -230,10 +314,10 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
     } finally {
         wasm[K + "document_free"](doc);
     }
-    if (ran === 0) continue;
     assert.strictEqual(ran, seq.steps.length, `${file}: replayed whole`);
     sequences++;
     steps += ran;
     if (words.length || process.env.GOLDEN_VERBOSE) console.log(`${file}: ${ran} steps`);
 }
+assert.strictEqual(sequences, files, "every sequence replayed");
 console.log(`golden: ${steps} steps of ${sequences} sequences in ${((Date.now() - started) / 1000).toFixed(1)} s`);
