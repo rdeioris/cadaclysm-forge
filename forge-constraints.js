@@ -8,7 +8,7 @@
 // (made here, never stored); a polycurve is reference only, its ends fixed. A model also
 // keeps `curveOf` (every kernel entity -> its curve) and `withheld` (the curves the last
 // `writeBack` refused to write, `{ id, error }`).
-import { regularPolygonPoints } from "./forge-doc-curves.js";
+import { regularPolygonPoints } from "./forge-sketch.js";
 
 // The constraint kinds in the C ABI's code order (index = the code).
 export const KINDS = Object.freeze([
