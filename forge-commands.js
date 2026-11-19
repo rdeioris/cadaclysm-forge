@@ -52,6 +52,12 @@
 // the world among them. The body verbs throw `Unported` until their group lands: each adds
 // its kinds to the body class (`bodyNodes`, `bodyHeld`) and its cases to `build`.
 //
+// Every command first adopts the held items the model lists without a head of their own
+// (`adoptHeld`): each gets its head `i<n>` under the number the model shows for it, and the
+// next id moves past it, in the command's own batch. The model numbers a headless held
+// item from the next id, so without this a command that moves the next id would renumber
+// them; with it, a document opened and not touched shows the numbers it keeps.
+//
 // # How a command writes
 //
 // A command builds on a `Draft` of the model: `d.add(node, at)`, `d.set(id, fields)`,
@@ -78,7 +84,7 @@
 //   (`base` / `offset` / `hinge` / `tilt` / `path` read off the frame where it holds them;
 //   `face`, `mid`, `points` -- index picks -- always kept). A face's reference is the frame
 //   node's: the command's `faceRefs` where it gives them, else `env.picks.faceRef`.
-// - A held item gets a head of its own (copied, placed): `solid.transform` of the
+// - A held item gets a head of its own (adopted, copied, placed): `solid.transform` of the
 //   held node (`profile.translate` by 0 for a held profile), `meta.forge` `{ kind: "held" |
 //   "held_profile", node, sheet? }`, so the model lists it as `i<n>` and not as the held node.
 //   A held body is a body here (below): placed, its head is the world transform of the node.
@@ -483,7 +489,7 @@ export class Draft {
 
     /// Item `n` as the model lists it, while its nodes are still in the draft; undefined
     /// for none (or one this command removed). One whose head this command wrote (a new
-    /// item, a held one given a head) as that head says.
+    /// item, an adopted held one) as that head says.
     item(n) {
         const it = this.model.item(n);
         if (it && !this.over.has(headId(n))) return this.has(it.of !== undefined ? it.node : headId(n)) ? it : undefined;
@@ -1474,10 +1480,23 @@ function consume(d, n, seen = new Set()) {
     }
 }
 
+/// Every held item the model lists without a head of its own gets one, under the number
+/// the model shows for it, and the next id moves past it: what a command does to the next
+/// id never renumbers a held item, and a document opened and not touched shows the numbers
+/// it will keep.
+function adoptHeld(d) {
+    for (const it of d.model.items()) {
+        if (it.of === undefined) continue;
+        writeItem(d, it.id, readItem(d, it.id), d.index(it.node) + 1);
+        d.bump(it.id);
+    }
+}
+
 /// The ops of `cmd` (see the header) on a draft.
 function build(model, cmd, env, broken) {
     const d = new Draft(model, env, broken);
     const op = opOf(cmd);
+    adoptHeld(d);
     switch (op) {
         case "add": {
             const n = cmdId(cmd, "id", op);

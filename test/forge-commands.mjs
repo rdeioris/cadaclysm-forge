@@ -500,6 +500,36 @@ for (const c of [
     t.free();
 }
 
+// Held items: every command first gives each held item the model lists without a head one
+// of its own, under the number the model shows, and moves the next id past it -- so the
+// primitive below (id 4, which moves the next id to 5) does not renumber the plate, and
+// the join after it finds it as #1. A held body placed is a world transform of its node.
+{
+    const t = fresh();
+    t.raw({ op: "add", node: { id: "plate", kind: "solid.cuboid", x: 40, y: 30, z: 20, name: "plate part", meta: { show: true } } });
+    t.raw({ op: "add", node: { id: "outline", kind: "profile.path", name: "outline part", path: { start: [-5, -3], segments: [{ type: "line", to: [5, -3] }, { type: "line", to: [5, 3] }, { type: "line", to: [-5, -3] }] } } });
+    const before = t.model.items().map((i) => [i.id, i.name]);
+    assert.deepStrictEqual(before, [[1, "plate part"], [2, "outline part"]]);
+    t.run({ op: "primitive", id: 4, kind: "box", plane: "top", dims: [10, 10, 40] });
+    assert.deepStrictEqual(t.model.items().map((i) => [i.id, i.name]), [[1, "plate part"], [2, "outline part"], [4, "Box 1"]]);
+    assert.deepStrictEqual(t.nodes().map((n) => n.id), ["plate", "i1", "outline", "i2", "i4"]);
+    assert.deepStrictEqual(t.node("i1"), { id: "i1", kind: "solid.transform", name: "plate part", meta: { forge: { kind: "held", node: "plate" } }, solid: "plate" });
+    assert.deepStrictEqual(t.node("i2").meta.forge, { kind: "held_profile", node: "outline" });
+    assert.strictEqual(t.meta().nextId, 5);
+    t.run({ op: "set", id: 1, place: { offset: [0, 0, 10], turn: [0, 0, 0] } });
+    assert.deepStrictEqual([t.node("i1").solid, t.node("i1").by, t.node("i1").by_in], ["plate", [0, 0, 10], "world"]);
+    assert.strictEqual(t.statusOf("i1").state, "ok");
+    assert.ok(close(solidOf(t.doc, "i1").bounds, [-20, -15, 0, 20, 15, 20]), JSON.stringify(solidOf(t.doc, "i1").bounds));
+    // A held node another app adds later is adopted at the number the model shows it under.
+    t.raw({ op: "add", node: { id: "post", kind: "solid.cylinder", r: 1, h: 2, meta: { show: true } } });
+    assert.strictEqual(t.model.items().find((i) => i.node === "post").id, 5);
+    t.run({ op: "image", id: 6 });
+    assert.strictEqual(t.node("i5").meta.forge.node, "post");
+    assert.deepStrictEqual(t.meta().nextId, 7);
+    assert.deepStrictEqual(t.model.items().map((i) => i.of), t.model.items().map(() => undefined));
+    t.free();
+}
+
 // What is not on nodes yet says so; an unknown command and a bad id are refused as the
 // page refused them.
 {
