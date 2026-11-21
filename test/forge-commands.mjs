@@ -1759,6 +1759,17 @@ const centreOf = (b) => [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2
     t.free();
 }
 
+// move about a pivot at a box's corner: a box of 4 at x 20, a quarter turn about X through its
+// top corner (22, 2, 4) -- the corner stays, the box swings up from it.
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 4, 20, 0)) t.run(c);
+    t.run({ op: "move", ids: [1], pivot: [22, 2, 4], by: [0, 0, 0], turn: [90, 0, 0] });
+    assert.ok(close(solidNow(t, "i1").bounds, [18, 2, 0, 22, 6, 4], 1e-6), JSON.stringify(solidOf(t.doc, "i1").bounds));
+    assert.ok(close(placeOfItem(t, 1), { offset: [20, 6, 2], turn: [90, 0, 0] }, 1e-12), JSON.stringify(placeOfItem(t, 1)));
+    t.free();
+}
+
 // move refusals: in the command's words, the document untouched
 {
     const t = fresh();
