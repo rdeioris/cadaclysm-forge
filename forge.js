@@ -155,6 +155,21 @@ const patternCount2El = document.getElementById("pattern-count2");
 const patternSpacing2El = document.getElementById("pattern-spacing2");
 const copiesPicksEl = document.getElementById("copies-picks");
 const mirrorLineEl = document.getElementById("mirror-line");
+const solidPatternEl = document.getElementById("pattern");
+const solidMirrorEl = document.getElementById("mirror");
+const solidCountEl = document.getElementById("solid-count");
+const solidAngleEl = document.getElementById("solid-angle");
+const solidSymmetricEl = document.getElementById("solid-symmetric");
+const solidCount1El = document.getElementById("solid-count1");
+const solidSpacing1El = document.getElementById("solid-spacing1");
+const solidCount2El = document.getElementById("solid-count2");
+const solidSpacing2El = document.getElementById("solid-spacing2");
+const solidSpacingEl = document.getElementById("solid-spacing");
+const solidOrientEl = document.getElementById("solid-orient");
+const solidOperationEl = document.getElementById("solid-operation");
+const solidAxisPickEl = document.getElementById("solid-axis-pick");
+const solidPlanePickEl = document.getElementById("solid-plane-pick");
+const solidPathPickEl = document.getElementById("solid-path-pick");
 
 function say(text, isError = false) {
     statusEl.textContent = text;
@@ -877,6 +892,8 @@ function pageEnv() {
             nodeFaceRef: (id, k) => need(`face ${k} of \`${id}\``),
             findFace: (id) => need(`a face of \`${id}\``),
             frameValue: (id) => { try { return picks.frameValue(id); } catch { return need(`the frame \`${id}\``); } },
+            bounds: (n) => need(`the bounds of #${n}`),
+            resultKind: (n) => need(`the result of #${n}`),
         },
     };
 }
@@ -1025,7 +1042,7 @@ function applyImagesNow(cmd) {
 // An item the document gave, as the page holds it: the runtime fields a new one starts
 // with -- a body's from what the worker last answered for its id -- then the document's.
 function freshItem(it) {
-    const blank = isBody(it) ? blankBody() : isSketch(it) ? { beziers: new Float32Array(0), bounds: null, error: null, dirty: false } : blankCurve();
+    const blank = isBody(it) ? blankBody() : isSketch(it) ? { beziers: new Float32Array(0), bounds: null, error: null, dirty: false } : isPattern(it) ? { error: null, bounds: null } : blankCurve();
     // Only the runtime fields: a document field the item lacks is not the page's to add
     // (it would read as an edit to preview, `localEdits`).
     const c = Object.fromEntries(Object.entries(blank).filter(([k]) => RUNTIME_KEYS.has(k) && !(k in it)));
@@ -1305,16 +1322,19 @@ let selection = [];
 let selected = null;
 let selectedPoint = null;   // an index into the active NURBS's or polyline's points, or null
 const LABELS = { held: "Body", held_profile: "Profile", image: "Image", line: "Line", polyline: "Polyline", rect: "Rectangle", circle: "Circle", arc: "Arc", ellipse: "Ellipse", polygon: "Polygon", nurbs: "NURBS", polycurve: "Polycurve", surface: "Surface", extrusion: "Extrusion", revolution: "Revolution", solid: "Solid", sweep: "Sweep", loft: "Loft", join: "Join", cut: "Cut", intersect: "Intersect", chamfer: "Chamfer", shell: "Shell", thicken: "Thicken", trim: "Trim", prism: "Solid", press: "Press Pull", refillet: "Refillet", rechamfer: "Rechamfer", remove: "Remove", fillet: "Fillet", sketch: "Sketch", face: "Face",
-                 box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split" };
-const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽" };
+                 box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split",
+                 pattern: "Pattern", instance: "Instance", pattern_feature: "Pattern", mirror: "Mirror" };
+const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽", pattern: "⁂", instance: "◇", pattern_feature: "⁂", mirror: "⧎" };
 // A kind's icon (the sprite in forge.html), or its glyph as text where there is none.
-const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror"]);
+const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror", "pattern_feature"]);
+// A kind drawn with another's icon: a feature pattern is a pattern.
+const ICON_OF = { pattern_feature: "pattern" };
 function iconOf(kind, glyph = GLYPHS[kind] ?? "•") {
     if (!ICONS.has(kind)) { const span = document.createElement("span"); span.textContent = glyph; return span; }
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", "icon");
     const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", `#i-${kind}`);
+    use.setAttribute("href", `#i-${ICON_OF[kind] ?? kind}`);
     svg.append(use);
     return svg;
 }
@@ -1333,14 +1353,20 @@ const isBody = (c) => c?.kind === "surface" || c?.kind === "extrusion" || c?.kin
 const isHeld = (c) => c?.kind === "held";
 const isHeldProfile = (c) => c?.kind === "held_profile";
 const isSolid = (c) => (isHeld(c) && !c.sheet) || c?.kind === "solid" || (c?.kind === "revolution" && c.sheet === false) || (c?.kind === "sweep" && !c.sheet) || (c?.kind === "loft" && !c.sheet) || c?.kind === "join" || c?.kind === "cut" || c?.kind === "intersect" || c?.kind === "shell" || c?.kind === "thicken" || c?.kind === "prism" || c?.kind === "press" || c?.kind === "refillet" || c?.kind === "rechamfer" || c?.kind === "remove" || c?.kind === "fillet"
-    || isQuickKind(c?.kind) || c?.kind === "pipe" || c?.kind === "split";
+    || isQuickKind(c?.kind) || c?.kind === "pipe" || c?.kind === "split" || c?.kind === "pattern_feature" || ((c?.kind === "instance" || c?.kind === "mirror") && !sheetSource(c));
+// An instance or a mirror join of a sheet is a sheet: its source says (an instance's
+// `source`, a join's part).
+const sheetSource = (c) => { const s = byId(c.kind === "instance" ? c.source : c.parts?.[0]); return !!s && s !== c && isSheet(s); };
+// A body pattern's group item (kind `pattern`): no body (its head a list of bodies), no
+// curve; its instances are body items of their own (kind `instance`, `pattern` its id).
+const isPattern = (c) => c?.kind === "pattern";
 // A body meant to be solid whose B-rep the kernel says is not closed: the browser's amber
 // dot.
 const notClosed = (c) => isSolid(c) && c.error === null && !!c.closure && !c.closure.closed;
 // A body made of other bodies' definitions (a join, a shell), its solid built once
 // and kept, and moved by the gizmo as a rigid whole.
 const isMade = (c) => c?.kind === "join" || c?.kind === "cut" || c?.kind === "intersect" || c?.kind === "shell" || c?.kind === "thicken" || c?.kind === "trim" || c?.kind === "prism" || c?.kind === "press" || c?.kind === "refillet" || c?.kind === "rechamfer" || c?.kind === "remove" || c?.kind === "fillet" || c?.kind === "face"
-    || isQuickKind(c?.kind) || c?.kind === "pipe" || c?.kind === "split" || isHeld(c);
+    || isQuickKind(c?.kind) || c?.kind === "pipe" || c?.kind === "split" || isHeld(c) || c?.kind === "instance" || c?.kind === "pattern_feature" || c?.kind === "mirror";
 // The quick solids' sizes, in the order the kernel takes them, as the dialog names them,
 // and what a new one starts with; a pipe's radius and wall (zero for a rod) likewise.
 const DIMS = {
@@ -1368,12 +1394,12 @@ const onTurned = (face) => {
 };
 // A sheet: a body with no inside -- a surface, a curve's sweep, or a trim of one. What
 // a trim cuts (a trim of a trim cuts it further).
-const isSheet = (c) => c?.kind === "surface" || c?.kind === "extrusion" || (c?.kind === "revolution" && c.sheet !== false) || c?.kind === "trim" || c?.kind === "face" || (c?.kind === "sweep" && c.sheet) || (c?.kind === "loft" && c.sheet) || (isHeld(c) && c.sheet);
+const isSheet = (c) => c?.kind === "surface" || c?.kind === "extrusion" || (c?.kind === "revolution" && c.sheet !== false) || c?.kind === "trim" || c?.kind === "face" || (c?.kind === "sweep" && c.sheet) || (c?.kind === "loft" && c.sheet) || (isHeld(c) && c.sheet) || ((c?.kind === "instance" || c?.kind === "mirror") && sheetSource(c));
 const isSketch = (c) => c?.kind === "sketch";
 // A reference image on a plane: drawn under the sketch to trace over, no geometry, and
 // not saved with the document (`documentJson` leaves it out).
 const isImage = (c) => c?.kind === "image";
-const isCurve = (c) => c !== null && c !== undefined && !isBody(c) && !isSketch(c) && !isImage(c) && !isHeldProfile(c);
+const isCurve = (c) => c !== null && c !== undefined && !isBody(c) && !isSketch(c) && !isImage(c) && !isHeldProfile(c) && !isPattern(c);
 // Whether an item shows in the views: not hidden itself, and not on a hidden sketch (a
 // sketch hidden takes everything on it with it). A hidden item is still in the
 // document -- it builds, its loops still close -- it is just not drawn or clicked.
@@ -2999,15 +3025,15 @@ function renderList() {
         return li;
     };
     // A folder's row: Bodies, Sketches, an origin plane -- its eye is its items'.
-    const folder = (key, text, depth, items) => {
+    const folder = (key, text, depth, items, eyeItems = items) => {
         const li = document.createElement("li");
         li.className = `header${depth === 0 ? " top" : ""}`;
         const glyph = document.createElement("span"); glyph.className = "glyph folder"; glyph.append(iconOf("folder"));
         const name = document.createElement("span"); name.className = "name"; name.textContent = text;
         const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = items.length ? String(items.length) : "";
-        const hidden = items.length > 0 && items.every((c) => c.hidden);
+        const hidden = eyeItems.length > 0 && eyeItems.every((c) => c.hidden);
         li.classList.toggle("hidden", hidden);
-        li.append(...guides(depth), foldOf(key, items.length), eyeOf(hidden, items.map((c) => c.id)), glyph, name, tag);
+        li.append(...guides(depth), foldOf(key, items.length), eyeOf(hidden, eyeItems.map((c) => c.id)), glyph, name, tag);
         return li;
     };
     const rows = [];
@@ -3038,9 +3064,33 @@ function renderList() {
         return rootOf(inputs[0]);
     };
     const members = (b) => [b, ...inputsOf(b).flatMap(members)];
-    const tips = bodies.filter((b) => !consumerOf(b.id));
-    rows.push(folder("bodies", "Bodies", 0, tips));
-    if (!folded.has("bodies")) for (const b of tips) {
+    // A body pattern (or a mirror as new bodies) is a group row, "Pattern 1 · 6 × 2 bodies"
+    // (placements × sources), folding (`pattern:<id>`) its instances' rows: an instance is no
+    // tip of its own. Its eye is the group's and every instance's.
+    const groups = curves.filter(isPattern);
+    const instancesOf = (g) => bodies.filter((b) => b.kind === "instance" && b.pattern === g.id);
+    const grouped = (b) => b.kind === "instance" && groups.some((g) => g.id === b.pattern);
+    const tips = bodies.filter((b) => !consumerOf(b.id) && !grouped(b));
+    for (const c of curves) if (isSelected(c) && c.kind === "instance") { folded.delete("bodies"); folded.delete(`pattern:${c.pattern}`); }
+    rows.push(folder("bodies", "Bodies", 0, [...tips, ...groups], [...tips, ...groups, ...groups.flatMap(instancesOf)]));
+    if (!folded.has("bodies")) for (const b of curves.filter((c) => tips.includes(c) || isPattern(c))) {
+        if (isPattern(b)) {
+            const insts = instancesOf(b), S = b.sources?.length ?? 0, key = `pattern:${b.id}`;
+            const P = b.type === "mirror" ? 2 : b.type === "rectangular" ? (b.count1 ?? 1) * (b.count2 ?? 1) : b.count;
+            const li = row(b, 1, key, insts.length);
+            li.querySelector(".name").textContent = `${b.name} · ${P ?? "?"} × ${S} ${S === 1 ? "body" : "bodies"}`;
+            const tag = li.querySelector(".tag");
+            tag.textContent = tag.title = b.type === "mirror" ? `across ${planeInfo(b.across)?.name ?? b.across}` : "";
+            const all = [b, ...insts];
+            const eye = li.querySelector(".eye"), hidden = all.every((c) => c.hidden);
+            eye.replaceWith(eyeOf(hidden, all.map((c) => c.id)));
+            li.classList.toggle("hidden", hidden);
+            li.classList.toggle("selected", all.some(isSelected));
+            li.title = b.error ?? `${b.name}: ${insts.map((c) => c.name).join(", ")}`;
+            rows.push(li);
+            if (!folded.has(key)) for (const inst of insts) rows.push(row(inst, 2));
+            continue;
+        }
         const root = rootOf(b), li = row(b, 1);
         li.dataset.root = root.id;
         li.querySelector(".name").textContent = root.name;
@@ -3124,6 +3174,7 @@ listEl.addEventListener("click", (e) => {
     if (!li) return;
     const id = +li.dataset.id;
     if (sweepMode) { pickSweepPath(id); return; }
+    if (tool?.solid?.picking) { takeSolidRow(id); return; }
     if (picking && picking !== "face" && isSketch(current())) { pickInto(current(), id); return; }
     if (sketchPick?.kind === "split") { const k = byId(id); if (k && (isBody(k) || isSketch(k))) splitBy(k.id); else if (isCurve(k)) splitByCurve(k); return; }
     if (sketchPick?.spots) { const k = byId(id); if (isCurve(k)) takeWholeCurve(k); return; }
@@ -3315,7 +3366,7 @@ function syncToolbar() {
     renderProps();
     const c = current();
     // A sketch made on the Construct tab keeps it open while its plane is placed.
-    if (c) showTab(isBody(c) ? "solid" : isSketch(c) && tab === "construct" ? "construct" : "sketch");
+    if (c) showTab(isBody(c) || isPattern(c) ? "solid" : isSketch(c) && tab === "construct" ? "construct" : "sketch");
     const nurbs = c?.kind === "nurbs", points = pointed(c);
     degreeEl.disabled = !nurbs;
     if (nurbs) degreeEl.value = c.shape.degree;
@@ -3660,7 +3711,7 @@ function openTool(openedAt, ids, title, glyph) {
 }
 function commitTool() {
     if (!tool) return;
-    const copies = tool.copies;
+    const copies = tool.copies ?? tool.solid;
     tool = null;
     if (copies) { hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; syncToolbar(); }
     if (shellMode) newShell();
@@ -3673,7 +3724,7 @@ function commitTool() {
 function cancelTool() {
     if (!tool) return;
     const { cancelAt, was } = tool;
-    const copies = tool.copies;
+    const copies = tool.copies ?? tool.solid;
     if (copies) { copies.cancelled = true; hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; }   // a re-run queued behind this is dropped
     tool = null;
     if (axisMode) setAxisMode(null);
@@ -3731,16 +3782,17 @@ operationEl.addEventListener("change", () => act(async () => {
 // shell being picked, an extrude with an operation to choose.
 function renderDialog() {
     const c = current();
-    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies);
-    // A sketch pattern or mirror in progress: the dialog is the tool's, as while a pick is.
-    const owned = !!(sketchPick || sketchTrim || tool?.copies);
+    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid);
+    // A pattern or a mirror in progress (a sketch's, the bodies'): the dialog is the tool's,
+    // as while a pick is.
+    const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid);
     if (!c && !tool && !modeOn) { dialogEl.hidden = true; return; }
     dialogEl.hidden = false;
     const kinds = new Set();
     // While a sketch tool picks its curves the dialog is the tool's alone: the picked
     // curves' own numbers and handles come back when it is done.
     if (c && !owned) kinds.add(c.kind);
-    if (c && isBody(c) && !sketchPick) {
+    if (c && isBody(c) && !sketchPick && !owned) {
         kinds.add("body");
         const look = lookOf(c);
         if (document.activeElement !== lookColourEl) lookColourEl.value = look.colour;
@@ -3761,6 +3813,13 @@ function renderDialog() {
         kinds.add(`sketch-${s.kind}`);
         if (s.kind === "pattern") kinds.add(`pattern-${s.type}`);
         renderCopies(s);
+    }
+    if (tool?.solid) {
+        const s = tool.solid;
+        kinds.add(`solid-${s.kind}`);
+        if (s.kind === "pattern") kinds.add(`solid-${s.type}`);
+        if (s.kind === "mirror" && s.objects === "bodies") kinds.add("solid-join-op");
+        renderSolid(s);
     }
     // The separator before the item's own numbers, when a tool's rows come first.
     if (propsEl.children.length && !owned && [...dialogEl.querySelectorAll("[data-for]")].some((row) => row.dataset.for !== "props" && row.dataset.for.split(" ").some((k) => kinds.has(k)))) kinds.add("props");
@@ -3884,6 +3943,14 @@ function timelineChips() {
         case "split":
             chip = { at: i, ids: added.slice(), glyph: GLYPHS.split, kind: "split" };
             break;
+        // A body pattern or mirror: one chip, its item first (a group's instances after it); a
+        // click selects the item. One that made nothing (a set of it) is its chip's.
+        case "pattern": case "pattern_feature": case "mirror": {
+            if (!added.length) { const ch = chipOf(touched); if (ch) ch.end = i; break; }
+            const own = added.filter((id) => byId(id)?.kind !== "instance");
+            chip = { at: i, ids: [...own, ...added.filter((id) => !own.includes(id))], glyph: GLYPHS[op], kind: op === "mirror" ? "mirror" : "pattern", one: true };
+            break;
+        }
         case "state":
             chip = { at: i, ids: added.slice(), glyph: "▤", kind: "state", label: "a version-1 file" };
             break;
@@ -3919,7 +3986,7 @@ function renderTimeline() {
         el.classList.toggle("error", chip.ids.map(byId).some((c) => c && c.error !== null));
         el.addEventListener("click", () => {
             const present = chip.ids.filter((id) => byId(id));
-            if (present.length) setSelection(chip.kind === "sketch" ? present.slice(0, 1) : present);
+            if (present.length) setSelection(chip.kind === "sketch" || chip.one ? present.slice(0, 1) : present);
         });
         nodes.push(el);
     }
@@ -4693,6 +4760,7 @@ const worldPivot = (c) => V.add(embed3(c.plane, pivotOf(c)), placeOf(c).offset);
 function manipulatorOf(view) {
     const c = current();
     if (!c || isSketch(c) || !visible(c) || sketchTrim) return null;   // a trim's clicks are for its pieces
+    if (tool?.copies || tool?.solid) return null;   // a pattern's or a mirror's preview: its copies go at every re-run
     if (isBody(c)) return { subject: "place", body: c, pivot: worldPivot(c), axes: AXES3, rings: RINGS3, scale: !isMade(c) };
     const items = selectedCurves().filter((k) => isCurve(k) && k.plane === c.plane && visible(k) && drawn(k));
     if (!items.length) return null;
@@ -5647,6 +5715,7 @@ function handleUnderPress(i, px) {
 // down.
 function pressAt(i, px, e) {
     if (tool?.copies?.picking) { pickCopiesCentre(i, px); return; }
+    if (tool?.solid?.picking) { pickSolidAt(i, px); return; }
     if (sketchPick?.spots) { sketchPick.shift = e.shiftKey; pickSpotAt(i, px); return; }
     if (sketchPick?.kind === "split") {
         const hitCurve = pickCurve(i, px);
@@ -6226,19 +6295,21 @@ async function runCopies(session) {
 // while one is out fold into it. OK pressed before it ran (Enter in the field just typed)
 // keeps what the numbers say now: it still runs, the session closed, while the history
 // stands where the session left it; Esc before it ran drops it.
-let copiesQueued = false;
-function rerunCopies() {
+// The same for a body pattern's or mirror's session (`tool.solid`, `runSolid`).
+let sessionQueued = false;
+const rerunCopies = () => rerunSession("copies", runCopies);
+function rerunSession(key, runner) {
     const session = tool;
-    if (!session?.copies || copiesQueued) return;
-    copiesQueued = true;
+    if (!session?.[key] || sessionQueued) return;
+    sessionQueued = true;
     return act(async () => {
-        copiesQueued = false;
+        sessionQueued = false;
         const open = tool === session;
-        if (session.copies.cancelled || (!open && !(tool === null && head === session.copies.doneAt))) return;
+        if (session[key].cancelled || (!open && !(tool === null && head === session[key].doneAt))) return;
         tool = null;                       // the rollback's replay must not commit the session
         await rollbackTo(session.openedAt);
         if (open) tool = session;
-        await runCopies(session);
+        await runner(session);
         renderDialog();
         syncToolbar();
     });
@@ -6251,8 +6322,10 @@ function renderCopies(s) {
     mirrorLineEl.textContent = s.line !== null ? byId(s.line)?.name ?? "" : "";
     patternCircularEl.setAttribute("aria-pressed", String(s.type === "circular"));
     patternRectangularEl.setAttribute("aria-pressed", String(s.type === "rectangular"));
-    patternCentreEl.textContent = s.centre === null ? "origin" : s.centre.label;
-    patternCentrePickEl.setAttribute("aria-pressed", String(s.picking));
+    // The two buttons say which: the origin pressed, or pick (and what was picked beside it).
+    patternCentreEl.textContent = s.centre === null ? "" : s.centre.label;
+    patternCentreOriginEl.setAttribute("aria-pressed", String(s.centre === null && !s.picking));
+    patternCentrePickEl.setAttribute("aria-pressed", String(s.picking || s.centre !== null));
 }
 for (const [el, type] of [[patternCircularEl, "circular"], [patternRectangularEl, "rectangular"]]) {
     el.addEventListener("click", () => {
@@ -6296,6 +6369,246 @@ function pickCopiesCentre(i, px) {
     s.centre = { curve: hit.c.id, at: hit.at, label: spotLabel(hit.c, hit.at) };
     rerunCopies();
 }
+
+// ------------------------------------------------------------------ the bodies' pattern and mirror
+
+// Solid › pattern and Solid › mirror (`pattern`, `pattern_feature`, `mirror`, forge-commands.js
+// Patterns). The button opens a session on the selected bodies (`tool.solid`); with one cut or
+// join selected the dialog's "feature" places its tool again instead. The command runs at
+// once, and each change in the dialog -- the objects, the type, the axis, a count, an angle,
+// a spacing, a direction, the path, the plane, the operation -- rolls the session back and runs
+// it again (`rerunSession`), so the copies preview as the numbers change. OK keeps the one
+// command it stands on, Esc rolls it back.
+//
+// The picks: an axis is X / Y / Z through the origin, or a click on a sketch line or a
+// straight edge of a body (its two ends, as numbers: it does not follow later edits of the
+// line or the edge). A cylinder's axis is not offered: the package has no reader of a
+// cylindrical face's axis. A plane is Top / Front / Right, a click on a flat face of a body, or
+// on a sketch (a curve of it, or its row in the list). A path is a click on a curve.
+// A cut or a join: the feature a feature pattern (or mirror) places again.
+const isFeature = (c) => c?.kind === "cut" || c?.kind === "join";
+const SOLID_PICK_HINTS = {
+    axis: "click a sketch line or a straight edge of a body for the axis · Esc cancels",
+    plane: "click a flat face of a body, or a sketch (a curve of it, or its row in the list), for the plane · Esc cancels",
+    path: "click the curve to copy along · Esc cancels",
+};
+// The button: the session's OK when pressed again over it, else a session on the selection.
+function pressSolid(kind) {
+    if (tool?.solid?.kind === kind) { commitTool(); return; }
+    const bodies = selectedCurves().filter(isBody);
+    if (!bodies.length) { say(`${kind} takes bodies -- select one or more in the views or the list`, true); return; }
+    newSolidTool(kind, bodies.map((c) => c.id));
+}
+// The session opened over the bodies `ids`, its first run made.
+function newSolidTool(kind, ids) {
+    return act(async () => {
+        if (sketchPick) disarmSketchPick();
+        if (tool) commitTool();
+        await whenBuilt(ids);
+        const at = headNow();
+        const title = kind === "pattern" ? "Pattern" : "Mirror";
+        const session = openTool(at, ids, title, kind);
+        // A body is looked at in Perspective (a sketch's view filling the area gives way).
+        if (maximized !== null && maximized !== 1) { setMaximized(1); rebuild(); frameAll(); }
+        const one = ids.length === 1 && isFeature(byId(ids[0])) ? ids[0] : null;
+        const pressed = (sel) => document.querySelector(`${sel}[aria-pressed="true"]`);
+        session.solid = {
+            kind, sources: ids.slice(), feature: one, objects: "bodies",
+            type: pressed("[data-solid-type]")?.dataset.solidType ?? "circular",
+            axis: pressed("[data-solid-axis]")?.dataset.solidAxis ?? "z",
+            plane: pressed("[data-solid-plane]")?.dataset.solidPlane ?? "right", planeLabel: "",
+            path: null, picking: null, made: [],
+        };
+        await runSolid(session);
+        renderDialog();
+        syncToolbar();
+    });
+}
+// A direction button pair's axis ("x", "y", "z").
+const solidDir = (k) => document.querySelector(`[data-solid-dir="${k}"][aria-pressed="true"]`)?.dataset.axis ?? (k === 1 ? "x" : "y");
+// The command the session's dialog stands for, its ids taken from `nextId`: the item, and for
+// bodies one instance per (placement >= 1, source) at most -- the kernel's count decides how
+// many the command keeps.
+function solidCommand(s) {
+    const id = nextId;
+    const ids = (k) => Array.from({ length: Number.isInteger(k) && k > 0 ? k : 0 }, (_, i) => id + 1 + i);
+    const S = s.sources.length;
+    if (s.kind === "mirror") {
+        if (s.objects === "feature") return { op: "mirror", id, objects: "feature", feature: s.feature, plane: s.plane };
+        const operation = solidOperationEl.value === "join" ? "join" : "new";
+        if (operation === "join") return { op: "mirror", id, objects: "bodies", sources: s.sources.slice(), plane: s.plane, operation };
+        return { op: "mirror", id, objects: "bodies", sources: s.sources.slice(), plane: s.plane, operation, instances: ids(S) };
+    }
+    const fields = { type: s.type };
+    let placements;
+    if (s.type === "circular") {
+        fields.axis = typeof s.axis === "string" ? s.axis : { origin: s.axis.origin.slice(), dir: s.axis.dir.slice() };
+        fields.count = Number(solidCountEl.value);
+        fields.angle = Number(solidAngleEl.value);
+        if (solidSymmetricEl.checked) fields.symmetric = true;
+        placements = fields.symmetric ? 2 * fields.count - 1 : fields.count;
+    } else if (s.type === "rectangular") {
+        Object.assign(fields, { d1: solidDir(1), count1: Number(solidCount1El.value), spacing1: Number(solidSpacing1El.value),
+                                d2: solidDir(2), count2: Number(solidCount2El.value), spacing2: Number(solidSpacing2El.value) });
+        placements = fields.count1 * fields.count2;
+    } else {
+        fields.path = s.path;
+        fields.count = Number(solidCountEl.value);
+        if (solidSpacingEl.value !== "") fields.spacing = Number(solidSpacingEl.value);
+        fields.orient = solidOrientEl.value;
+        placements = fields.count;
+    }
+    if (s.objects === "feature") return { op: "pattern_feature", id, feature: s.feature, ...fields };
+    return { op: "pattern", id, sources: s.sources.slice(), ...fields, instances: ids((placements - 1) * S) };
+}
+// One run of the session's command: what it made selected. A refusal (a count of 1, no path
+// yet) says why and leaves the bodies as they were.
+async function runSolid(session) {
+    const s = session.solid;
+    const cmd = solidCommand(s);
+    const ok = s.type === "along" && s.kind === "pattern" && s.path === null ? false : await run(cmd);
+    s.made = ok ? [cmd.id, ...(cmd.instances ?? [])].filter((id) => byId(id)) : [];
+    s.doneAt = head;
+    session.ids = s.made.slice();
+    keepView = true;
+    try { setSelection(s.made.length ? s.made : s.sources.filter((id) => byId(id))); } finally { keepView = false; }
+    if (tool !== session) return;   // closed by OK while this ran: nothing left to say
+    const what = s.kind === "pattern" ? "the copies follow the numbers" : "the mirror follows the plane";
+    s.hint = s.type === "along" && s.kind === "pattern" && s.path === null ? "pick the path: a curve to copy along · Esc cancels"
+        : `${what} · OK or Enter keeps ${s.made.length ? "them" : "nothing"} · Esc cancels`;
+    if (!ok && !(s.type === "along" && s.kind === "pattern" && s.path === null)) s.hint = `${statusEl.textContent} · ${s.hint}`;
+    hintEl.textContent = s.picking ? SOLID_PICK_HINTS[s.picking] : s.hint;
+}
+// The session run again from where it opened (`rerunSession`).
+const rerunSolid = () => rerunSession("solid", runSolid);
+// The dialog's readouts.
+function renderSolid(s) {
+    // The note under the rows (and the status line): what a pick wants, or what the run did.
+    hintEl.textContent = s.picking ? SOLID_PICK_HINTS[s.picking] : s.hint ?? "";
+    const names = (s.objects === "feature" ? [s.feature] : s.sources).map((id) => byId(id)?.name ?? `#${id}`);
+    const made = s.made.filter((id) => byId(id)?.kind === "instance").length;
+    document.getElementById("solid-picks-label").textContent = s.kind === "pattern" ? "copying" : "mirroring";
+    document.getElementById("solid-picks").textContent = `${names.join(", ")}${made ? ` · ${made} ${made === 1 ? "body" : "bodies"}` : ""}`;
+    for (const b of document.querySelectorAll("[data-solid-objects]")) {
+        b.setAttribute("aria-pressed", String(b.dataset.solidObjects === s.objects));
+        b.disabled = b.dataset.solidObjects === "feature" && s.feature === null;
+    }
+    for (const b of document.querySelectorAll("[data-solid-type]")) b.setAttribute("aria-pressed", String(b.dataset.solidType === s.type));
+    for (const b of document.querySelectorAll("[data-solid-axis]")) b.setAttribute("aria-pressed", String(b.dataset.solidAxis === s.axis));
+    for (const b of document.querySelectorAll("[data-solid-plane]")) b.setAttribute("aria-pressed", String(b.dataset.solidPlane === s.plane));
+    document.getElementById("solid-axis").textContent = typeof s.axis === "object" ? s.axis.label : "";
+    document.getElementById("solid-plane").textContent = Object.hasOwn(PLANES, s.plane) ? "" : s.planeLabel;
+    document.getElementById("solid-path").textContent = s.path === null ? "" : byId(s.path)?.name ?? `#${s.path}`;
+    solidAxisPickEl.setAttribute("aria-pressed", String(s.picking === "axis"));
+    solidPlanePickEl.setAttribute("aria-pressed", String(s.picking === "plane"));
+    solidPathPickEl.setAttribute("aria-pressed", String(s.picking === "path"));
+}
+// A change of the dialog's: `f` changes the session, then it runs again.
+function solidChange(f) {
+    const s = tool?.solid;
+    if (!s) return;
+    if (f(s) === false) return;
+    renderDialog();
+    rerunSolid();
+}
+for (const b of document.querySelectorAll("[data-solid-objects]")) b.addEventListener("click", () => solidChange((s) => {
+    if (s.objects === b.dataset.solidObjects || (b.dataset.solidObjects === "feature" && s.feature === null)) return false;
+    s.objects = b.dataset.solidObjects;
+}));
+for (const b of document.querySelectorAll("[data-solid-type]")) b.addEventListener("click", () => solidChange((s) => {
+    if (s.type === b.dataset.solidType) return false;
+    s.type = b.dataset.solidType;
+    if (s.type === "along" && s.path === null) armSolidPick(s, "path");
+}));
+for (const b of document.querySelectorAll("[data-solid-axis]")) b.addEventListener("click", () => solidChange((s) => { s.picking = null; s.axis = b.dataset.solidAxis; }));
+for (const b of document.querySelectorAll("[data-solid-plane]")) b.addEventListener("click", () => solidChange((s) => { s.picking = null; s.plane = b.dataset.solidPlane; s.planeLabel = ""; }));
+for (const b of document.querySelectorAll("[data-solid-dir]")) {
+    b.addEventListener("click", () => {
+        for (const o of document.querySelectorAll(`[data-solid-dir="${b.dataset.solidDir}"]`)) o.setAttribute("aria-pressed", String(o === b));
+        rerunSolid();
+    });
+}
+for (const el of [solidCountEl, solidAngleEl, solidCount1El, solidSpacing1El, solidCount2El, solidSpacing2El, solidSpacingEl]) el.addEventListener("input", () => rerunSolid());
+for (const el of [solidSymmetricEl, solidOrientEl, solidOperationEl]) el.addEventListener("change", () => rerunSolid());
+// A pick armed (or put down, pressed again): the next click in a view (or the list) is it.
+function armSolidPick(s, what) {
+    s.picking = s.picking === what ? null : what;
+    overlay.style.cursor = s.picking ? "crosshair" : "default";
+    if (s.picking) hintEl.textContent = SOLID_PICK_HINTS[s.picking];
+}
+for (const [el, what] of [[solidAxisPickEl, "axis"], [solidPlanePickEl, "plane"], [solidPathPickEl, "path"]]) {
+    el.addEventListener("click", () => { const s = tool?.solid; if (!s) return; armSolidPick(s, what); renderDialog(); });
+}
+// What a pick took: the session changed and run again, the pick put down.
+function solidPicked(s, f) {
+    s.picking = null;
+    overlay.style.cursor = "default";
+    f(s);
+    renderDialog();
+    rerunSolid();
+}
+// A click while a pick is armed: a curve under it first (a sketch line's axis, a sketch's
+// plane, a path), else a body's face (its plane, or the straight edge nearest the click).
+function pickSolidAt(i, px) {
+    const s = tool.solid, what = s.picking;
+    const hitCurve = pickCurve(i, px);
+    if (hitCurve) { takeSolidCurve(hitCurve); return; }
+    if (what === "path") { say("pattern: click a curve to copy along", true); return; }
+    pickThen(i, px, undefined, (hit) => {
+        if (tool?.solid !== s || s.picking !== what) return;
+        if (!hit) { say(what === "axis" ? "pattern: click a sketch line or a straight edge of a body" : "mirror: click a flat face or a sketch", true); return; }
+        if (s.made.includes(hit.body.id)) { say(`${s.kind}: click a body that stood before the ${s.kind} -- not one of its copies`, true); return; }
+        if (what === "plane") {
+            if (!faceFrame(hit.body, hit.index)) { say(`mirror: face ${hit.index + 1} of ${hit.body.name} is not flat`, true); return; }
+            solidPicked(s, () => { s.plane = facePlane(hit.body.id, hit.index); s.planeLabel = `${hit.body.name} · face ${hit.index + 1}`; });
+            return;
+        }
+        const k = nearestEdge(hit.body, i, px, hit.index);
+        const edge = k === null ? null : parseEdges(hit.body.gpu.edges)[k];
+        const axis = edge ? straightAxis(edge.segments) : null;
+        if (!axis) { say(k === null ? "pattern: no edge there -- click nearer one" : `pattern: edge ${k + 1} of ${hit.body.name} is not straight`, true); return; }
+        solidPicked(s, () => { s.axis = { ...axis, label: `${hit.body.name} · edge ${k + 1}` }; });
+    });
+}
+// A straight edge's axis -- `{ origin, dir }` from its first point to its last -- or null
+// where a point of it is off that line.
+function straightAxis(segments) {
+    if (!segments.length) return null;
+    const a = segments[0][0], b = segments[segments.length - 1][1];
+    const dir = V.sub(b, a), len = Math.hypot(...dir);
+    if (!(len > 1e-9)) return null;
+    const u = V.mul(dir, 1 / len);
+    for (const seg of segments) for (const p of seg) {
+        const d = V.sub(p, a);
+        if (Math.hypot(...V.sub(d, V.mul(u, V.dot(d, u)))) > 1e-6 * Math.max(1, len)) return null;
+    }
+    return { origin: a.slice(), dir };
+}
+// A curve taken by the armed pick (clicked in a view or its row in the list).
+function takeSolidCurve(c) {
+    const s = tool?.solid;
+    if (!s?.picking) return;
+    if (s.picking === "path") { solidPicked(s, () => { s.path = c.id; }); return; }
+    if (s.picking === "plane") {
+        const sk = typeof c.plane === "number" ? byIdAs(c.plane, isSketch) : null;
+        solidPicked(s, () => { s.plane = sk ? sk.id : c.plane; s.planeLabel = sk ? sk.name : ""; });
+        return;
+    }
+    if (c.kind !== "line") { say(`pattern: ${c.name} is no line -- click a sketch line or a straight edge`, true); return; }
+    const a = embed3(c.plane, [c.shape.x0, c.shape.y0]), b = embed3(c.plane, [c.shape.x1, c.shape.y1]);
+    if (!(Math.hypot(...V.sub(b, a)) > 1e-9)) { say(`pattern: ${c.name} has no length`, true); return; }
+    solidPicked(s, () => { s.axis = { origin: a, dir: V.sub(b, a), label: c.name }; });
+}
+// A row of the list clicked while a pick is armed: a sketch is a plane, a curve as clicked.
+function takeSolidRow(id) {
+    const s = tool.solid, k = byId(id);
+    if (!k) return;
+    if (isSketch(k) && s.picking === "plane") { solidPicked(s, () => { s.plane = k.id; s.planeLabel = k.name; }); return; }
+    if (isCurve(k)) { takeSolidCurve(k); return; }
+    say(SOLID_PICK_HINTS[s.picking], true);
+}
+solidPatternEl.addEventListener("click", () => pressSolid("pattern"));
+solidMirrorEl.addEventListener("click", () => pressSolid("mirror"));
 
 // The constraint tools, the ribbon's "constrain" group. A tool picks spots of ONE sketch's
 // curves -- a point (an end, a corner, a vertex, a centre) within `SNAP_PX`, else the
@@ -8088,6 +8401,16 @@ function onWorkerMessage({ data }) {
         return;
     }
     if (data.kind === "progress") { progress = { ...data, name: byId(data.id)?.name ?? data.node ?? "" }; renderProgress(); return; }
+    if (data.kind === "group") {
+        // A body pattern's group status (its head a list of bodies, no body): failed or
+        // blocked shows on its row and its timeline chip.
+        const g = byIdAs(data.id, isPattern);
+        if (g) {
+            g.error = data.state === "ok" ? null : data.state === "blocked" ? `blocked${data.by ? ` by ${byId(itemOfNode(data.by))?.name ?? data.by}` : ""}${data.error && data.error !== "blocked" ? `: ${data.error}` : ""}` : data.error ?? data.state;
+            renderList(); renderTimeline(); renderDialog();
+        }
+        return;
+    }
     if (data.kind === "forgotten") {
         // Bodies that left the worker's replica: their tables go, and only now.
         for (const id of data.ids) {
@@ -8393,8 +8716,10 @@ function tagText(c) {
         if (c.kind === "revolution") bits.push(`${c.angle}°`);
         if (c.kind === "sweep") bits.push(`along ${byId(c.path)?.name ?? "?"}`);
         if (c.kind === "loft") bits.push(`${c.via?.length ? `through ${c.via.map((v) => v.name).join(", ")} ` : ""}to ${c.to.name}`);
-        if ((c.source && !c.loops) || c.parts?.some((p) => typeof p === "object")) bits.push("frozen");   // a version-1 body: its sources baked, following nothing
+        if ((c.source && !c.loops && c.kind !== "instance") || c.parts?.some((p) => typeof p === "object")) bits.push("frozen");   // an instance's `source` is the body it copies   // a version-1 body: its sources baked, following nothing
         if (c.kind === "join") bits.push(`${c.parts.length} parts`);
+        if (c.kind === "mirror") bits.push(`across ${planeInfo(c.across)?.name ?? c.across}`);
+        if (c.kind === "pattern_feature") bits.push(c.type === "mirror" ? `across ${planeInfo(c.across)?.name ?? c.across}` : `${c.type ?? ""}`);
         if (c.kind === "cut" || c.kind === "intersect") bits.push(`${c.parts.length} parts`);
         if (c.kind === "shell") bits.push(`t ${c.thickness}${c.open.length ? ` · ${c.open.length} open` : ""}`);
         if (c.kind === "thicken") bits.push(`t ${c.thickness}`);
@@ -8512,6 +8837,13 @@ function syncSolidButtons() {
         el.setAttribute("aria-pressed", String(sketchPick?.kind === op));
     }
     trimEl.setAttribute("aria-pressed", String(!!trimMode || sketchPick?.kind === "trim"));
+    // Pattern and mirror: on one or more bodies (a cut or a join for its feature), or while
+    // their session is open, so the button can be its OK.
+    const bodies = selectedCurves().filter(isBody).length;
+    for (const [el, kind] of [[solidPatternEl, "pattern"], [solidMirrorEl, "mirror"]]) {
+        el.disabled = tool?.solid?.kind !== kind && bodies < 1;
+        el.setAttribute("aria-pressed", String(tool?.solid?.kind === kind));
+    }
 }
 // The sketch's modify tools work on what is selected: each is enabled while the
 // selection holds something it takes (a closable curve, a polycurve, a mergeable

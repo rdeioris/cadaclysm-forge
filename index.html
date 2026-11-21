@@ -402,6 +402,8 @@
                 <button id="chamfer" aria-pressed="false" disabled title="chamfer a solid's edges (H)"><svg class="g"><use href="#i-chamfer"/></svg>chamfer</button>
                 <button id="remove" aria-pressed="false" disabled title="take a fillet or a chamfer off the selected solid -- then click its face"><svg class="g"><use href="#i-fillet"/></svg>remove</button>
                 <button id="trim" aria-pressed="false" disabled title="trim a sheet by a solid or a curve -- select either, click the other, then pick the pieces (T)"><svg class="g"><use href="#i-trim"/></svg>trim</button>
+                <button id="pattern" aria-pressed="false" disabled title="copy the selected bodies (or the selected cut's or join's feature) round an axis, along a grid or along a path -- the count and the spacing in the dialog"><svg class="g"><use href="#i-pattern"/></svg>pattern</button>
+                <button id="mirror" aria-pressed="false" disabled title="mirror the selected bodies (or the selected cut's or join's feature) across a plane: Top, Front, Right, a flat face or a sketch -- as a new body or joined"><svg class="g"><use href="#i-mirror"/></svg>mirror</button>
             </div>
             <span>modify</span>
         </div>
@@ -491,7 +493,7 @@
                 </div>
                 <label class="row" data-for="pattern-circular">count <input type="number" id="pattern-count" value="6" min="2" max="500" step="1"></label>
                 <label class="row" data-for="pattern-circular">angle° <input type="number" id="pattern-angle" value="360" min="1" max="360" step="1"></label>
-                <div class="row" data-for="pattern-circular">centre <span style="display:flex;gap:6px;align-items:center"><span id="pattern-centre">origin</span><button id="pattern-centre-origin" title="the sketch's origin">origin</button><button id="pattern-centre-pick" aria-pressed="false" title="then click a point of the sketch: an end, a corner, a vertex or a centre">pick</button></span></div>
+                <div class="row" data-for="pattern-circular">centre <span style="display:flex;gap:6px;align-items:center"><button id="pattern-centre-origin" aria-pressed="true" title="the sketch's origin">origin</button><button id="pattern-centre-pick" aria-pressed="false" title="then click a point of the sketch: an end, a corner, a vertex or a centre">pick</button><span id="pattern-centre"></span></span></div>
                 <div class="row" data-for="pattern-rectangular">direction 1 <span style="display:flex;gap:6px;align-items:center"><button data-pattern-dir="1" data-axis="x" aria-pressed="true">x</button><button data-pattern-dir="1" data-axis="y" aria-pressed="false">y</button></span></div>
                 <label class="row" data-for="pattern-rectangular">count 1 <input type="number" id="pattern-count1" value="3" min="1" max="500" step="1"></label>
                 <label class="row" data-for="pattern-rectangular">spacing 1 <input type="number" id="pattern-spacing1" value="10" min="-500" max="500" step="1"></label>
@@ -500,6 +502,31 @@
                 <label class="row" data-for="pattern-rectangular">spacing 2 <input type="number" id="pattern-spacing2" value="10" min="-500" max="500" step="1"></label>
                 <div class="row" data-for="sketch-pattern sketch-mirror"><span id="copies-label">copying</span><span id="copies-picks"></span></div>
                 <div class="row" data-for="sketch-mirror">across <span id="mirror-line"></span></div>
+                <div class="row buttons" data-for="solid-pattern solid-mirror">
+                    <button data-solid-objects="bodies" aria-pressed="true" title="copies of the selected bodies, each a body of its own">bodies</button>
+                    <button data-solid-objects="feature" aria-pressed="false" title="the selected cut's or join's tool placed again on its target">feature</button>
+                </div>
+                <div class="row buttons three" data-for="solid-pattern">
+                    <button data-solid-type="circular" aria-pressed="true" title="copies round an axis">circular</button>
+                    <button data-solid-type="rectangular" aria-pressed="false" title="copies along one or two directions">rectangular</button>
+                    <button data-solid-type="along" aria-pressed="false" title="copies along a curve">along path</button>
+                </div>
+                <div class="row" data-for="solid-circular">axis <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button data-solid-axis="x" aria-pressed="false">X</button><button data-solid-axis="y" aria-pressed="false">Y</button><button data-solid-axis="z" aria-pressed="true">Z</button><button id="solid-axis-pick" aria-pressed="false" title="then click a sketch line or a straight edge of a body">pick</button><span id="solid-axis"></span></span></div>
+                <label class="row" data-for="solid-circular solid-along">count <input type="number" id="solid-count" value="6" min="2" max="500" step="1"></label>
+                <label class="row" data-for="solid-circular">angle° <input type="number" id="solid-angle" value="360" min="1" max="360" step="1"></label>
+                <label class="row" data-for="solid-circular">symmetric <input type="checkbox" id="solid-symmetric" title="the angle spread to both sides of the source"></label>
+                <div class="row" data-for="solid-rectangular">direction 1 <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button data-solid-dir="1" data-axis="x" aria-pressed="true">X</button><button data-solid-dir="1" data-axis="y" aria-pressed="false">Y</button><button data-solid-dir="1" data-axis="z" aria-pressed="false">Z</button></span></div>
+                <label class="row" data-for="solid-rectangular">count 1 <input type="number" id="solid-count1" value="3" min="1" max="500" step="1"></label>
+                <label class="row" data-for="solid-rectangular">spacing 1 <input type="number" id="solid-spacing1" value="30" min="-5000" max="5000" step="1"></label>
+                <div class="row" data-for="solid-rectangular">direction 2 <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button data-solid-dir="2" data-axis="x" aria-pressed="false">X</button><button data-solid-dir="2" data-axis="y" aria-pressed="true">Y</button><button data-solid-dir="2" data-axis="z" aria-pressed="false">Z</button></span></div>
+                <label class="row" data-for="solid-rectangular">count 2 <input type="number" id="solid-count2" value="1" min="1" max="500" step="1"></label>
+                <label class="row" data-for="solid-rectangular">spacing 2 <input type="number" id="solid-spacing2" value="30" min="-5000" max="5000" step="1"></label>
+                <div class="row" data-for="solid-along">path <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button id="solid-path-pick" aria-pressed="false" title="then click the curve to copy along">pick</button><span id="solid-path"></span></span></div>
+                <label class="row" data-for="solid-along">spacing <input type="number" id="solid-spacing" placeholder="the whole path" min="0" max="5000" step="1"></label>
+                <label class="row" data-for="solid-along">orient <select id="solid-orient"><option value="fixed">fixed</option><option value="path">along the path</option></select></label>
+                <div class="row" data-for="solid-mirror">plane <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button data-solid-plane="top" aria-pressed="false">Top</button><button data-solid-plane="front" aria-pressed="false">Front</button><button data-solid-plane="right" aria-pressed="true">Right</button><button id="solid-plane-pick" aria-pressed="false" title="then click a flat face of a body, or a sketch (a curve of it, or its row)">pick</button><span id="solid-plane"></span></span></div>
+                <label class="row" data-for="solid-join-op">operation <select id="solid-operation"><option value="new">new body</option><option value="join">join</option></select></label>
+                <div class="row" data-for="solid-pattern solid-mirror"><span id="solid-picks-label">copying</span><span id="solid-picks"></span></div>
                 <label class="row" data-for="operation">operation <select id="operation"><option value="new">new body</option><option value="join">join</option><option value="cut">cut</option><option value="intersect">intersect</option></select></label>
                 <span id="sketch-tools" data-for="sketch" style="display: contents">
                     <label class="row">plane <select id="mode"><option value="offset">offset</option><option value="angle">at angle</option><option value="path">along path</option><option value="face">on face</option><option value="mid">midplane</option><option value="points">3 points</option></select></label>

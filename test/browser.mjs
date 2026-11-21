@@ -17,6 +17,7 @@
 //     node test/browser.mjs --headed                # watch it
 //     node test/browser.mjs --no-snap               # the examples alone, no snap check
 //     node test/browser.mjs --no-sketch-tools       # no sketch pattern / mirror check
+//     node test/browser.mjs --no-solid-tools        # no solid pattern / mirror check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
 import { spawn } from "node:child_process";
@@ -496,6 +497,142 @@ async function checkSketchCopies(cdp, base, { webgl2, out }) {
     }
 }
 
+// Solid › pattern and Solid › mirror on a box: the session previews 5 instance items and the
+// outline's group row, Esc leaves none and no commit; OK keeps them in one commit. Mirror
+// across Right as a new body: 1 instance. The STEP of every body: one MANIFOLD_SOLID_BREP per
+// solid, the instances each their own.
+async function checkSolidCopies(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    const settled = () => evaluate("window.__forgeTest.settled()");
+    const key = async (k, code, vk) => {
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk });
+    };
+    const press = async (id) => { await evaluate(`document.getElementById(${JSON.stringify(id)}).click()`); await sleep(100); await settled(); };
+    const breps = async () => {
+        await evaluate("window.__forgeTest.select([])");
+        const got = await evaluate(`window.__forgeTest.exportBase64("step")`);
+        return got ? (Buffer.from(got.base64, "base64").toString("utf8").match(/MANIFOLD_SOLID_BREP/g) ?? []).length : 0;
+    };
+    try {
+        await settled();
+        // The example's own bodies hidden: the copies alone in the views (and the STEP).
+        const own = (await evaluate("window.__forgeTest.bodies()")).map((b) => b.id);
+        await evaluate(`window.__forgeTest.run({ op: "edit", items: ${JSON.stringify(own)}.map((id) => ({ id, hidden: true })) })`);
+        await settled();
+        const before = await breps();
+        const B = await evaluate("window.__forgeTest.nextId()");
+        await evaluate(`window.__forgeTest.run({ op: "primitive", id: ${B}, kind: "box", plane: "top", dims: [6, 6, 6] })`);
+        await evaluate(`window.__forgeTest.run({ op: "set", id: ${B}, place: { offset: [40, 0, 0], turn: [0, 0, 0] } })`);
+        await settled();
+        const items = () => evaluate("window.__forgeTest.items()");
+        const made = async () => (await items()).filter((c) => c.kind === "instance" || c.kind === "pattern");
+        const head0 = await evaluate("window.__forgeTest.headCount()");
+
+        // Pattern, then Esc: 5 instances and the group row previewed, rolled back whole.
+        await evaluate(`window.__forgeTest.select([${B}])`);
+        if (await evaluate(`document.getElementById("pattern").disabled`)) throw new Error("Solid › pattern is off with a box selected");
+        await press("pattern");
+        let now = await made();
+        const insts = now.filter((c) => c.kind === "instance"), group = now.find((c) => c.kind === "pattern");
+        if (insts.length !== 5 || !group) throw new Error(`pattern previews ${insts.length} instances and ${group ? "a" : "no"} group, not 5 and one`);
+        const rowText = await evaluate(`document.querySelector('#curves li[data-id="${group.id}"] .name')?.textContent ?? null`);
+        if (!rowText || !rowText.includes("6 × 1 body")) throw new Error(`the group row reads ${JSON.stringify(rowText)}`);
+        const instRows = await evaluate(`${JSON.stringify(insts.map((c) => c.id))}.filter((id) => document.querySelector('#curves li[data-id="' + id + '"]')).length`);
+        if (instRows !== 5) throw new Error(`${instRows} instance rows under the group, not 5`);
+        await key("Escape", "Escape", 27);
+        await sleep(100); await settled();
+        if ((await made()).length) throw new Error(`Esc leaves ${(await made()).length} pattern items`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0) throw new Error("Esc left a commit behind");
+
+        // Pattern, then OK: one commit, the instances built, each a box.
+        await evaluate(`window.__forgeTest.select([${B}])`);
+        await press("pattern");
+        if ((await made()).filter((c) => c.kind === "instance").length !== 5) throw new Error("the second pattern does not preview 5 instances");
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            await key("f", "KeyF", 70);
+            await frame(); await sleep(500); await frame();
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `solid-pattern${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        }
+        await press("dialog-ok");
+        now = await made();
+        if (now.filter((c) => c.kind === "instance").length !== 5) throw new Error(`OK keeps ${now.filter((c) => c.kind === "instance").length} instances, not 5`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 1) throw new Error("the pattern is not one commit");
+        const bodies = await evaluate("window.__forgeTest.bodies()");
+        const bad = bodies.filter((b) => b.kind === "instance" && (b.error !== null || b.faces !== 6));
+        if (bad.length) throw new Error(`instances not built as boxes: ${JSON.stringify(bad)}`);
+
+        // Mirror across Right as a new body: one instance, named "<box> mirror".
+        const head1 = await evaluate("window.__forgeTest.headCount()");
+        await evaluate(`window.__forgeTest.select([${B}])`);
+        await press("mirror");
+        await press("dialog-ok");
+        const mirrored = (await items()).filter((c) => c.kind === "instance" && / mirror$/.test(c.name));
+        if (mirrored.length !== 1) throw new Error(`mirror makes ${mirrored.length} instances, not 1`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head1 + 1) throw new Error("the mirror is not one commit");
+        const mb = (await evaluate("window.__forgeTest.bodies()")).find((b) => b.id === mirrored[0].id);
+        if (!mb || mb.error !== null || !(Math.abs(mb.bounds.centre[0] + 40) < 1e-3)) throw new Error(`the mirror is not at x -40: ${JSON.stringify(mb)}`);
+
+        // The STEP of all: the box, its 5 instances and its mirror each a solid of their own.
+        const after = await breps();
+        if (after !== before + 7) throw new Error(`the STEP has ${after} solids, not ${before} + 7`);
+
+        // The group's eye hides the group and every instance.
+        const kept = (await items()).find((c) => c.kind === "pattern" && c.type === "circular");
+        await evaluate(`document.querySelector('#curves li[data-id="${kept.id}"] .eye').click()`);
+        await sleep(100); await settled();
+        const shown = (await items()).filter((c) => c.kind === "instance" && c.pattern === kept.id && !c.hidden);
+        if (shown.length) throw new Error(`the group's eye leaves ${shown.length} instances shown`);
+
+        // Mirror joined across Front (the box straddles it): one body, consuming the box --
+        // the command asks the worker for the box's bounds and kind.
+        await evaluate(`window.__forgeTest.select([${B}])`);
+        await press("mirror");
+        await evaluate(`(() => { document.querySelector('[data-solid-plane="front"]').click(); })()`);
+        await sleep(100); await settled();
+        await evaluate(`(() => { const el = document.getElementById("solid-operation"); el.value = "join"; el.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+        await sleep(100); await settled();
+        await press("dialog-ok");
+        const joined = (await items()).filter((c) => c.kind === "mirror");
+        if (joined.length !== 1 || joined[0].across !== "front" || joined[0].parts?.[0] !== B) throw new Error(`mirror join gives ${JSON.stringify(joined)}`);
+        const jb = (await evaluate("window.__forgeTest.bodies()")).find((b) => b.id === joined[0].id);
+        if (!jb || jb.error !== null || !jb.closure?.closed) throw new Error(`the mirror join did not build a closed solid: ${JSON.stringify(jb)}`);
+
+        // A feature pattern: a plate's off-centre hole, 6 about Z -- the cut selected, then
+        // "feature" in the dialog; the item takes the cut's place, one body with 4 holes.
+        const P = await evaluate("window.__forgeTest.nextId()");
+        for (const c of [{ op: "primitive", id: P, kind: "box", plane: "top", dims: [40, 40, 4] },
+            { op: "primitive", id: P + 1, kind: "cylinder", plane: "top", dims: [2, 10] }, { op: "set", id: P + 1, place: { offset: [10, 0, -3], turn: [0, 0, 0] } },
+            { op: "cut", id: P + 2, parts: [P, P + 1] }]) await evaluate(`window.__forgeTest.run(${JSON.stringify(c)})`);
+        await settled();
+        await evaluate(`window.__forgeTest.select([${P + 2}])`);
+        await press("pattern");
+        await evaluate(`document.querySelector('[data-solid-objects="feature"]').click()`);
+        await sleep(100); await settled();
+        await press("dialog-ok");
+        const fp = (await items()).filter((c) => c.kind === "pattern_feature");
+        if (fp.length !== 1 || fp[0].parts?.[0] !== P + 2) throw new Error(`the feature pattern gives ${JSON.stringify(fp)}`);
+        const fb = (await evaluate("window.__forgeTest.figures()")).find((b) => b.id === fp[0].id);
+        const want = 40 * 40 * 4 - 6 * Math.PI * 2 * 2 * 4;
+        if (!fb || fb.error !== null || !(Math.abs(fb.volume - want) < 1e-3 * want)) throw new Error(`the feature pattern is not the plate less 6 holes (${want.toFixed(3)}): ${JSON.stringify(fb)}`);
+        await sleep(300);
+        if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
+        console.log(`ok - solid tools: pattern previews 5 instances and the group row, Esc rolls back, OK keeps them in one commit; mirror makes 1; the STEP has ${after} solids (${before} + 7); the group's eye hides its instances; mirror join builds one solid; a feature pattern cuts 6 holes`);
+    } catch (e) {
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+            if (shot) writeFileSync(join(out, `solid-tools${webgl2 ? "-webgl2" : ""}-failed.png`), Buffer.from(shot.data, "base64"));
+        }
+        throw e;
+    } finally {
+        await close();
+    }
+}
+
 async function main() {
     if (!existsSync(join(root, "pkg", "cadaclysm_bg.wasm"))) throw new Error("no pkg/: run `npm run setup` first");
     const all = readdirSync(join(root, "examples")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
@@ -537,6 +674,14 @@ async function main() {
             } catch (e) {
                 failed++;
                 console.error(`not ok - sketch tools: ${e.message}`);
+            }
+        }
+        if (!failed && !flag("--no-solid-tools")) {
+            try {
+                await checkSolidCopies(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - solid tools: ${e.message}`);
             }
         }
     } finally {
