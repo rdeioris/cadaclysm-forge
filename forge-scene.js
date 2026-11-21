@@ -155,7 +155,7 @@ export const ISOCURVE_DENSITY = 1;
 // app's held body (`held`) among them.
 const BODY_KINDS = new Set(["surface", "extrusion", "revolution", "solid", "sweep", "loft",
     "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split",
-    "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "held", "instance"]);
+    "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "held", "instance", "pattern_feature", "mirror"]);
 export const isBodyKind = (kind) => BODY_KINDS.has(kind);
 // The item a node belongs to: `i<n>` and its helpers `i<n>_<role>` are item n's.
 export const itemOfNode = (node) => { const m = /^i(\d+)(?:_|$)/.exec(node ?? ""); return m ? Number(m[1]) : null; };

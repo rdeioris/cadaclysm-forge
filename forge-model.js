@@ -125,7 +125,7 @@ const PAGE_CURVE_KINDS = Object.fromEntries(Object.entries(CURVE_KINDS).map(([k,
 /// The quick solids.
 export const QUICK_KINDS = ["box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil"];
 export const isQuickKind = (kind) => QUICK_KINDS.includes(kind);
-const MADE = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split", "held", "instance"];
+const MADE = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split", "held", "instance", "pattern_feature", "mirror"];
 /// A body made of other bodies, or a quick solid, a pipe, a split, a held body.
 export const isMadeKind = (kind) => MADE.includes(kind) || isQuickKind(kind);
 const DRAWN = ["surface", "extrusion", "revolution", "solid", "sweep", "loft"];

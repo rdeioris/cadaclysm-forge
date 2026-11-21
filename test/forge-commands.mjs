@@ -9,7 +9,7 @@
 import assert from "node:assert";
 import { loadWasm } from "./package.mjs";
 import { Model, UNITS } from "../forge-model.js";
-import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes, pageItems } from "../forge-commands.js";
+import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes, pageItems, touchesPlane } from "../forge-commands.js";
 import { buildModel, freeModel, solveModel, writeBack, addConstraint, removeConstraint, dragModel, setValue } from "../forge-constraints.js";
 import { isBody } from "../forge-model.js";
 import { readFileSync } from "node:fs";
@@ -1282,6 +1282,130 @@ const BOX_AT = (id, s, x, y) => [{ op: "primitive", id, kind: "box", plane: "top
     t.run({ op: "delete", ids: [1] });
     assert.deepStrictEqual(t.model.items().map((i) => [i.id, i.kind]), [[2, "pattern"], [3, "instance"], [4, "instance"]]);
     assert.deepStrictEqual([t.statusOf("i2").state, t.statusOf("i3").state, t.statusOf("i3").by], ["error", "blocked", "i2"]);
+    t.free();
+}
+
+// A plate with an off-centre hole cut (a cylinder at x 10 through a 40 x 40 x 4 plate).
+const PLATE = [
+    { op: "primitive", id: 1, kind: "box", plane: "top", dims: [40, 40, 4] },
+    { op: "primitive", id: 2, kind: "cylinder", plane: "top", dims: [2, 10] },
+    { op: "set", id: 2, place: { offset: [10, 0, -3], turn: [0, 0, 0] } },
+    { op: "cut", id: 3, parts: [1, 2] },
+];
+const HOLE = Math.PI * 2 * 2 * 4;
+
+// pattern_feature: the cut's tool placed again on the cut's target (its target and tool,
+// not its result), one item at the chain's end that consumes the cut; 4 about Z: the plate
+// less 4 holes. A change of the cut's parts reaches it (a copy, see Copies). A save and a
+// load give the same page items.
+{
+    const t = fresh();
+    for (const c of PLATE) t.run(c);
+    t.run({ op: "pattern_feature", id: 4, feature: 3, type: "circular", axis: "z", count: 4 });
+    assert.deepStrictEqual(t.node("i4_at"), { id: "i4_at", kind: "placements.circular", axis: "xy", count: 4 });
+    const v = t.node("i4");
+    assert.deepStrictEqual([v.kind, v.solid, v.tool, v.op, v.placements], ["solid.pattern_feature", "i1", "i2", "cut", "i4_at"]);
+    const it = t.item(4);
+    assert.deepStrictEqual([it.kind, it.name, it.parts, it.type, it.axis, it.count, it.hidden], ["pattern_feature", "Pattern 1", [3], "circular", "z", 4, false]);
+    assert.ok(t.item(3).hidden, "the cut is consumed");
+    assert.strictEqual(t.statusOf("i4").state, "ok", JSON.stringify(t.statusOf("i4")));
+    assert.ok(close(solidOf(t.doc, "i4").volume, 6400 - 4 * HOLE, 1e-6), String(solidOf(t.doc, "i4").volume));
+    // the cut's tool changed: the pattern reads the new one
+    t.run({ op: "primitive", id: 5, kind: "cylinder", plane: "top", dims: [3, 10] });
+    t.run({ op: "set", id: 5, place: { offset: [10, 0, -3], turn: [0, 0, 0] } });
+    t.run({ op: "set", id: 3, parts: [1, 5] });
+    assert.strictEqual(t.node("i4").tool, "i5");
+    assert.ok(close(solidNow(t, "i4").volume, 6400 - 4 * Math.PI * 9 * 4, 1e-6));
+    // the count set: one node
+    const set = t.run({ op: "set", id: 4, count: 6 }).op;
+    assert.deepStrictEqual(set.ops, [{ op: "set", id: "i4_at", fields: { count: 6 } }]);
+    const items = pageItems(t.model);
+    const again = wasm[K + "document_load"](wasm[K + "document_save"](t.doc));
+    assert.deepStrictEqual(pageItems(new Model(wasm, again)), items);
+    wasm[K + "document_free"](again);
+    t.free();
+}
+
+// mirror of a feature: pattern_feature over `placements.mirror` across Right: 2 holes, at +-x
+{
+    const t = fresh();
+    for (const c of PLATE) t.run(c);
+    t.run({ op: "mirror", id: 4, objects: "feature", feature: 3, plane: "right" });
+    assert.deepStrictEqual(t.node("i4_at"), { id: "i4_at", kind: "placements.mirror", plane: "yz" });
+    assert.deepStrictEqual([t.node("i4").kind, t.node("i4").solid, t.node("i4").tool], ["solid.pattern_feature", "i1", "i2"]);
+    assert.deepStrictEqual([t.item(4).kind, t.item(4).name, t.item(4).type, t.item(4).across], ["pattern_feature", "Mirror 1", "mirror", "right"]);
+    const got = solidNow(t, "i4");
+    assert.ok(close(got.volume, 6400 - 2 * HOLE, 1e-6), String(got.volume));
+    // the same as two holes cut by hand, at +-10
+    for (const c of [{ op: "primitive", id: 5, kind: "box", plane: "top", dims: [40, 40, 4] },
+        { op: "primitive", id: 6, kind: "cylinder", plane: "top", dims: [2, 10] }, { op: "set", id: 6, place: { offset: [10, 0, -3], turn: [0, 0, 0] } },
+        { op: "primitive", id: 7, kind: "cylinder", plane: "top", dims: [2, 10] }, { op: "set", id: 7, place: { offset: [-10, 0, -3], turn: [0, 0, 0] } },
+        { op: "cut", id: 8, parts: [5, 6] }, { op: "cut", id: 9, parts: [8, 7] }]) t.run(c);
+    const hand = solidNow(t, "i9");
+    assert.deepStrictEqual([got.faces, got.edges], [hand.faces, hand.edges]);
+    assert.ok(close(got.area, hand.area, 1e-6));
+    t.free();
+}
+
+// mirror of bodies, joined: a half touching the plane is `solid.mirror_join` (one body, twice
+// the volume, no face on the plane -- as one box of twice the length); the same half off the
+// plane is a mirrored copy and a join (two lumps in one item). The source is consumed.
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 6, 3, 0)) t.run(c);   // x 0..6: touching YZ
+    t.run({ op: "set", id: 1, dims: [6, 6, 4] });
+    t.run({ op: "mirror", id: 2, objects: "bodies", sources: [1], plane: "right", operation: "join" });
+    assert.deepStrictEqual([t.node("i2").kind, t.node("i2").solid, t.node("i2").plane, t.node("i2").snap], ["solid.mirror_join", "i1", "yz", 0.01]);
+    assert.deepStrictEqual([t.item(2).kind, t.item(2).name, t.item(2).parts, t.item(2).across, t.item(2).touch], ["mirror", "Mirror 1", [1], "right", true]);
+    assert.ok(t.item(1).hidden);
+    // KERNEL GAP (this web package): `solid.mirror_join` refuses every flat-sided half touching
+    // the plane (a box, a cylinder, an L of two boxes) in these words. Pinned so it flips when
+    // the kernel takes it; then: one solid, volume 288, 6 faces, bounds [-6, -3, 0, 6, 3, 4].
+    wasm[K + "document_evaluate"](t.doc, false);
+    assert.deepStrictEqual([t.statusOf("i2").state, t.statusOf("i2").error], ["error", "mirror_join: edge_continuity: edge 0 bounds 4 face(s), not two"]);
+    // off the plane: a copy and a join, two lumps in one item
+    for (const c of BOX_AT(3, 6, 8, 0)) t.run(c);   // x 5..11
+    t.run({ op: "mirror", id: 4, objects: "bodies", sources: [3], plane: "right", operation: "join" });
+    assert.deepStrictEqual(t.node("i4_copy"), { id: "i4_copy", kind: "solid.mirror", solid: "i3", plane: "yz" });
+    assert.deepStrictEqual([t.node("i4").kind, t.node("i4").solids], ["solid.join", ["i3", "i4_copy"]]);
+    assert.deepStrictEqual([t.item(4).touch, t.item(4).parts, t.item(4).across], [false, [3], "right"]);
+    const two = solidNow(t, "i4");
+    assert.ok(close(two.volume, 432, 1e-6) && two.faces === 12, JSON.stringify(two));
+    // the page's own word wins: the touch it gives is kept and written
+    t.run({ op: "mirror", id: 5, objects: "bodies", sources: [4], plane: "front", operation: "join", touch: false });
+    assert.deepStrictEqual([t.item(5).touch, t.node("i5").kind], [false, "solid.join"]);
+    assert.ok(touchesPlane([0, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]) && !touchesPlane([0.02, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]) && !touchesPlane([-1, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]));
+    // a corner on a slanted plane, the box on both sides of it: no touch
+    assert.ok(!touchesPlane([0, -2, 0, 2, 0, 1], [0, 0, 0], [1, 1, 0]) && touchesPlane([0, 0, 0, 2, 2, 1], [0, 0, 0], [1, 1, 0]));
+    t.free();
+}
+
+// mirror of bodies, new: a group over `placements.mirror`, one instance per source named
+// "<source> mirror", its bounds reflected; the sources stay.
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 4, 10, 5)) t.run(c);
+    t.run({ op: "mirror", id: 2, objects: "bodies", sources: [1], plane: "front", operation: "new", instances: [3] });
+    assert.deepStrictEqual(t.node("i2_at"), { id: "i2_at", kind: "placements.mirror", plane: "xz" });
+    assert.deepStrictEqual([t.item(2).kind, t.item(2).name, t.item(2).type, t.item(2).across, t.item(2).instances], ["pattern", "Mirror 1", "mirror", "front", [3]]);
+    assert.deepStrictEqual([t.item(3).kind, t.item(3).name, t.item(3).index], ["instance", "Box 1 mirror", 1]);
+    assert.ok(!t.item(1).hidden);
+    const b = solidNow(t, "i1").bounds;
+    assert.ok(close(solidNow(t, "i3").bounds, [b[0], -b[4], b[2], b[3], -b[1], b[5]], 1e-6), JSON.stringify(solidOf(t.doc, "i3").bounds));
+    t.free();
+}
+
+// pattern_feature and mirror refusals: in the command's words, the document untouched
+{
+    const t = fresh();
+    for (const c of PLATE) t.run(c);
+    t.run({ op: "fillet", id: 4, source: 1, radius: 1 });
+    refused(t, { op: "pattern_feature", id: 5, feature: 4, type: "circular", count: 3 }, /^pattern_feature: #4 is not a cut or a join/);
+    refused(t, { op: "pattern_feature", id: 5, feature: 3, type: "circular", count: 1 }, /^pattern_feature: `count` must be a whole number, 2 or more/);
+    refused(t, { op: "mirror", id: 5, objects: "bodies", sources: [1], operation: "new", instances: [6] }, /^mirror: no plane/);
+    refused(t, { op: "mirror", id: 5, objects: "feature", feature: 3, plane: "nowhere" }, /^mirror: no plane/);
+    refused(t, { op: "mirror", id: 5, objects: "feature", feature: 4, plane: "top" }, /^mirror: #4 is not a cut or a join/);
+    refused(t, { op: "mirror", id: 5, objects: "bodies", sources: [1, 2], plane: "top", operation: "join" }, /^mirror: a join mirrors one body/);
     t.free();
 }
 

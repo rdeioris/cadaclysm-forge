@@ -59,8 +59,8 @@
 // `explode` (5.3a); the made bodies `surface`, `sweep` (an extrusion or a revolution of a
 // curve), `solid`, `revolved`, `lofted`, `swept`, `primitive`, `pipe` (5.3b); the body verbs
 // `join`, `cut`, `intersect`, `shell`, `thicken`, `trim`, `face`, `prism`, `press`,
-// `rechamfer`, `remove`, `refillet`, `fillet`, `split` (5.3c); `pattern` (see Patterns);
-// `set` / `edit` of curves,
+// `rechamfer`, `remove`, `refillet`, `fillet`, `split` (5.3c); `pattern`, `pattern_feature`,
+// `mirror` (see Patterns); `set` / `edit` of curves,
 // sketches, held items and every body: a body's in-plane move and its place in the world, a
 // rename, a hide (5.3d). `state` (a version-1 file's items, whole) is refused: the page
 // sends it for no file it opens, and a forge file of before is not loaded (spec, decision 2;
@@ -189,7 +189,21 @@
 //   batch: those no longer made go, new ones take the ids its `instances` names (a set that
 //   makes more instances than the ids it has is refused). A delete of the group takes its
 //   instances along.
-// - A mirror's plane is `across` on the items (as `placements.mirror` takes it).
+// - `{ op: "pattern_feature", id, feature, ...the placement fields }`: a body item (kind
+//   `pattern_feature`, `parts: [feature]`) whose verb is `solid.pattern_feature { solid: the
+//   cut's target, tool: its tool, op: "cut" | "join", placements: "i<id>_at" }`; the feature
+//   is consumed.
+// - `{ op: "mirror", id, objects: "bodies" | "feature", sources | feature, plane, operation:
+//   "new" | "join", instances, touch? }`, `plane` "top" / "front" / "right", a sketch id or
+//   `face:<body>:<k>`. Bodies, new: a group as a pattern's, over `placements.mirror`, each
+//   instance "<source> mirror". Bodies, join: one body item (kind `mirror`, one source, which
+//   it consumes): `solid.mirror_join { snap: 0.01 }` when the source touches the plane, else
+//   `i<id>_copy` `solid.mirror` and `solid.join` of the two. `touch` is the command's when it
+//   is a boolean (the page's, off the body's bounds: `touchesPlane`), else read off the
+//   evaluated document; the item keeps it, so a write again makes the same nodes. A feature:
+//   a `pattern_feature` item over `placements.mirror`.
+// - On the items the mirror plane is `across` (a body's `plane` is its own plane).
+// - `madeTail`'s `axis` and `angle` (a revolution's) are a feature pattern's own fields.
 //
 // # Copies
 //
@@ -655,6 +669,11 @@ export class Draft {
         }
     }
 
+    /// Body item `n`'s bounds (`bounds64`: six numbers) off the evaluated document.
+    bounds(n) {
+        return this._picks(`the bounds of #${n}`).bounds(n);
+    }
+
     /// Whether this command's ops so far add, set or remove node `id` or a node it reads.
     _touches(id) {
         if (!this.ops.length) return false;
@@ -1052,7 +1071,7 @@ function profileNode(d, id, holder, frame, open, moves, pre) {
 // The body verbs: bodies made of other bodies (see the header's Picks).
 
 /// The body verbs' item kinds.
-const VERBS = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "split", "instance"];
+const VERBS = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "split", "instance", "pattern_feature", "mirror"];
 
 /// The normal of each origin plane's frame, as the kernel's `xy` / `xz` / `yz` have it.
 const ORIGIN_NORMALS = { xy: [0, 0, 1], xz: [0, -1, 0], yz: [1, 0, 0] };
@@ -1324,6 +1343,36 @@ function placementsHeld(get, n) {
     return out;
 }
 
+/// The mirror's snap (`solid.mirror_join`) and how near the plane a body's bounds must come
+/// for a mirror join to be one body (`touchesPlane`), in mm.
+const MIRROR_SNAP = 0.01;
+
+/// Whether a box (`bounds64`'s six numbers) touches the plane through `origin` square to
+/// `normal`: every corner on one side of it (within `tol`), the nearest within `tol`. A
+/// mirror join's choice: `solid.mirror_join` when it does, else a mirror and a join.
+export function touchesPlane(bounds, origin, normal, tol = MIRROR_SNAP) {
+    const len = Math.hypot(...normal);
+    if (!(len > 0) || !Array.isArray(bounds) || bounds.length !== 6) return false;
+    const ds = [];
+    for (const x of [bounds[0], bounds[3]]) for (const y of [bounds[1], bounds[4]]) for (const z of [bounds[2], bounds[5]]) {
+        ds.push(((x - origin[0]) * normal[0] + (y - origin[1]) * normal[1] + (z - origin[2]) * normal[2]) / len);
+    }
+    const side = ds.every((v) => v >= -tol) || ds.every((v) => v <= tol);
+    return side && Math.min(...ds.map(Math.abs)) <= tol;
+}
+
+/// A page plane's origin and normal: an origin plane's own, else its frame node's twelve
+/// numbers as the document last evaluated them.
+function planeAt(d, base, plane) {
+    const f = planeFrame(d, plane, []);
+    if (f === undefined) fail(`${base}: no plane`);
+    if (Object.hasOwn(ORIGIN_NORMALS, f)) return { origin: [0, 0, 0], normal: ORIGIN_NORMALS[f].slice() };
+    const s = itemOfId(f);
+    const id = s !== undefined ? helperId(s, "frame") : f;
+    const v = nums(d.frameValue(id), 12) ?? fail(`${base}: \`${id}\` is not a frame`);
+    return { origin: v.slice(0, 3), normal: v.slice(9, 12) };
+}
+
 /// A body pattern's group item (kind `pattern`): `i<n>_at` (and its helpers), the head `i<n>`
 /// `solid.pattern { solids, placements, combine: "separate" }` -- a list of bodies, not a
 /// body. Its instances are items of their own (`writeGroup`).
@@ -1519,6 +1568,28 @@ function verbSteps(d, n, c, pending, pre, numOr) {
             if (!isPattern(it)) refuse(`${base}: pattern #${g ?? "?"} is gone`);
             return [{ kind: "solid.nth", list: headId(g), index: numOr("index") }];
         }
+        case "pattern_feature": {
+            // The feature's tool placed again on its target: its target and its tool read, not
+            // its result (placement 0 is the identity, so the pattern holds the feature).
+            const f = idOf(parts[0]), it = f === undefined ? undefined : d.item(f);
+            if (!it) refuse(`${base}: feature #${f ?? "?"} is gone`);
+            const fc = readItem(d, f);
+            if (fc.kind !== "cut" && fc.kind !== "join") refuse(`${base}: #${f} is not a cut or a join`);
+            const fp = Array.isArray(fc.parts) ? fc.parts : [];
+            if (fp.length !== 2) refuse(`${base}: #${f} is not of two bodies`);
+            const solid = bodyPart(d, base, fp[0]), tool = bodyPart(d, base, fp[1]);
+            pre.push(...placementNodes(d, n, c, "pattern_feature", pending));
+            return [{ kind: "solid.pattern_feature", solid, tool, op: fc.kind, placements: helperId(n, "at") }];
+        }
+        case "mirror": {
+            // Joined to its mirror: in one when it touches the plane (`touch`, decided when the
+            // command was made), else a mirrored copy `i<n>_copy` and a join.
+            const solid = part(0);
+            const plane = planeFrame(d, get(c, "across"), pending) ?? refuse(`${base}: the plane is gone`);
+            if (get(c, "touch") === true) return [{ kind: "solid.mirror_join", solid, plane, snap: MIRROR_SNAP }];
+            pre.push({ id: helperId(n, "copy"), kind: "solid.mirror", solid, plane });
+            return [{ kind: "solid.join", solids: [solid, helperId(n, "copy")] }];
+        }
         default:
             return refuse(`${base}: no body kind \`${kind}\``);
     }
@@ -1535,7 +1606,16 @@ function verbHeld(get, n, verb, vk) {
         if (ids && !ids.includes(undefined)) out.parts = ids;
     };
     switch (vk) {
-        case "solid.join": parts(verb.solids); break;
+        case "solid.join": {
+            // A mirror's join: its source and its mirrored copy.
+            const copy = get(helperId(n, "copy"));
+            if (copy?.kind === "solid.mirror") {
+                parts([copy.solid]);
+                put("across", planeOfFrame(copy.plane));
+                out.touch = false;
+            } else parts(verb.solids);
+            break;
+        }
         case "solid.cut": parts([verb.target, verb.tool]); break;
         case "solid.common": parts([verb.a, verb.b]); break;
         case "solid.shell": parts([verb.solid]); put("thickness", verb.thickness); put("faceRefs", verb.open); break;
@@ -1557,6 +1637,8 @@ function verbHeld(get, n, verb, vk) {
         case "solid.split_side": parts([verb.solid]); put("side", verb.side); put("cutter", itemOfId(verb.tool)); break;
         case "solid.split_side_by_plane": parts([verb.solid]); put("side", verb.side); put("cutter", planeOfFrame(verb.plane)); break;
         case "solid.nth": put("pattern", itemOfId(verb.list)); put("index", verb.index); break;
+        case "solid.pattern_feature": Object.assign(out, placementsHeld(get, n)); break;
+        case "solid.mirror_join": parts([verb.solid]); put("across", planeOfFrame(verb.plane)); out.touch = true; break;
         case "solid.split_side_by_profile": {
             parts([verb.solid]);
             put("side", verb.side);
@@ -1902,8 +1984,9 @@ export function writeItem(d, n, fields, at) {
 const FACE_READERS = ["press", "refillet", "rechamfer", "remove"];
 
 /// The items whose nodes hold a copy of a value of another item (see the header's Copies):
-/// a trim (its split's direction), a split (a curve cutter's plane), the face readers.
-const COPIERS = ["trim", "split", ...FACE_READERS];
+/// a trim (its split's direction), a split (a curve cutter's plane), the face readers, a
+/// feature pattern (its feature's target and tool).
+const COPIERS = ["trim", "split", ...FACE_READERS, "pattern_feature"];
 
 /// Every item that copies a value of an item this command wrote, written again from its
 /// own fields, so the copy is what its source now gives (the diff emits nothing where it
@@ -1925,7 +2008,7 @@ function rewriteCopies(d) {
         for (const n of sources) {
             d.copied.add(n);
             const it = d.model.item(n);
-            if ((d.item(n) ?? it)?.kind === "face") faces = true;
+            if (["face", "cut", "join"].includes((d.item(n) ?? it)?.kind)) faces = true;
             if (!it || !d.item(n)) continue;
             const ids = it.of !== undefined ? [it.node] : [it.head.id, ...it.helpers.map((h) => h.id)];
             for (const id of ids) {
@@ -1937,7 +2020,7 @@ function rewriteCopies(d) {
         }
         if (faces) {
             for (const it of d.model.items()) {
-                if (!FACE_READERS.includes(it.kind) || !d.has(headId(it.id))) continue;
+                if (![...FACE_READERS, "pattern_feature"].includes(it.kind) || !d.has(headId(it.id))) continue;
                 const c = readItem(d, it.id);
                 if (Array.isArray(c.parts) && c.parts.some((p) => sources.includes(p))) targets.add(it.id);
             }
@@ -2227,6 +2310,19 @@ function hide(d, n) {
     if (nd) {
         if (nd.hidden !== true) d.set(id, { hidden: true });
     } else writeItem(d, n, { ...readItem(d, n), hidden: true });
+}
+
+/// A feature pattern's fields (kind `pattern_feature`, named `name`): the cut or join `f`
+/// as its one part, its plane and pivot, the placements' `fields`. `madeTail`'s revolution
+/// fields `axis` and `angle` are a circular pattern's here: null (the kind's default) unless
+/// given.
+function featurePattern(d, n, f, name, fields) {
+    const c = { id: n, name, kind: "pattern_feature" };
+    if (f.plane !== undefined) c.plane = clone(f.plane);
+    Object.assign(c, { parts: [f.id], pivot: pivotOf(f), transform: still() });
+    madeTail(c, true);
+    c.angle = null;
+    return Object.assign(c, fields);
 }
 
 /// The page's `consume`: item `n` hidden, and what it was made of -- a curve's sketch, a
@@ -2889,6 +2985,67 @@ function build(model, cmd, env, broken) {
             c.instances = idsOf(get(cmd, "instances"));
             c.hidden = false;
             writeGroup(d, n, c);
+            break;
+        }
+        // A cut's or a join's tool patterned on its target: the item takes the feature's place.
+        case "pattern_feature": {
+            const n = cmdId(cmd, "id", op);
+            const feature = idOf(get(cmd, "feature"));
+            const f = feature === undefined ? undefined : d.item(feature);
+            if (!f) fail("pattern_feature: no feature");
+            if (f.kind !== "cut" && f.kind !== "join") fail(`pattern_feature: #${feature} is not a cut or a join`);
+            d.bump(n);
+            const fields = {};
+            for (const k of PLACEMENT_KEYS) if (k !== "across" && get(cmd, k) !== undefined) fields[k] = kept(cmd[k]);
+            writeItem(d, n, featurePattern(d, n, need(d, feature, op), d.nameFor("pattern"), fields));
+            consume(d, feature);
+            break;
+        }
+        // A mirror: of bodies, as new bodies (a group, as a pattern) or joined to its mirror;
+        // of a feature, its tool mirrored on its target.
+        case "mirror": {
+            const n = cmdId(cmd, "id", op);
+            const plane = get(cmd, "plane");
+            if (!planeThere(d, plane)) fail("mirror: no plane");
+            const objects = orElse(get(cmd, "objects"), "bodies");
+            const name = () => `${d.model.label("mirror")} ${d.count("mirror")}`;
+            if (objects === "feature") {
+                const feature = idOf(get(cmd, "feature"));
+                const f = feature === undefined ? undefined : d.item(feature);
+                if (!f) fail("mirror: no feature");
+                if (f.kind !== "cut" && f.kind !== "join") fail(`mirror: #${feature} is not a cut or a join`);
+                d.bump(n);
+                writeItem(d, n, featurePattern(d, n, need(d, feature, op), name(), { type: "mirror", across: clone(plane) }));
+                consume(d, feature);
+                break;
+            }
+            if (objects !== "bodies") fail("mirror: `objects` is not bodies or feature");
+            const sources = idsOf(get(cmd, "sources"));
+            if (!sources.length) fail("mirror: nothing to mirror");
+            for (const s of sources) if (!isBody(d.item(s))) fail(`mirror: #${s} is not a body`);
+            const operation = orElse(get(cmd, "operation"), "new");
+            if (operation === "new") {
+                d.bump(n);
+                const c = { id: n, name: name(), kind: "pattern", sources, type: "mirror", across: clone(plane), instances: idsOf(get(cmd, "instances")), hidden: false };
+                writeGroup(d, n, c);
+                break;
+            }
+            if (operation !== "join") fail("mirror: `operation` is not new or join");
+            if (sources.length !== 1) fail("mirror: a join mirrors one body");
+            const src = need(d, sources[0], op);
+            // Touching the plane or not: the command's own word (the page's, off the body's
+            // bounds), else the bounds off the evaluated document.
+            let touch = get(cmd, "touch");
+            if (typeof touch !== "boolean") {
+                const { origin, normal } = planeAt(d, "mirror", plane);
+                touch = touchesPlane(d.bounds(src.id), origin, normal);
+            }
+            d.bump(n);
+            const c = { id: n, name: name(), kind: "mirror" };
+            if (src.plane !== undefined) c.plane = clone(src.plane);
+            Object.assign(c, { parts: [src.id], across: clone(plane), touch, pivot: pivotOf(src), transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            consume(d, src.id);
             break;
         }
         case "split": {
