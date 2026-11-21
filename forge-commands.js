@@ -2276,6 +2276,23 @@ function setPlane(c, p) {
     if (get(p, "faceRefs") !== undefined) c.faceRefs = kept(p.faceRefs);
 }
 
+/// The plane fields of a copy of sketch `src` (its fields) that `cmd` asks for: each field
+/// `cmd` leaves out is the source's, its face reference only when `cmd` names no face; then
+/// only those the mode reads (`MODE_FIELDS`), so a face sketch copied to an offset plane
+/// loses its face.
+function copyPlane(src, cmd) {
+    const p = {};
+    const newFace = get(cmd, "face") !== undefined || get(cmd, "mid") !== undefined;
+    for (const k of PLANE_FIELDS) {
+        const v = get(cmd, k) !== undefined ? cmd[k] : k === "faceRefs" && newFace ? undefined : src[k];
+        if (v !== undefined && v !== null) p[k] = clone(v);
+    }
+    if (typeof p.mode !== "string") p.mode = "offset";
+    const uses = MODE_FIELDS[p.mode] ?? [];
+    for (const k of PLANE_FIELDS) if (k !== "mode" && !uses.includes(k)) delete p[k];
+    return p;
+}
+
 /// The curve items on sketch `s`, in document order, as their fields. (No curve item holds
 /// a `node` of another app's today: a held curve is a `held_profile`, on no sketch.)
 function curvesOnSketch(d, s) {
@@ -2621,6 +2638,17 @@ function build(model, cmd, env, broken) {
             c.hidden = false;
             if (get(cmd, "constraints")) c.constraints = kept(cmd.constraints);
             writeItem(d, n, c);
+            break;
+        }
+        // A sketch copied whole onto another plane (`copySketch`): the plane fields the
+        // `sketch` op takes, each one left out the source's (`copyPlane`).
+        case "sketch_copy": {
+            const s = idOf(get(cmd, "sketch"));
+            if (s === undefined || !isSketch(d.item(s))) fail(`sketch_copy: #${s ?? "?"} is not a sketch`);
+            const n = cmdId(cmd, "id", op);
+            const plane = copyPlane(readItem(d, s), cmd);
+            if (plane.mode === "face" && !isMap(plane.face)) fail("sketch_copy: a face plane needs a face");
+            d.skipped = copySketch(d, op, s, n, idsOf(get(cmd, "copies")), plane).skipped;
             break;
         }
         // `copies`: one id per picked item, in the order picked -- a curve on a picked

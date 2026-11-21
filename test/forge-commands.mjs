@@ -1126,6 +1126,92 @@ function refused(t, cmd, words) {
     t.free();
 }
 
+// sketch_copy, the tutorial's top plate: Sketch 1 (a hexagon r 104, a hole patterned six
+// times about the origin, a rectangle) copied to offset 36 in one command. The copy's frame
+// is 36 over Top; its curves have the source's 2D shapes. Then the copy's polygon typed to
+// r 92 and its source hole to r 9 (the page's typed radius): the six holes on the copy are
+// r 9, the source keeps r 104 / r 11. Undo takes the copy back, node for node.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "polygon", plane: 1, shape: { cx: 0, cy: 0, r: 104, sides: 6, angle: 0 } });
+    t.run({ op: "add", id: 3, kind: "circle", plane: 1, shape: { cx: 80, cy: 0, r: 11 } });
+    t.run({ op: "sketch_pattern", sketch: 1, ids: [3], type: "circular", centre: null, count: 6, angle: 360, copies: [4, 5, 6, 7, 8, 9, 10] });
+    t.run({ op: "add", id: 11, kind: "rect", plane: 1, shape: { x0: -20, y0: -10, x1: 20, y1: 10 } });
+    const before = JSON.stringify(t.nodes());
+    const src = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const copies = src.map((n) => n + 11);
+    const r = t.run({ op: "sketch_copy", sketch: 1, id: 12, copies, offset: 36 });
+    assert.strictEqual(r.skipped, 0);
+    assert.strictEqual(r.op.message, "forge: sketch_copy");
+    assert.deepStrictEqual(t.node("i12_frame"), { id: "i12_frame", kind: "frame.offset", base: "xy", offset: 36 });
+    assert.deepStrictEqual([t.item(12).name, t.item(12).mode, t.item(12).base, t.item(12).offset], ["Sketch 2", "offset", "top", 36]);
+    src.forEach((n, k) => {
+        const [a, b] = [t.item(n), t.item(copies[k])];
+        assert.deepStrictEqual([b.kind, b.plane, b.construction], [a.kind, 12, a.construction], `#${copies[k]}`);
+        assert.ok(close(b.shape, a.shape, 1e-12), `#${copies[k]} ${JSON.stringify(b.shape)}`);
+    });
+    assert.strictEqual(t.statusOf("i12").state, "ok");
+    t.run({ op: "set", id: 13, shape: { ...t.item(13).shape, r: 92 } });
+    const holes = solvedSketch(t, 12, (m) => {
+        assert.ok(addConstraint(wasm, m, { id: 999, kind: "radius", refs: [{ curve: 14, at: "curve" }], value: 9, driving: true }).ok);
+        dragModel(wasm, m, [{ curve: 14, at: "centre", x: 80, y: 0 }]);
+        removeConstraint(wasm, m, 999);
+    });
+    for (const n of [14, 15, 16, 17, 18, 19]) assert.ok(near(holes.get(n).r, 9), `#${n} r ${holes.get(n).r}`);
+    assert.strictEqual(t.item(13).shape.r, 92);
+    assert.strictEqual(t.item(2).shape.r, 104);
+    const kept = solvedSketch(t, 1);
+    for (const n of [3, 4, 5, 6, 7, 8]) assert.ok(near(kept.get(n).r, 11), `#${n} on the source moved`);
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    assert.deepStrictEqual(t.model.nodes(), t.nodes());
+    t.free();
+}
+
+// sketch_copy to another base: the same 2D shapes, the frame on Front (the offset left out
+// is the source's).
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 5 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 3, cy: 4, r: 2 } });
+    t.run({ op: "add", id: 3, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 6, y1: 1 } });
+    t.run({ op: "sketch_copy", sketch: 1, id: 4, copies: [5, 6], base: "front" });
+    assert.deepStrictEqual(t.node("i4_frame"), { id: "i4_frame", kind: "frame.offset", base: "xz", offset: 5 });
+    assert.deepStrictEqual([[5, 2], [6, 3]].map(([b, a]) => close(t.item(b).shape, t.item(a).shape, 1e-12) && t.item(b).plane === 4), [true, true]);
+    t.free();
+}
+
+// sketch_copy of a sketch on a body's face to an offset plane: the curves are kept, the face
+// and its reference are not, and nothing is skipped.
+{
+    const t = fresh();
+    t.run({ op: "primitive", id: 1, kind: "box", plane: "top", dims: [10, 10, 10] });
+    t.run({ op: "sketch", id: 2, mode: "face", face: { body: 1, index: 0 } });
+    assert.strictEqual(t.node("i2_frame").kind, "frame.on_face");
+    t.run({ op: "add", id: 3, kind: "circle", plane: 2, shape: { cx: 1, cy: 1, r: 2 } });
+    const r = t.run({ op: "sketch_copy", sketch: 2, id: 4, copies: [5], mode: "offset", base: "top", offset: 20 });
+    assert.strictEqual(r.skipped, 0);
+    const c = t.item(4);
+    assert.deepStrictEqual([c.mode, c.base, c.offset, c.face, c.faceRefs], ["offset", "top", 20, null, undefined]);
+    assert.deepStrictEqual(t.node("i4_frame"), { id: "i4_frame", kind: "frame.offset", base: "xy", offset: 20 });
+    assert.deepStrictEqual([t.item(5).kind, t.item(5).plane, t.item(5).shape], ["circle", 4, { cx: 1, cy: 1, r: 2 }]);
+    t.free();
+}
+
+// sketch_copy refusals: in the command's words, the document untouched
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 0, cy: 0, r: 1 } });
+    refused(t, { op: "sketch_copy", sketch: 2, id: 3, copies: [4], offset: 10 }, /^sketch_copy: #2 is not a sketch$/);
+    refused(t, { op: "sketch_copy", sketch: 9, id: 3, copies: [4], offset: 10 }, /^sketch_copy: #9 is not a sketch$/);
+    refused(t, { op: "sketch_copy", sketch: 1, id: 3, copies: [4], mode: "face" }, /^sketch_copy: a face plane needs a face$/);
+    refused(t, { op: "sketch_copy", sketch: 1, id: 3, copies: [], offset: 10 }, /^sketch_copy: fewer `copies` ids than curves on #1$/);
+    t.free();
+}
+
 // duplicate of a patterned sketch: the six circles and two step lines on the copy, the
 // pattern's records remapped, so the copy's source circle typed to r 4 drives its five
 // copies; the source sketch is untouched.
