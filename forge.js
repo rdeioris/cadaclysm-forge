@@ -300,7 +300,7 @@ const RUNTIME_KEYS = new Set(["cache", "gpu", "job", "dirty", "waiting", "versio
 // Every id a command makes, taken now: a command queued behind an apply in flight has not
 // bumped `nextId` yet, and the next tool would read the same id.
 function reserve(cmd) {
-    for (const id of [cmd.id, cmd.arc, ...(cmd.ids ?? []), ...(cmd.copies ?? [])]) if (typeof id === "number") bump(id);
+    for (const id of [cmd.id, cmd.arc, ...(cmd.ids ?? []), ...(cmd.copies ?? []), ...(cmd.instances ?? [])]) if (typeof id === "number") bump(id);
 }
 // A command run: applied in its turn. The result is what `apply` returned -- undefined, or
 // for a command queued behind another a promise of that. `merge`: true folds a `set` into

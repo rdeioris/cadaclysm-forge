@@ -10,8 +10,14 @@
 // - Its helpers are `i<n>_<role>`, written BEFORE the head in document order. Roles keep
 //   their old names where they still apply: `_frame` (a sketch's plane), `_src`, `_to`,
 //   `_via<k>` (a body's profiles), `_mid<k>` (a midplane sketch's face), `_split`,
-//   `_tool` (a trim's), `_cut` (a split's profile), `_inner`, `_flush`, `_moved`. There is
-//   no `_placed` and no cast node any more.
+//   `_tool` (a trim's), `_cut` (a split's profile), `_inner`, `_flush`, `_moved`, `_at` (a
+//   pattern's placements), `_axis` (its axis as numbers, `frame.at`), `_path` (its path,
+//   `curve.as_nurbs`), `_copy` (a mirror join's mirrored copy). There is no `_placed` and no
+//   cast node any more.
+// - A body pattern is a GROUP item (kind `pattern`, not a body): its head `i<n>` is
+//   `solid.pattern` (a list of bodies, `combine: "separate"`) over `i<n>_at`; and one body
+//   item per instance (kind `instance`), its head `solid.nth { list: "i<n>", index }`. A
+//   mirror as new bodies is a group too (`placements.mirror`).
 // - A body's chain, each step reading the one before:
 //     the verb node `i<n>_inner` (or `i<n>` itself when nothing follows it)
 //     -> `solid.merge_flush` `i<n>_flush`                      when the body is flush
@@ -87,7 +93,7 @@
 //   helper(item, role)           the item's helper node `i<n>_<role>`, or undefined
 //   headId(n), helperId(n, role), itemOfId(id), isFacePlaneId(id), isForgeId(id)
 //   heldOf(node)                 "solid" | "sheet" | "profile" for a held node, else undefined
-//   isBody / isSketch / isCurve / isImage / isHeldProfile(item)   the page's predicates
+//   isBody / isSketch / isCurve / isImage / isHeldProfile / isPattern(item)   the page's predicates
 //   isBodyKind / isMadeKind / isQuickKind(kind), label(kind), CURVE_KINDS, COUNTERS, UNITS
 
 /// The units of every forge document.
@@ -98,7 +104,7 @@ const U32_MAX = 4294967295;
 
 /// The counters as the page starts them, in its order (all 0 when the meta has none).
 export const COUNTERS = [
-    "image", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "chamfer", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "sketch", "face", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split",
+    "image", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "chamfer", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "sketch", "face", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "instance", "mirror",
 ];
 
 const LABELS = {
@@ -106,6 +112,7 @@ const LABELS = {
     surface: "Surface", extrusion: "Extrusion", revolution: "Revolution", solid: "Solid", sweep: "Sweep", loft: "Loft", join: "Join", cut: "Cut", intersect: "Intersect", chamfer: "Chamfer",
     shell: "Shell", thicken: "Thicken", trim: "Trim", prism: "Solid", press: "Press Pull", refillet: "Refillet", rechamfer: "Rechamfer", remove: "Remove", fillet: "Fillet", sketch: "Sketch",
     face: "Face", box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split",
+    pattern: "Pattern", instance: "Instance", pattern_feature: "Pattern", mirror: "Mirror",
 };
 
 /// An item kind's label; "undefined" for a kind it lacks, as a template string writes it.
@@ -118,7 +125,7 @@ const PAGE_CURVE_KINDS = Object.fromEntries(Object.entries(CURVE_KINDS).map(([k,
 /// The quick solids.
 export const QUICK_KINDS = ["box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil"];
 export const isQuickKind = (kind) => QUICK_KINDS.includes(kind);
-const MADE = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split", "held"];
+const MADE = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split", "held", "instance", "pattern_feature", "mirror"];
 /// A body made of other bodies, or a quick solid, a pipe, a split, a held body.
 export const isMadeKind = (kind) => MADE.includes(kind) || isQuickKind(kind);
 const DRAWN = ["surface", "extrusion", "revolution", "solid", "sweep", "loft"];
@@ -129,10 +136,13 @@ const kindOf = (item) => (typeof item?.kind === "string" ? item.kind : "");
 export const isBody = (item) => isBodyKind(kindOf(item));
 export const isSketch = (item) => kindOf(item) === "sketch";
 export const isImage = (item) => kindOf(item) === "image";
+/// A body pattern's group item (kind `pattern`): its head a list of bodies, not a body. Its
+/// instances are body items of their own (kind `instance`).
+export const isPattern = (item) => kindOf(item) === "pattern";
 /// A held profile (another app's): listed and kept, not drawn, and no curve a tool takes.
 export const isHeldProfile = (item) => kindOf(item) === "held_profile";
-/// Neither a body, a sketch, an image nor a held profile.
-export const isCurve = (item) => !isBody(item) && !isSketch(item) && !isImage(item) && !isHeldProfile(item);
+/// Neither a body, a sketch, an image, a held profile nor a pattern group.
+export const isCurve = (item) => !isBody(item) && !isSketch(item) && !isImage(item) && !isHeldProfile(item) && !isPattern(item);
 
 // ---------------------------------------------------------------------------------
 // Ids.

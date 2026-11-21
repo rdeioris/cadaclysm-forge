@@ -59,7 +59,8 @@
 // `explode` (5.3a); the made bodies `surface`, `sweep` (an extrusion or a revolution of a
 // curve), `solid`, `revolved`, `lofted`, `swept`, `primitive`, `pipe` (5.3b); the body verbs
 // `join`, `cut`, `intersect`, `shell`, `thicken`, `trim`, `face`, `prism`, `press`,
-// `rechamfer`, `remove`, `refillet`, `fillet`, `split` (5.3c); `set` / `edit` of curves,
+// `rechamfer`, `remove`, `refillet`, `fillet`, `split` (5.3c); `pattern`, `pattern_feature`,
+// `mirror` (see Patterns); `set` / `edit` of curves,
 // sketches, held items and every body: a body's in-plane move and its place in the world, a
 // rename, a hide (5.3d). `state` (a version-1 file's items, whole) is refused: the page
 // sends it for no file it opens, and a forge file of before is not loaded (spec, decision 2;
@@ -176,6 +177,34 @@
 // what it reads, as those ops leave it (a probe of them, `Draft.frameValue`) -- kept by the
 // Copies below. ACCEPTED.md, kernel follow-ups.
 //
+// # Patterns
+//
+// - `{ op: "pattern", id, sources: [body ids], type: "circular" | "rectangular" | "along",
+//   axis ("x" | "y" | "z" | { origin, dir }), count, angle, symmetric, d1, count1, spacing1,
+//   d2, count2, spacing2 (a direction "x" / "y" / "z" or numbers), path (a curve item),
+//   spacing, orient, skip, instances: [ids] }`: a group item `id` (kind `pattern`) and an
+//   instance item per (placement >= 1, source) from `instances`, instance-major
+//   (`writeGroup`). A field left out is the node kind's default. The sources are not
+//   consumed. A `set` (or `edit`) of the group writes the group and its instances in one
+//   batch: those no longer made go, new ones take the ids its `instances` names (a set that
+//   makes more instances than the ids it has is refused). A delete of the group takes its
+//   instances along.
+// - `{ op: "pattern_feature", id, feature, ...the placement fields }`: a body item (kind
+//   `pattern_feature`, `parts: [feature]`) whose verb is `solid.pattern_feature { solid: the
+//   cut's target, tool: its tool, op: "cut" | "join", placements: "i<id>_at" }`; the feature
+//   is consumed.
+// - `{ op: "mirror", id, objects: "bodies" | "feature", sources | feature, plane, operation:
+//   "new" | "join", instances, touch? }`, `plane` "top" / "front" / "right", a sketch id or
+//   `face:<body>:<k>`. Bodies, new: a group as a pattern's, over `placements.mirror`, each
+//   instance "<source> mirror". Bodies, join: one body item (kind `mirror`, one source, which
+//   it consumes): `solid.mirror_join { snap: 0.01 }` when the source touches the plane, else
+//   `i<id>_copy` `solid.mirror` and `solid.join` of the two. `touch` is the command's when it
+//   is a boolean (the page's, off the body's bounds: `touchesPlane`), else read off the
+//   evaluated document; the item keeps it, so a write again makes the same nodes. A feature:
+//   a `pattern_feature` item over `placements.mirror`.
+// - On the items the mirror plane is `across` (a body's `plane` is its own plane).
+// - `madeTail`'s `axis` and `angle` (a revolution's) are a feature pattern's own fields.
+//
 // # Copies
 //
 // A verb's node may hold a copy of a value of another item that no node input carries: a
@@ -199,7 +228,7 @@
 // any other node is a `value.unresolved` stand-in of its output type, `why` "<id>: curve #n
 // is gone" (the 0.14 layer's words). A held node no item names any more goes with its last
 // item.
-import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, metaOp, bumpId, heldOf } from "./forge-model.js";
+import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, isPattern, metaOp, bumpId, heldOf } from "./forge-model.js";
 import { bodyNode, facePlaneId, docPicks } from "./forge-picks.js";
 import { buildModel, freeModel, madeByCall, curveName } from "./forge-constraints.js";
 
@@ -625,6 +654,26 @@ export class Draft {
         return this._picks(`the frame \`${id}\``).frameValue(id);
     }
 
+    /// Node `id`'s value (`document_value`, parsed) as this command's ops so far leave it:
+    /// read in a probe of them, then ended. Refused in the kernel's words, or "`id`: <its
+    /// error>" where it does not evaluate.
+    probeValue(id) {
+        const batch = JSON.stringify({ op: "batch", ops: this.ops });
+        const statuses = JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_probe", this.doc, batch, JSON.stringify([id])));
+        try {
+            const st = Array.isArray(statuses) ? statuses.find((x) => x?.id === id) : undefined;
+            if (st && st.state !== "ok") fail(`${id}: ${st.error ?? st.state}`);
+            return JSON.parse(call(this.kernel, "cadaclysm_blacksmith_document_value", this.doc, id));
+        } finally {
+            call(this.kernel, "cadaclysm_blacksmith_document_probe_end", this.doc);
+        }
+    }
+
+    /// Body item `n`'s bounds (`bounds64`: six numbers) off the evaluated document.
+    bounds(n) {
+        return this._picks(`the bounds of #${n}`).bounds(n);
+    }
+
     /// Whether this command's ops so far add, set or remove node `id` or a node it reads.
     _touches(id) {
         if (!this.ops.length) return false;
@@ -1022,7 +1071,7 @@ function profileNode(d, id, holder, frame, open, moves, pre) {
 // The body verbs: bodies made of other bodies (see the header's Picks).
 
 /// The body verbs' item kinds.
-const VERBS = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "split"];
+const VERBS = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "split", "instance", "pattern_feature", "mirror"];
 
 /// The normal of each origin plane's frame, as the kernel's `xy` / `xz` / `yz` have it.
 const ORIGIN_NORMALS = { xy: [0, 0, 1], xz: [0, -1, 0], yz: [1, 0, 0] };
@@ -1131,6 +1180,295 @@ function planeFrame(d, plane, pending) {
     return isBody(d.item(k.face.body)) ? frameFor(d, plane, pending) : undefined;
 }
 
+// ---------------------------------------------------------------------------------
+// Patterns and mirrors: placements (see the header's Patterns).
+
+/// The page fields a pattern's placements are made of (a command's, an item's).
+const PLACEMENT_KEYS = ["type", "axis", "count", "angle", "symmetric", "d1", "count1", "spacing1", "d2", "count2", "spacing2", "path", "spacing", "orient", "skip", "across"];
+
+/// The world axes a circular pattern turns about, as the origin frames whose z they are; Y
+/// has none (`xz`'s z is -Y), so it is a `frame.at` helper as a picked axis is.
+const AXIS_FRAMES = { x: "yz", z: "xy" };
+const DIRECTIONS = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+
+/// A direction field: "x" / "y" / "z", or two or three numbers (a third 0 when two).
+function directionOf(v) {
+    if (typeof v === "string" && Object.hasOwn(DIRECTIONS, v)) return DIRECTIONS[v].slice();
+    if (Array.isArray(v) && v.length === 2) v = [...v, 0];
+    return nums(v, 3);
+}
+
+/// Whether a page plane (`top`, a sketch, `face:<b>:<k>`) names a plane that is there.
+function planeThere(d, plane) {
+    const k = planeKey(plane);
+    if (!k) return false;
+    if (k.origin) return true;
+    if (k.sketch !== undefined) return isSketch(d.item(k.sketch));
+    return isBody(d.item(k.face.body));
+}
+
+/// A pattern's placements as nodes (`c.type`): its helpers -- `i<n>_axis` (`frame.at`, an axis
+/// as numbers), `i<n>_path` (`curve.as_nurbs` of a path curve) -- then `i<n>_at`
+/// `placements.<type>`. A field left out (or null) is the kind's default. Refused in the
+/// command's words (`what`: "pattern", ...) where the fields cannot make them: the page
+/// asked for something that is not a pattern, not an item that cannot be built.
+function placementNodes(d, n, c, what, pending) {
+    const out = [];
+    const nd = { id: helperId(n, "at") };
+    const has = (k) => c[k] !== undefined && c[k] !== null;
+    const whole = (k, min) => {
+        const v = num(c[k]);
+        if (v === undefined || !Number.isInteger(v) || v < min) fail(`${what}: \`${k}\` must be a whole number, ${min} or more`);
+        return v;
+    };
+    const tail = () => {
+        if (has("symmetric")) nd.symmetric = c.symmetric === true;
+        if (has("skip")) {
+            const skip = Array.isArray(c.skip) ? c.skip.map(idOf) : undefined;
+            if (!skip || skip.includes(undefined)) fail(`${what}: \`skip\` is not a list of indices`);
+            if (skip.includes(0)) fail(`${what}: the original (instance 0) cannot be skipped`);
+            if (skip.length) nd.skip = skip;
+        }
+    };
+    switch (c.type) {
+        case "circular": {
+            nd.kind = "placements.circular";
+            const axis = has("axis") ? c.axis : "z";
+            if (typeof axis === "string" && Object.hasOwn(AXIS_FRAMES, axis)) nd.axis = AXIS_FRAMES[axis];
+            else {
+                const [origin, dir] = axis === "y" ? [[0, 0, 0], [0, 1, 0]] : [nums(get(axis, "origin"), 3), nums(get(axis, "dir"), 3)];
+                if (!origin || !dir || !(Math.hypot(...dir) > 0)) fail(`${what}: the axis is not x, y, z or a point and a direction`);
+                out.push({ id: helperId(n, "axis"), kind: "frame.at", origin, normal: dir });
+                nd.axis = helperId(n, "axis");
+            }
+            nd.count = whole("count", 2);
+            if (has("angle")) {
+                const a = num(c.angle);
+                if (a === undefined || !(a > 0) || a > 360) fail(`${what}: the angle must be more than 0 and at most 360`);
+                nd.angle = a;
+            }
+            tail();
+            break;
+        }
+        case "rectangular": {
+            nd.kind = "placements.rectangular";
+            const d1 = directionOf(c.d1) ?? fail(`${what}: \`d1\` is not a direction`);
+            if (!(Math.hypot(...d1) > 0)) fail(`${what}: a zero direction (\`d1\`)`);
+            nd.direction1 = d1;
+            nd.count1 = whole("count1", 1);
+            nd.spacing1 = num(c.spacing1) ?? fail(`${what}: \`spacing1\` is not a number`);
+            if (has("d2")) {
+                const d2 = directionOf(c.d2) ?? fail(`${what}: \`d2\` is not a direction`);
+                if (!(Math.hypot(...d2) > 0)) fail(`${what}: a zero direction (\`d2\`)`);
+                nd.direction2 = d2;
+            }
+            if (has("count2")) nd.count2 = whole("count2", 1);
+            if (has("spacing2")) nd.spacing2 = num(c.spacing2) ?? fail(`${what}: \`spacing2\` is not a number`);
+            if (nd.count1 * (nd.count2 ?? 1) < 2) fail(`${what}: \`count\` must be a whole number, 2 or more`);
+            tail();
+            break;
+        }
+        case "along": {
+            nd.kind = "placements.along";
+            const p = idOf(c.path), it = p === undefined ? undefined : d.item(p);
+            if (!curveItem(it) || classOf(it.kind) !== "curve") fail(`${what}: the path is not a curve`);
+            out.push({ id: helperId(n, "path"), kind: "curve.as_nurbs", curve: headId(p) });
+            nd.path = helperId(n, "path");
+            nd.count = whole("count", 2);
+            if (has("spacing")) nd.spacing = num(c.spacing) ?? fail(`${what}: \`spacing\` is not a number`);
+            if (has("orient")) {
+                if (c.orient !== "fixed" && c.orient !== "path") fail(`${what}: \`orient\` is not fixed or path`);
+                nd.orient = c.orient;
+            }
+            tail();
+            break;
+        }
+        case "mirror":
+            nd.kind = "placements.mirror";
+            if (!planeThere(d, c.across)) fail(`${what}: no plane`);
+            nd.plane = planeFrame(d, c.across, pending);
+            break;
+        default:
+            fail(`${what}: \`type\` is not circular, rectangular, along or mirror`);
+    }
+    out.push(nd);
+    return out;
+}
+
+/// The page fields a pattern's placement nodes give back (`get`: its nodes by id).
+function placementsHeld(get, n) {
+    const at = get(helperId(n, "at"));
+    const out = {};
+    if (!at) return out;
+    const put = (k, v) => { if (v !== undefined) out[k] = clone(v); };
+    const tail = () => { put("symmetric", at.symmetric); put("skip", at.skip); };
+    switch (at.kind) {
+        case "placements.circular": {
+            out.type = "circular";
+            const axis = at.axis ?? "xy";
+            if (axis === "xy") out.axis = "z";
+            else if (axis === "yz") out.axis = "x";
+            else {
+                const f = get(axis);
+                if (f?.kind === "frame.at") out.axis = same(f.origin, [0, 0, 0]) && same(f.normal, [0, 1, 0]) ? "y" : { origin: clone(f.origin), dir: clone(f.normal) };
+            }
+            put("count", at.count);
+            put("angle", at.angle);
+            tail();
+            break;
+        }
+        case "placements.rectangular":
+            out.type = "rectangular";
+            put("d1", at.direction1);
+            put("count1", at.count1);
+            put("spacing1", at.spacing1);
+            put("d2", at.direction2);
+            put("count2", at.count2);
+            put("spacing2", at.spacing2);
+            tail();
+            break;
+        case "placements.along":
+            out.type = "along";
+            put("path", itemOfId(get(at.path)?.curve));
+            put("count", at.count);
+            put("spacing", at.spacing);
+            put("orient", at.orient);
+            tail();
+            break;
+        case "placements.mirror":
+            out.type = "mirror";
+            put("across", planeOfFrame(at.plane));
+            break;
+    }
+    return out;
+}
+
+/// The mirror's snap (`solid.mirror_join`) and how near the plane a body's bounds must come
+/// for a mirror join to be one body (`touchesPlane`), in mm.
+const MIRROR_SNAP = 0.01;
+
+/// Whether a box (`bounds64`'s six numbers) touches the plane through `origin` square to
+/// `normal`: every corner on one side of it (within `tol`), the nearest within `tol`. A
+/// mirror join's choice: `solid.mirror_join` when it does, else a mirror and a join.
+export function touchesPlane(bounds, origin, normal, tol = MIRROR_SNAP) {
+    const len = Math.hypot(...normal);
+    if (!(len > 0) || !Array.isArray(bounds) || bounds.length !== 6) return false;
+    const ds = [];
+    for (const x of [bounds[0], bounds[3]]) for (const y of [bounds[1], bounds[4]]) for (const z of [bounds[2], bounds[5]]) {
+        ds.push(((x - origin[0]) * normal[0] + (y - origin[1]) * normal[1] + (z - origin[2]) * normal[2]) / len);
+    }
+    const side = ds.every((v) => v >= -tol) || ds.every((v) => v <= tol);
+    return side && Math.min(...ds.map(Math.abs)) <= tol;
+}
+
+/// A page plane's origin and normal: an origin plane's own, else its frame node's twelve
+/// numbers as the document last evaluated them.
+function planeAt(d, base, plane) {
+    const f = planeFrame(d, plane, []);
+    if (f === undefined) fail(`${base}: no plane`);
+    if (Object.hasOwn(ORIGIN_NORMALS, f)) return { origin: [0, 0, 0], normal: ORIGIN_NORMALS[f].slice() };
+    const s = itemOfId(f);
+    const id = s !== undefined ? helperId(s, "frame") : f;
+    const v = nums(d.frameValue(id), 12) ?? fail(`${base}: \`${id}\` is not a frame`);
+    return { origin: v.slice(0, 3), normal: v.slice(9, 12) };
+}
+
+/// A body pattern's group item (kind `pattern`): `i<n>_at` (and its helpers), the head `i<n>`
+/// `solid.pattern { solids, placements, combine: "separate" }` -- a list of bodies, not a
+/// body. Its instances are items of their own (`writeGroup`).
+const patternClass = {
+    read(d, n, head) {
+        const mf = head.meta?.forge ?? {};
+        const out = { id: n, name: head.name, kind: "pattern", ...patternHeld((id) => wasNode(d.node(id)), n, head) };
+        for (const [k, v] of Object.entries(mf)) if (k !== "kind") out[k] = clone(v);
+        out.hidden = head.hidden === true;
+        return out;
+    },
+    write(d, n, c, pending) {
+        const what = c.type === "mirror" ? "mirror" : "pattern";
+        const sources = Array.isArray(c.sources) ? c.sources : [];
+        let nodes;
+        const mark = pending.length;
+        try {
+            const solids = sources.map((s) => bodyPart(d, headId(n), s));
+            if (!solids.length) refuse(`${headId(n)}: nothing to ${what}`);
+            nodes = placementNodes(d, n, c, what, pending);
+            nodes.push({ ...headOf(n, "solid.pattern", c), solids, placements: helperId(n, "at"), combine: "separate" });
+        } catch (e) {
+            if (!(e instanceof Refuse)) throw e;
+            pending.length = mark;
+            return [standIn(n, c, "solid", e.message)];
+        }
+        const head = nodes[nodes.length - 1];
+        const byId = new Map(nodes.map((x) => [x.id, x]));
+        const held = patternHeld((id) => byId.get(id), n, head);
+        const mf = { kind: "pattern" };
+        for (const [k, v] of Object.entries(c)) if (v !== undefined && ![...OWN, "kind"].includes(k) && !same(held[k], v)) mf[k] = clone(v);
+        head.meta = { forge: mf };
+        return nodes;
+    },
+};
+
+/// The page fields a pattern group's nodes give back.
+function patternHeld(get, n, head) {
+    const out = placementsHeld(get, n);
+    const ids = Array.isArray(head.solids) ? head.solids.map(itemOfId) : undefined;
+    if (ids && !ids.includes(undefined)) out.sources = ids;
+    return out;
+}
+
+/// A pattern group `n` written as `c` asks, with its instances: one instance item per
+/// (placement p >= 1, source s), in instance-major order, numbered from `c.instances` --
+/// `solid.nth { list: "i<n>", index: p * S + s }`, named "<source> <p+1>" ("<source> mirror"
+/// for a mirror). An instance already there keeps its own fields (a look, a move, a name),
+/// renamed only when it is now another placement or source; the ones no longer made go, as a
+/// delete takes them. The placements' count is the kernel's: `i<n>_at` read in a probe of
+/// this command's ops. All in the command's one batch.
+function writeGroup(d, n, c) {
+    const what = c.type === "mirror" ? "mirror" : "pattern";
+    const prior = priorFields(d, n);
+    const ids = idsOf(c.instances);
+    writeItem(d, n, c);
+    const at = helperId(n, "at");
+    if (!d.has(at) || d.node(headId(n))?.kind !== "solid.pattern") return;   // a stand-in: its instances wait
+    const count = num(d.probeValue(at)?.count) ?? fail(`${what}: \`${at}\` is not placements`);
+    const sources = idsOf(c.sources), S = sources.length;
+    const want = (count - 1) * S;
+    if (ids.length < want) fail(`${what}: fewer \`instances\` ids than instances`);
+    const keep = ids.slice(0, want);
+    if (!same(keep, ids)) writeItem(d, n, { ...c, instances: keep });
+    let pos = d.index(headId(n)) + 1;
+    keep.forEach((m, k) => {
+        const p = Math.floor(k / S) + 1, s = k % S;
+        const src = readItem(d, sources[s]);
+        const index = p * S + s;
+        const name = what === "mirror" ? `${nameText(src.name)} mirror` : `${nameText(src.name)} ${p + 1}`;
+        const prev = d.item(m)?.kind === "instance" ? readItem(d, m) : undefined;
+        let f;
+        if (prev && prev.pattern === n) {
+            f = { ...prev, index, source: src.id };
+            if (prev.index !== index || prev.source !== src.id) f.name = name;
+        } else {
+            d.bump(m);
+            f = { id: m, name, kind: "instance" };
+            if (src.plane !== undefined) f.plane = clone(src.plane);
+            Object.assign(f, { parts: [], pivot: pivotOf(src), transform: still() });
+            madeTail(f, true);
+            Object.assign(f, { pattern: n, index, source: src.id });
+        }
+        writeItem(d, m, f, pos);
+        pos = d.index(headId(m)) + 1;
+    });
+    // The instances no longer made: the ids past the ones kept, and the old list's.
+    const old = [...ids.slice(want), ...idsOf(prior?.instances)].filter((m) => !keep.includes(m));
+    const doomed = [...new Set(old)].filter((m) => d.item(m)?.kind === "instance" && readItem(d, m).pattern === n);
+    if (doomed.length) {
+        const gone = [];
+        for (const m of doomed) for (const id of d.nodesOf(m)) { d.remove(id); gone.push(id); }
+        orphanReaders(d, gone);
+    }
+}
+
 /// A body verb's steps (its helpers pushed to `pre`), before its flush and its moves.
 function verbSteps(d, n, c, pending, pre, numOr) {
     const base = headId(n), kind = c.kind;
@@ -1224,6 +1562,34 @@ function verbSteps(d, n, c, pending, pre, numOr) {
             const plane = planeFrame(d, cutter, pending) ?? refuse(`${base}: the cutter is gone`);
             return [{ kind: "solid.split_side_by_plane", solid, plane, side }];
         }
+        case "instance": {
+            // One body of a pattern group's list.
+            const g = idOf(get(c, "pattern")), it = g === undefined ? undefined : d.item(g);
+            if (!isPattern(it)) refuse(`${base}: pattern #${g ?? "?"} is gone`);
+            return [{ kind: "solid.nth", list: headId(g), index: numOr("index") }];
+        }
+        case "pattern_feature": {
+            // The feature's tool placed again on its target: its target and its tool read, not
+            // its result (placement 0 is the identity, so the pattern holds the feature).
+            const f = idOf(parts[0]), it = f === undefined ? undefined : d.item(f);
+            if (!it) refuse(`${base}: feature #${f ?? "?"} is gone`);
+            const fc = readItem(d, f);
+            if (fc.kind !== "cut" && fc.kind !== "join") refuse(`${base}: #${f} is not a cut or a join`);
+            const fp = Array.isArray(fc.parts) ? fc.parts : [];
+            if (fp.length !== 2) refuse(`${base}: #${f} is not of two bodies`);
+            const solid = bodyPart(d, base, fp[0]), tool = bodyPart(d, base, fp[1]);
+            pre.push(...placementNodes(d, n, c, "pattern_feature", pending));
+            return [{ kind: "solid.pattern_feature", solid, tool, op: fc.kind, placements: helperId(n, "at") }];
+        }
+        case "mirror": {
+            // Joined to its mirror: in one when it touches the plane (`touch`, decided when the
+            // command was made), else a mirrored copy `i<n>_copy` and a join.
+            const solid = part(0);
+            const plane = planeFrame(d, get(c, "across"), pending) ?? refuse(`${base}: the plane is gone`);
+            if (get(c, "touch") === true) return [{ kind: "solid.mirror_join", solid, plane, snap: MIRROR_SNAP }];
+            pre.push({ id: helperId(n, "copy"), kind: "solid.mirror", solid, plane });
+            return [{ kind: "solid.join", solids: [solid, helperId(n, "copy")] }];
+        }
         default:
             return refuse(`${base}: no body kind \`${kind}\``);
     }
@@ -1240,7 +1606,16 @@ function verbHeld(get, n, verb, vk) {
         if (ids && !ids.includes(undefined)) out.parts = ids;
     };
     switch (vk) {
-        case "solid.join": parts(verb.solids); break;
+        case "solid.join": {
+            // A mirror's join: its source and its mirrored copy.
+            const copy = get(helperId(n, "copy"));
+            if (copy?.kind === "solid.mirror") {
+                parts([copy.solid]);
+                put("across", planeOfFrame(copy.plane));
+                out.touch = false;
+            } else parts(verb.solids);
+            break;
+        }
         case "solid.cut": parts([verb.target, verb.tool]); break;
         case "solid.common": parts([verb.a, verb.b]); break;
         case "solid.shell": parts([verb.solid]); put("thickness", verb.thickness); put("faceRefs", verb.open); break;
@@ -1261,6 +1636,9 @@ function verbHeld(get, n, verb, vk) {
         case "solid.chamfer": parts([verb.solid]); put("edgeRefs", verb.edges); put("radius", verb.distance); break;
         case "solid.split_side": parts([verb.solid]); put("side", verb.side); put("cutter", itemOfId(verb.tool)); break;
         case "solid.split_side_by_plane": parts([verb.solid]); put("side", verb.side); put("cutter", planeOfFrame(verb.plane)); break;
+        case "solid.nth": put("pattern", itemOfId(verb.list)); put("index", verb.index); break;
+        case "solid.pattern_feature": Object.assign(out, placementsHeld(get, n)); break;
+        case "solid.mirror_join": parts([verb.solid]); put("across", planeOfFrame(verb.plane)); out.touch = true; break;
         case "solid.split_side_by_profile": {
             parts([verb.solid]);
             put("side", verb.side);
@@ -1509,12 +1887,13 @@ const bodyClass = {
 
 /// Item classes by the page's kind: each `{ read(d, n, head), write(d, n, fields, pending) }`.
 /// The body verbs (5.3c) add their kinds to the body class.
-export const ITEM_CLASSES = { curve: curveClass, sketch: sketchClass, held: heldClass, body: bodyClass };
+export const ITEM_CLASSES = { curve: curveClass, sketch: sketchClass, held: heldClass, body: bodyClass, pattern: patternClass };
 
 /// The class name of a page kind.
 export function classOf(kind) {
     if (kind === "sketch") return "sketch";
     if (kind === "held_profile") return "held";
+    if (kind === "pattern") return "pattern";
     if (isBodyKind(kind)) return "body";
     if (kind === "image") return "image";
     return "curve";
@@ -1535,7 +1914,7 @@ function standIn(n, c, type, why) {
     return head;
 }
 
-const standInType = (c) => (c.kind === "sketch" ? "sketch" : classOf(c.kind) === "curve" ? "curve" : c.kind === "held_profile" ? "profile" : bodyIsSheet(c) ? "sheet" : "solid");
+const standInType = (c) => (c.kind === "sketch" ? "sketch" : c.kind === "pattern" ? "solid" : classOf(c.kind) === "curve" ? "curve" : c.kind === "held_profile" ? "profile" : bodyIsSheet(c) ? "sheet" : "solid");
 
 /// Item `n`'s page fields, read off its nodes as the draft has them. A held item with no
 /// head of its own reads off its held node.
@@ -1605,15 +1984,18 @@ export function writeItem(d, n, fields, at) {
 const FACE_READERS = ["press", "refillet", "rechamfer", "remove"];
 
 /// The items whose nodes hold a copy of a value of another item (see the header's Copies):
-/// a trim (its split's direction), a split (a curve cutter's plane), the face readers.
-const COPIERS = ["trim", "split", ...FACE_READERS];
+/// a trim (its split's direction), a split (a curve cutter's plane), the face readers, a
+/// feature pattern (its feature's target and tool).
+const COPIERS = ["trim", "split", ...FACE_READERS, "pattern_feature"];
 
 /// Every item that copies a value of an item this command wrote, written again from its
 /// own fields, so the copy is what its source now gives (the diff emits nothing where it
 /// is): the copiers reading a written item's nodes, at any depth (`document_readers`,
 /// transitive: a trim reads its curve's sketch's frame through the curve), and the face
 /// readers whose parts name a face item written or gone (no node input carries a face
-/// item's body and reference). An item gone is its node readers' to `orphanReaders`; one
+/// item's body and reference), and the feature patterns whose part is a cut or a join written
+/// (their node copies its target and tool). An item gone is its node readers' to
+/// `orphanReaders`; one
 /// reading only its own nodes is not its own copier. What this writes is a source in turn,
 /// until nothing more moves. `d.copied` keeps the sources done.
 function rewriteCopies(d) {
@@ -1626,7 +2008,7 @@ function rewriteCopies(d) {
         for (const n of sources) {
             d.copied.add(n);
             const it = d.model.item(n);
-            if ((d.item(n) ?? it)?.kind === "face") faces = true;
+            if (["face", "cut", "join"].includes((d.item(n) ?? it)?.kind)) faces = true;
             if (!it || !d.item(n)) continue;
             const ids = it.of !== undefined ? [it.node] : [it.head.id, ...it.helpers.map((h) => h.id)];
             for (const id of ids) {
@@ -1638,7 +2020,7 @@ function rewriteCopies(d) {
         }
         if (faces) {
             for (const it of d.model.items()) {
-                if (!FACE_READERS.includes(it.kind) || !d.has(headId(it.id))) continue;
+                if (![...FACE_READERS, "pattern_feature"].includes(it.kind) || !d.has(headId(it.id))) continue;
                 const c = readItem(d, it.id);
                 if (Array.isArray(c.parts) && c.parts.some((p) => sources.includes(p))) targets.add(it.id);
             }
@@ -1827,6 +2209,13 @@ function newCurve(d, n, def, plane, at) {
     writeItem(d, n, c, at);
 }
 
+/// Item `n` written as `c`: a pattern group with its instances (`writeGroup`), any other
+/// item alone (`writeItem`).
+function writeAny(d, n, c) {
+    if (isPattern(d.item(n))) writeGroup(d, n, c);
+    else writeItem(d, n, c);
+}
+
 /// Each `{ id, ...fields }` set on its item (forge.js `editItems`).
 function editItems(d, list) {
     if (!Array.isArray(list)) return;
@@ -1835,7 +2224,7 @@ function editItems(d, list) {
         if (n === undefined || !d.item(n) || !isMap(it)) continue;
         const c = readItem(d, n);
         for (const [k, v] of Object.entries(it)) if (k !== "id" && !RUNTIME_KEYS.includes(k)) c[k] = kept(v);
-        writeItem(d, n, c);
+        writeAny(d, n, c);
     }
 }
 
@@ -1921,6 +2310,19 @@ function hide(d, n) {
     if (nd) {
         if (nd.hidden !== true) d.set(id, { hidden: true });
     } else writeItem(d, n, { ...readItem(d, n), hidden: true });
+}
+
+/// A feature pattern's fields (kind `pattern_feature`, named `name`): the cut or join `f`
+/// as its one part, its plane and pivot, the placements' `fields`. `madeTail`'s revolution
+/// fields `axis` and `angle` are a circular pattern's here: null (the kind's default) unless
+/// given.
+function featurePattern(d, n, f, name, fields) {
+    const c = { id: n, name, kind: "pattern_feature" };
+    if (f.plane !== undefined) c.plane = clone(f.plane);
+    Object.assign(c, { parts: [f.id], pivot: pivotOf(f), transform: still() });
+    madeTail(c, true);
+    c.angle = null;
+    return Object.assign(c, fields);
 }
 
 /// The page's `consume`: item `n` hidden, and what it was made of -- a curve's sketch, a
@@ -2189,6 +2591,11 @@ function build(model, cmd, env, broken) {
             // made body keeps its first part's, with no node on the sketch's frame), as the
             // page's walk did.
             const doomed = idsOf(get(cmd, "ids")).filter((n) => d.item(n));
+            // A pattern group takes its instances along.
+            for (const n of doomed.slice()) {
+                if (!isPattern(d.item(n))) continue;
+                for (const m of idsOf(readItem(d, n).instances)) if (!doomed.includes(m) && d.item(m)?.kind === "instance") doomed.push(m);
+            }
             for (const n of doomed.slice()) {
                 if (!isSketch(d.item(n))) continue;
                 for (const it of model.items()) {
@@ -2298,7 +2705,7 @@ function build(model, cmd, env, broken) {
                 if (k === "op" || k === "id" || k === "sketchConstraints" || k === "sketchEdits" || RUNTIME_KEYS.includes(k)) continue;
                 c[k] = kept(v);
             }
-            writeItem(d, n, c);
+            writeAny(d, n, c);
             break;
         }
         case "edit":
@@ -2564,6 +2971,81 @@ function build(model, cmd, env, broken) {
             if (get(cmd, "radius") !== undefined) c.radius = clone(cmd.radius);
             Object.assign(c, { tool: src.id, pivot: pivotOf(src), transform: still() });
             writeItem(d, n, madeTail(c, true));
+            break;
+        }
+        // A body pattern: the group and its instances (`writeGroup`); the sources stay.
+        case "pattern": {
+            const n = cmdId(cmd, "id", op);
+            const sources = idsOf(get(cmd, "sources"));
+            if (!sources.length) fail("pattern: nothing to pattern");
+            for (const s of sources) if (!isBody(d.item(s))) fail(`pattern: #${s} is not a body`);
+            d.bump(n);
+            const c = { id: n, name: d.nameFor("pattern"), kind: "pattern", sources };
+            for (const k of PLACEMENT_KEYS) if (k !== "across" && get(cmd, k) !== undefined) c[k] = kept(cmd[k]);
+            c.instances = idsOf(get(cmd, "instances"));
+            c.hidden = false;
+            writeGroup(d, n, c);
+            break;
+        }
+        // A cut's or a join's tool patterned on its target: the item takes the feature's place.
+        case "pattern_feature": {
+            const n = cmdId(cmd, "id", op);
+            const feature = idOf(get(cmd, "feature"));
+            const f = feature === undefined ? undefined : d.item(feature);
+            if (!f) fail("pattern_feature: no feature");
+            if (f.kind !== "cut" && f.kind !== "join") fail(`pattern_feature: #${feature} is not a cut or a join`);
+            d.bump(n);
+            const fields = {};
+            for (const k of PLACEMENT_KEYS) if (k !== "across" && get(cmd, k) !== undefined) fields[k] = kept(cmd[k]);
+            writeItem(d, n, featurePattern(d, n, need(d, feature, op), d.nameFor("pattern"), fields));
+            consume(d, feature);
+            break;
+        }
+        // A mirror: of bodies, as new bodies (a group, as a pattern) or joined to its mirror;
+        // of a feature, its tool mirrored on its target.
+        case "mirror": {
+            const n = cmdId(cmd, "id", op);
+            const plane = get(cmd, "plane");
+            if (!planeThere(d, plane)) fail("mirror: no plane");
+            const objects = orElse(get(cmd, "objects"), "bodies");
+            const name = () => `${d.model.label("mirror")} ${d.count("mirror")}`;
+            if (objects === "feature") {
+                const feature = idOf(get(cmd, "feature"));
+                const f = feature === undefined ? undefined : d.item(feature);
+                if (!f) fail("mirror: no feature");
+                if (f.kind !== "cut" && f.kind !== "join") fail(`mirror: #${feature} is not a cut or a join`);
+                d.bump(n);
+                writeItem(d, n, featurePattern(d, n, need(d, feature, op), name(), { type: "mirror", across: clone(plane) }));
+                consume(d, feature);
+                break;
+            }
+            if (objects !== "bodies") fail("mirror: `objects` is not bodies or feature");
+            const sources = idsOf(get(cmd, "sources"));
+            if (!sources.length) fail("mirror: nothing to mirror");
+            for (const s of sources) if (!isBody(d.item(s))) fail(`mirror: #${s} is not a body`);
+            const operation = orElse(get(cmd, "operation"), "new");
+            if (operation === "new") {
+                d.bump(n);
+                const c = { id: n, name: name(), kind: "pattern", sources, type: "mirror", across: clone(plane), instances: idsOf(get(cmd, "instances")), hidden: false };
+                writeGroup(d, n, c);
+                break;
+            }
+            if (operation !== "join") fail("mirror: `operation` is not new or join");
+            if (sources.length !== 1) fail("mirror: a join mirrors one body");
+            const src = need(d, sources[0], op);
+            // Touching the plane or not: the command's own word (the page's, off the body's
+            // bounds), else the bounds off the evaluated document.
+            let touch = get(cmd, "touch");
+            if (typeof touch !== "boolean") {
+                const { origin, normal } = planeAt(d, "mirror", plane);
+                touch = touchesPlane(d.bounds(src.id), origin, normal);
+            }
+            d.bump(n);
+            const c = { id: n, name: name(), kind: "mirror" };
+            if (src.plane !== undefined) c.plane = clone(src.plane);
+            Object.assign(c, { parts: [src.id], across: clone(plane), touch, pivot: pivotOf(src), transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            consume(d, src.id);
             break;
         }
         case "split": {

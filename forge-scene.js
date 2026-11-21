@@ -93,6 +93,11 @@
 // `version`). A body item with no node is `failed` "no node i<n>". `version` counts up per id
 // each time a solid replaces the kept one; `elapsed` is the evaluation's, in ms.
 //
+// A body pattern's group item (kind `pattern`: its head `i<n>` a list of bodies, each of its
+// instances a body item of its own) is no body: it is posted, when its status changed, as
+// `{ kind: "group", id, key, state, error, by?, elapsed }` -- `state` "ok", "error" or
+// "blocked", `error` null when ok -- so a failed pattern shows on its row.
+//
 // Bodies that left the document (deleted, undone, switched away) are freed and posted once per
 // evaluation as `{ kind: "forgotten", ids }`. The page drops a body's table only on that
 // message, never off its own items: changes are coalesced into one evaluation, so a body
@@ -150,7 +155,7 @@ export const ISOCURVE_DENSITY = 1;
 // app's held body (`held`) among them.
 const BODY_KINDS = new Set(["surface", "extrusion", "revolution", "solid", "sweep", "loft",
     "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split",
-    "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "held"]);
+    "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "held", "instance", "pattern_feature", "mirror"]);
 export const isBodyKind = (kind) => BODY_KINDS.has(kind);
 // The item a node belongs to: `i<n>` and its helpers `i<n>_<role>` are item n's.
 export const itemOfNode = (node) => { const m = /^i(\d+)(?:_|$)/.exec(node ?? ""); return m ? Number(m[1]) : null; };
@@ -308,6 +313,7 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
     const nodeOf = (id) => typeof id === "number" ? (model && bodyNode(model, id)) ?? `i${id}` : String(id);
     const bodies = new Map();     // item id -> { solid, version, table, refs, ghostFaces, drop, kind }
     const sent = new Map();       // item id -> the `(key, hash)` or error last posted for it
+    const groupSent = new Map();  // pattern group id -> the status last posted for it
     const ghosts = new Map();     // trim body id -> { solid, faces, version }, freed when replaced
     const bitmaps = new Map();    // image id -> { bitmap, gen }
     const payloads = new Map();   // wanted key -> { beziers?, corners? }, as last sent for it
@@ -371,6 +377,7 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
                 model = new Model(wasm, doc);
                 if (m.skip?.length) wasm.cadaclysm_blacksmith_document_set_skip(doc, JSON.stringify(m.skip));
                 sent.clear();
+                groupSent.clear();
                 stale = true;
                 return;
             }
@@ -470,7 +477,9 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
             }
             if (forgotten.size) post({ kind: "forgotten", ids: [...forgotten].sort((a, b) => a - b) });
             lastStatuses = statuses;
+            for (const id of groupSent.keys()) if (byId.get(id)?.kind !== "pattern") groupSent.delete(id);
             for (const item of items) {
+                if (item.kind === "pattern") { group(item, byNode.get(`i${item.id}`), elapsed); continue; }
                 if (!isBodyKind(item.kind)) continue;
                 const node = nodeOf(item.id), st = byNode.get(node);
                 if (!st) {
@@ -515,6 +524,16 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
         if (rebuilt.size) {
             try { resync(rebuilt); } catch (error) { if (isTrap(error)) fault(error, [...rebuilt].at(-1)); else throw error; }
         }
+    }
+
+    // A pattern group's status (its head a list of bodies: no body), posted when it changed.
+    function group(item, st, elapsed) {
+        if (!st || st.state === "pending") return;
+        const error = st.state === "ok" ? null : st.error ?? st.state;
+        const sig = `${st.key}|${st.state}|${error}`;
+        if (groupSent.get(item.id) === sig) return;
+        groupSent.set(item.id, sig);
+        post({ kind: "group", id: item.id, key: st.key, state: st.state, error, ...(st.by !== undefined ? { by: st.by } : {}), elapsed: elapsed() });
     }
 
     // Body `item` (node `node`, Ok under `key`) made a solid, kept and answered: true when

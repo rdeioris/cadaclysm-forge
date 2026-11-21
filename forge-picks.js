@@ -21,7 +21,8 @@
 //                                           item's own node); undefined for no body item
 //   docPicks(kernel, doc, model?)           the geometry a command may ask of a document:
 //                                           `{ kernel, edgeRef(n, k), faceRef(n, k),
-//                                           faceFrame(n, k) }` (faceFrame needs the model),
+//                                           faceFrame(n, k), bounds(n) }` (faceFrame needs the
+//                                           model; bounds the six `bounds64` numbers),
 //                                           and off any node's result: `nodeFaceRef(id, k)`,
 //                                           `findFace(id, ref8, hint)` (the face the page's
 //                                           own eight-number reference finds, -1 none),
@@ -49,6 +50,8 @@ const REF_TOLERANCE = 1e-6;
 /// How far the page's own face reference (eight numbers: a shell's `openRefs`, a face item's
 /// `ref`) may be from the face it finds (the 0.14 layer's `FORGE_REF_TOLERANCE`).
 const PAGE_REF_TOLERANCE = 1e-3;
+/// The tolerance a body's bounds are read at (`bounds64`), as the tests read them.
+const BOUNDS_TOLERANCE = 0.01;
 
 const fail = (why) => { throw new Error(why); };
 
@@ -170,6 +173,7 @@ export function docPicks(kernel, doc, model) {
         },
         edgeRef: (n, index) => body(n, (s) => edgeRefOf(kernel, s, index)),
         faceRef: (n, index) => body(n, (s) => faceRefOf(kernel, s, index)),
+        bounds: (n) => body(n, (s) => Array.from(call(kernel, "cadaclysm_blacksmith_bounds64", s, BOUNDS_TOLERANCE))),
         nodeFaceRef: (id, index) => onNode(id, (s) => faceRefOf(kernel, s, index)),
         findFace: (id, ref, hint) => onNode(id, (s) => call(kernel, "cadaclysm_blacksmith_find_face", s, Float64Array.from(ref), hint, PAGE_REF_TOLERANCE)),
         frameValue: (id) => {

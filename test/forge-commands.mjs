@@ -9,7 +9,7 @@
 import assert from "node:assert";
 import { loadWasm } from "./package.mjs";
 import { Model, UNITS } from "../forge-model.js";
-import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes, pageItems } from "../forge-commands.js";
+import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes, pageItems, touchesPlane } from "../forge-commands.js";
 import { buildModel, freeModel, solveModel, writeBack, addConstraint, removeConstraint, dragModel, setValue } from "../forge-constraints.js";
 import { isBody } from "../forge-model.js";
 import { readFileSync } from "node:fs";
@@ -1142,6 +1142,270 @@ function refused(t, cmd, words) {
     t.run({ op: "sketch_mirror", sketch: 1, ids: [3], line: 2, copies: [4] });
     assert.ok(close(t.item(4).shape, { cx: -5, cy: -5, r: 2, sides: 5, angle: 170 }, 1e-9), JSON.stringify(t.item(4).shape));
     for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    t.free();
+}
+
+// A box's bounds turned `deg` about the world Z through the origin: the box of its eight
+// corners turned (exact for a box).
+function turnedBounds(b, deg) {
+    const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    const xs = [], ys = [];
+    for (const x of [b[0], b[3]]) for (const y of [b[1], b[4]]) { xs.push(c * x - s * y); ys.push(s * x + c * y); }
+    return [Math.min(...xs), Math.min(...ys), b[2], Math.max(...xs), Math.max(...ys), b[5]];
+}
+const BOX_AT = (id, s, x, y) => [{ op: "primitive", id, kind: "box", plane: "top", dims: [s, s, s] }, { op: "set", id, place: { offset: [x, y, 0], turn: [0, 0, 0] } }];
+
+// pattern of bodies, circular about Z: one group item (kind `pattern`, no parts: the sources
+// stay tips) whose head `i<id>` is `solid.pattern` over `i<id>_at` `placements.circular`, and
+// one instance item per (placement >= 1, source), instance-major, each `solid.nth` of the
+// list, named "<source> <p+1>". An edit of a source flows into its instances; a `set` of
+// the group's count re-makes the instances in one command; undo takes it all back.
+{
+    const t = fresh();
+    for (const c of [...BOX_AT(1, 4, 20, 0), ...BOX_AT(2, 2, 30, 5)]) t.run(c);
+    const before = JSON.stringify(t.nodes());
+    const ids = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+    t.run({ op: "pattern", id: 3, sources: [1, 2], type: "circular", axis: "z", count: 6, instances: ids });
+    assert.deepStrictEqual(t.node("i3_at"), { id: "i3_at", kind: "placements.circular", axis: "xy", count: 6 });
+    assert.deepStrictEqual([t.node("i3").kind, t.node("i3").solids, t.node("i3").placements, t.node("i3").combine], ["solid.pattern", ["i1", "i2"], "i3_at", "separate"]);
+    const g = t.item(3);
+    assert.deepStrictEqual([g.kind, g.name, g.sources, g.type, g.axis, g.count, g.instances, g.parts], ["pattern", "Pattern 1", [1, 2], "circular", "z", 6, ids, undefined]);
+    assert.deepStrictEqual(t.model.items().filter((i) => i.kind === "instance").map((i) => i.id), ids);
+    assert.ok(!isBody(t.model.item(3)) && isBody(t.model.item(4)));
+    assert.deepStrictEqual(ids.map((n) => t.item(n).name), ["Box 1 2", "Box 2 2", "Box 1 3", "Box 2 3", "Box 1 4", "Box 2 4", "Box 1 5", "Box 2 5", "Box 1 6", "Box 2 6"]);
+    assert.deepStrictEqual(ids.map((n) => [t.node(`i${n}`).kind, t.node(`i${n}`).list, t.node(`i${n}`).index]), ids.map((_, k) => ["solid.nth", "i3", k + 2]));
+    assert.deepStrictEqual([t.item(7).pattern, t.item(7).index, t.item(7).source, t.item(7).kind, t.item(7).parts], [3, 5, 2, "instance", []]);
+    assert.ok(!t.item(1).hidden && !t.item(2).hidden, "the sources are not consumed");
+    const b1 = solidNow(t, "i1"), b2 = solidNow(t, "i2");
+    ids.forEach((n, k) => assert.ok(close(solidOf(t.doc, `i${n}`).volume, k % 2 ? 8 : 64, 1e-9), `#${n} ${solidOf(t.doc, `i${n}`).volume}`));
+    // (p = 2, s = 1): box 2 turned 120 degrees
+    assert.ok(close(solidOf(t.doc, "i7").bounds, turnedBounds(b2.bounds, 120), 1e-3), JSON.stringify([solidOf(t.doc, "i7").bounds, turnedBounds(b2.bounds, 120)]));
+    assert.ok(close(solidOf(t.doc, "i4").bounds, turnedBounds(b1.bounds, 60), 1e-3));
+    // the source's size: every instance of it follows
+    t.run({ op: "set", id: 1, dims: [5, 5, 5] });
+    for (const n of [4, 6, 8, 10, 12]) assert.ok(close(solidNow(t, `i${n}`).volume, 125, 1e-9), `#${n}`);
+    // the count set to 4: the group and its instances re-made in one command
+    const rev = t.revision();
+    t.run({ op: "set", id: 3, count: 4 });
+    assert.strictEqual(t.revision(), rev + 1);
+    assert.strictEqual(t.node("i3_at").count, 4);
+    assert.deepStrictEqual(t.item(3).instances, [4, 5, 6, 7, 8, 9]);
+    assert.deepStrictEqual(t.model.items().filter((i) => i.kind === "instance").map((i) => [i.id, i.name]), [[4, "Box 1 2"], [5, "Box 2 2"], [6, "Box 1 3"], [7, "Box 2 3"], [8, "Box 1 4"], [9, "Box 2 4"]]);
+    for (const n of [10, 11, 12, 13]) assert.strictEqual(t.node(`i${n}`), undefined);
+    assert.ok(close(solidNow(t, "i7").bounds, turnedBounds(b2.bounds, 180), 1e-3));
+    // up again: the command names the new ids
+    t.run({ op: "set", id: 3, count: 5, instances: [4, 5, 6, 7, 8, 9, 14, 15] });
+    assert.deepStrictEqual(t.model.items().filter((i) => i.kind === "instance").map((i) => i.id), [4, 5, 6, 7, 8, 9, 14, 15]);
+    assert.strictEqual(t.meta().nextId, 16);
+    // too few ids: refused, nothing written
+    refused(t, { op: "set", id: 3, count: 7 }, /^pattern: fewer `instances` ids than instances/);
+    // undo, back to before the pattern (the three sets, then the pattern)
+    for (let k = 0; k < 4; k++) t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    assert.deepStrictEqual(t.model.nodes(), t.nodes());
+    t.free();
+}
+
+// skip: the skipped placement is absent, the rest named in order; rectangular and along a
+// sketch line (its `curve.as_nurbs` the path) once each; an axis picked off geometry is
+// numbers; the pattern round-trips through a save and a load (the same page items).
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "pattern", id: 2, sources: [1], type: "circular", count: 6, skip: [2], instances: [3, 4, 5, 6, 7] });
+    assert.deepStrictEqual(t.node("i2_at").skip, [2]);
+    assert.deepStrictEqual(t.item(2).instances, [3, 4, 5, 6]);
+    assert.deepStrictEqual([3, 4, 5, 6].map((n) => [t.item(n).name, t.item(n).index]), [["Box 1 2", 1], ["Box 1 3", 2], ["Box 1 4", 3], ["Box 1 5", 4]]);
+    const b = solidNow(t, "i1").bounds;
+    // index 2 (120 degrees) skipped: the second instance is the one at 180
+    assert.ok(close(solidOf(t.doc, "i4").bounds, turnedBounds(b, 180), 1e-3), JSON.stringify(solidOf(t.doc, "i4").bounds));
+    t.run({ op: "pattern", id: 8, sources: [1], type: "rectangular", d1: "x", count1: 3, spacing1: 5, d2: [0, 1, 0], count2: 2, spacing2: 7, instances: [9, 10, 11, 12, 13] });
+    assert.deepStrictEqual(t.node("i8_at"), { id: "i8_at", kind: "placements.rectangular", direction1: [1, 0, 0], count1: 3, spacing1: 5, direction2: [0, 1, 0], count2: 2, spacing2: 7 });
+    [[5, 0], [10, 0], [0, 7], [5, 7], [10, 7]].forEach(([dx, dy], k) => {
+        const got = solidNow(t, `i${9 + k}`).bounds;
+        assert.ok(close(got, [b[0] + dx, b[1] + dy, b[2], b[3] + dx, b[4] + dy, b[5]], 1e-6), `#${9 + k} ${JSON.stringify(got)}`);
+    });
+    t.run({ op: "sketch", id: 14, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 15, kind: "line", plane: 14, shape: { x0: 0, y0: 0, x1: 0, y1: 30 } });
+    t.run({ op: "pattern", id: 16, sources: [1], type: "along", path: 15, count: 4, instances: [17, 18, 19] });
+    assert.deepStrictEqual(t.node("i16_path"), { id: "i16_path", kind: "curve.as_nurbs", curve: "i15" });
+    assert.deepStrictEqual(t.node("i16_at"), { id: "i16_at", kind: "placements.along", path: "i16_path", count: 4 });
+    [10, 20, 30].forEach((dy, k) => {
+        const got = solidNow(t, `i${17 + k}`).bounds;
+        assert.ok(close(got, [b[0], b[1] + dy, b[2], b[3], b[4] + dy, b[5]], 1e-6), `#${17 + k} ${JSON.stringify(got)}`);
+    });
+    assert.deepStrictEqual([t.item(16).path, t.item(16).type, t.item(16).count], [15, "along", 4]);
+    // the axis picked off geometry: numbers, a `frame.at` helper (and Y, the world's, the same)
+    t.run({ op: "pattern", id: 20, sources: [1], type: "circular", axis: { origin: [10, 0, 0], dir: [0, 0, 1] }, count: 2, angle: 180, instances: [21] });
+    assert.deepStrictEqual(t.node("i20_axis"), { id: "i20_axis", kind: "frame.at", origin: [10, 0, 0], normal: [0, 0, 1] });
+    assert.strictEqual(t.node("i20_at").axis, "i20_axis");
+    assert.deepStrictEqual(t.item(20).axis, { origin: [10, 0, 0], dir: [0, 0, 1] });
+    assert.ok(close(solidNow(t, "i21").bounds, b, 1e-6), "a box centred on the axis turned half a turn is where it was");
+    t.run({ op: "pattern", id: 22, sources: [1], type: "circular", axis: "y", count: 4, instances: [23, 24, 25] });
+    assert.deepStrictEqual(t.node("i22_axis"), { id: "i22_axis", kind: "frame.at", origin: [0, 0, 0], normal: [0, 1, 0] });
+    assert.strictEqual(t.item(22).axis, "y");
+    // a quarter turn about +Y takes +X to -Z
+    assert.ok(close(solidNow(t, "i23").bounds, [b[2], b[1], -b[3], b[5], b[4], -b[0]], 1e-6), JSON.stringify(solidOf(t.doc, "i23").bounds));
+    t.run({ op: "pattern", id: 26, sources: [1], type: "circular", axis: "x", count: 2, instances: [27] });
+    assert.strictEqual(t.node("i26_at").axis, "yz");
+    // a save, a load: the same page items
+    const items = pageItems(t.model);
+    const text = wasm[K + "document_save"](t.doc);
+    const again = wasm[K + "document_load"](text);
+    assert.deepStrictEqual(pageItems(new Model(wasm, again)), items);
+    wasm[K + "document_free"](again);
+    t.free();
+}
+
+// pattern refusals: in the command's words, the document untouched
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "sketch", id: 2, mode: "offset", base: "top", offset: 0 });
+    refused(t, { op: "pattern", id: 3, sources: [], type: "circular", count: 6, instances: [4, 5, 6, 7, 8] }, /^pattern: nothing to pattern/);
+    refused(t, { op: "pattern", id: 3, sources: [1], type: "circular", count: 1, instances: [4] }, /^pattern: `count` must be a whole number, 2 or more/);
+    refused(t, { op: "pattern", id: 3, sources: [1], type: "along", path: 2, count: 3, instances: [4, 5] }, /^pattern: the path is not a curve/);
+    refused(t, { op: "pattern", id: 3, sources: [2], type: "circular", count: 3, instances: [4, 5] }, /^pattern: #2 is not a body/);
+    refused(t, { op: "pattern", id: 3, sources: [1], type: "circular", count: 3, skip: [0], instances: [4, 5] }, /^pattern: the original \(instance 0\) cannot be skipped/);
+    t.free();
+}
+
+// A pattern group deleted takes its instances along; a source deleted leaves the group and
+// its instances standing, failed (the group a stand-in, the instances blocked by it).
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "pattern", id: 2, sources: [1], type: "circular", count: 3, instances: [3, 4] });
+    t.run({ op: "delete", ids: [2] });
+    assert.deepStrictEqual(t.model.items().map((i) => [i.id, i.kind]), [[1, "box"]]);
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    t.run({ op: "delete", ids: [1] });
+    assert.deepStrictEqual(t.model.items().map((i) => [i.id, i.kind]), [[2, "pattern"], [3, "instance"], [4, "instance"]]);
+    assert.deepStrictEqual([t.statusOf("i2").state, t.statusOf("i3").state, t.statusOf("i3").by], ["error", "blocked", "i2"]);
+    t.free();
+}
+
+// A plate with an off-centre hole cut (a cylinder at x 10 through a 40 x 40 x 4 plate).
+const PLATE = [
+    { op: "primitive", id: 1, kind: "box", plane: "top", dims: [40, 40, 4] },
+    { op: "primitive", id: 2, kind: "cylinder", plane: "top", dims: [2, 10] },
+    { op: "set", id: 2, place: { offset: [10, 0, -3], turn: [0, 0, 0] } },
+    { op: "cut", id: 3, parts: [1, 2] },
+];
+const HOLE = Math.PI * 2 * 2 * 4;
+
+// pattern_feature: the cut's tool placed again on the cut's target (its target and tool,
+// not its result), one item at the chain's end that consumes the cut; 4 about Z: the plate
+// less 4 holes. A change of the cut's parts reaches it (a copy, see Copies). A save and a
+// load give the same page items.
+{
+    const t = fresh();
+    for (const c of PLATE) t.run(c);
+    t.run({ op: "pattern_feature", id: 4, feature: 3, type: "circular", axis: "z", count: 4 });
+    assert.deepStrictEqual(t.node("i4_at"), { id: "i4_at", kind: "placements.circular", axis: "xy", count: 4 });
+    const v = t.node("i4");
+    assert.deepStrictEqual([v.kind, v.solid, v.tool, v.op, v.placements], ["solid.pattern_feature", "i1", "i2", "cut", "i4_at"]);
+    const it = t.item(4);
+    assert.deepStrictEqual([it.kind, it.name, it.parts, it.type, it.axis, it.count, it.hidden], ["pattern_feature", "Pattern 1", [3], "circular", "z", 4, false]);
+    assert.ok(t.item(3).hidden, "the cut is consumed");
+    assert.strictEqual(t.statusOf("i4").state, "ok", JSON.stringify(t.statusOf("i4")));
+    assert.ok(close(solidOf(t.doc, "i4").volume, 6400 - 4 * HOLE, 1e-6), String(solidOf(t.doc, "i4").volume));
+    // the cut's tool changed: the pattern reads the new one
+    t.run({ op: "primitive", id: 5, kind: "cylinder", plane: "top", dims: [3, 10] });
+    t.run({ op: "set", id: 5, place: { offset: [10, 0, -3], turn: [0, 0, 0] } });
+    t.run({ op: "set", id: 3, parts: [1, 5] });
+    assert.strictEqual(t.node("i4").tool, "i5");
+    assert.ok(close(solidNow(t, "i4").volume, 6400 - 4 * Math.PI * 9 * 4, 1e-6));
+    // the count set: one node
+    const set = t.run({ op: "set", id: 4, count: 6 }).op;
+    assert.deepStrictEqual(set.ops, [{ op: "set", id: "i4_at", fields: { count: 6 } }]);
+    const items = pageItems(t.model);
+    const again = wasm[K + "document_load"](wasm[K + "document_save"](t.doc));
+    assert.deepStrictEqual(pageItems(new Model(wasm, again)), items);
+    wasm[K + "document_free"](again);
+    t.free();
+}
+
+// mirror of a feature: pattern_feature over `placements.mirror` across Right: 2 holes, at +-x
+{
+    const t = fresh();
+    for (const c of PLATE) t.run(c);
+    t.run({ op: "mirror", id: 4, objects: "feature", feature: 3, plane: "right" });
+    assert.deepStrictEqual(t.node("i4_at"), { id: "i4_at", kind: "placements.mirror", plane: "yz" });
+    assert.deepStrictEqual([t.node("i4").kind, t.node("i4").solid, t.node("i4").tool], ["solid.pattern_feature", "i1", "i2"]);
+    assert.deepStrictEqual([t.item(4).kind, t.item(4).name, t.item(4).type, t.item(4).across], ["pattern_feature", "Mirror 1", "mirror", "right"]);
+    const got = solidNow(t, "i4");
+    assert.ok(close(got.volume, 6400 - 2 * HOLE, 1e-6), String(got.volume));
+    // the same as two holes cut by hand, at +-10
+    for (const c of [{ op: "primitive", id: 5, kind: "box", plane: "top", dims: [40, 40, 4] },
+        { op: "primitive", id: 6, kind: "cylinder", plane: "top", dims: [2, 10] }, { op: "set", id: 6, place: { offset: [10, 0, -3], turn: [0, 0, 0] } },
+        { op: "primitive", id: 7, kind: "cylinder", plane: "top", dims: [2, 10] }, { op: "set", id: 7, place: { offset: [-10, 0, -3], turn: [0, 0, 0] } },
+        { op: "cut", id: 8, parts: [5, 6] }, { op: "cut", id: 9, parts: [8, 7] }]) t.run(c);
+    const hand = solidNow(t, "i9");
+    assert.deepStrictEqual([got.faces, got.edges], [hand.faces, hand.edges]);
+    assert.ok(close(got.area, hand.area, 1e-6));
+    t.free();
+}
+
+// mirror of bodies, joined: a half touching the plane is `solid.mirror_join` (one body, twice
+// the volume, no face on the plane -- as one box of twice the length); the same half off the
+// plane is a mirrored copy and a join (two lumps in one item). The source is consumed.
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 6, 3, 0)) t.run(c);   // x 0..6: touching YZ
+    t.run({ op: "set", id: 1, dims: [6, 6, 4] });
+    t.run({ op: "mirror", id: 2, objects: "bodies", sources: [1], plane: "right", operation: "join" });
+    assert.deepStrictEqual([t.node("i2").kind, t.node("i2").solid, t.node("i2").plane, t.node("i2").snap], ["solid.mirror_join", "i1", "yz", 0.01]);
+    assert.deepStrictEqual([t.item(2).kind, t.item(2).name, t.item(2).parts, t.item(2).across, t.item(2).touch], ["mirror", "Mirror 1", [1], "right", true]);
+    assert.ok(t.item(1).hidden);
+    // KERNEL GAP (this web package): `solid.mirror_join` refuses every flat-sided half touching
+    // the plane (a box, a cylinder, an L of two boxes) in these words. Pinned so it flips when
+    // the kernel takes it; then: one solid, volume 288, 6 faces, bounds [-6, -3, 0, 6, 3, 4].
+    wasm[K + "document_evaluate"](t.doc, false);
+    assert.deepStrictEqual([t.statusOf("i2").state, t.statusOf("i2").error], ["error", "mirror_join: edge_continuity: edge 0 bounds 4 face(s), not two"]);
+    // off the plane: a copy and a join, two lumps in one item
+    for (const c of BOX_AT(3, 6, 8, 0)) t.run(c);   // x 5..11
+    t.run({ op: "mirror", id: 4, objects: "bodies", sources: [3], plane: "right", operation: "join" });
+    assert.deepStrictEqual(t.node("i4_copy"), { id: "i4_copy", kind: "solid.mirror", solid: "i3", plane: "yz" });
+    assert.deepStrictEqual([t.node("i4").kind, t.node("i4").solids], ["solid.join", ["i3", "i4_copy"]]);
+    assert.deepStrictEqual([t.item(4).touch, t.item(4).parts, t.item(4).across], [false, [3], "right"]);
+    const two = solidNow(t, "i4");
+    assert.ok(close(two.volume, 432, 1e-6) && two.faces === 12, JSON.stringify(two));
+    // the page's own word wins: the touch it gives is kept and written
+    t.run({ op: "mirror", id: 5, objects: "bodies", sources: [4], plane: "front", operation: "join", touch: false });
+    assert.deepStrictEqual([t.item(5).touch, t.node("i5").kind], [false, "solid.join"]);
+    assert.ok(touchesPlane([0, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]) && !touchesPlane([0.02, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]) && !touchesPlane([-1, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]));
+    // a corner on a slanted plane, the box on both sides of it: no touch
+    assert.ok(!touchesPlane([0, -2, 0, 2, 0, 1], [0, 0, 0], [1, 1, 0]) && touchesPlane([0, 0, 0, 2, 2, 1], [0, 0, 0], [1, 1, 0]));
+    t.free();
+}
+
+// mirror of bodies, new: a group over `placements.mirror`, one instance per source named
+// "<source> mirror", its bounds reflected; the sources stay.
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 4, 10, 5)) t.run(c);
+    t.run({ op: "mirror", id: 2, objects: "bodies", sources: [1], plane: "front", operation: "new", instances: [3] });
+    assert.deepStrictEqual(t.node("i2_at"), { id: "i2_at", kind: "placements.mirror", plane: "xz" });
+    assert.deepStrictEqual([t.item(2).kind, t.item(2).name, t.item(2).type, t.item(2).across, t.item(2).instances], ["pattern", "Mirror 1", "mirror", "front", [3]]);
+    assert.deepStrictEqual([t.item(3).kind, t.item(3).name, t.item(3).index], ["instance", "Box 1 mirror", 1]);
+    assert.ok(!t.item(1).hidden);
+    const b = solidNow(t, "i1").bounds;
+    assert.ok(close(solidNow(t, "i3").bounds, [b[0], -b[4], b[2], b[3], -b[1], b[5]], 1e-6), JSON.stringify(solidOf(t.doc, "i3").bounds));
+    t.free();
+}
+
+// pattern_feature and mirror refusals: in the command's words, the document untouched
+{
+    const t = fresh();
+    for (const c of PLATE) t.run(c);
+    t.run({ op: "fillet", id: 4, source: 1, radius: 1 });
+    refused(t, { op: "pattern_feature", id: 5, feature: 4, type: "circular", count: 3 }, /^pattern_feature: #4 is not a cut or a join/);
+    refused(t, { op: "pattern_feature", id: 5, feature: 3, type: "circular", count: 1 }, /^pattern_feature: `count` must be a whole number, 2 or more/);
+    refused(t, { op: "mirror", id: 5, objects: "bodies", sources: [1], operation: "new", instances: [6] }, /^mirror: no plane/);
+    refused(t, { op: "mirror", id: 5, objects: "feature", feature: 3, plane: "nowhere" }, /^mirror: no plane/);
+    refused(t, { op: "mirror", id: 5, objects: "feature", feature: 4, plane: "top" }, /^mirror: #4 is not a cut or a join/);
+    refused(t, { op: "mirror", id: 5, objects: "bodies", sources: [1, 2], plane: "top", operation: "join" }, /^mirror: a join mirrors one body/);
     t.free();
 }
 

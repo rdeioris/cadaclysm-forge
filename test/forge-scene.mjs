@@ -722,4 +722,24 @@ const bodyItem = (id, extra = {}) => ({ key: `body:${id}`, deps: [], kind: "body
     assert.deepStrictEqual(posted.filter((m) => m.kind === "built" || m.kind === "failed").map((m) => m.kind), ["built"], "built once, never failed");
     assert.deepStrictEqual(crashes.map((c) => c.id), [1], "and one crash");
 }
+// A body pattern: its instances are bodies, built and posted as any; the group (its head a
+// list, not a body) is no body, but its status is posted as `group` -- ok, then, its source
+// deleted, in error (its instances failed, blocked by it) -- once per change.
+{
+    const { s, posted, run } = await pair();
+    await run({ ...BOX, dims: [2, 2, 2] }, { op: "set", id: 1, place: { offset: [10, 0, 0], turn: [0, 0, 0] } });
+    posted.length = 0;
+    await run({ op: "pattern", id: 2, sources: [1], type: "circular", count: 3, instances: [3, 4] });
+    assert.deepStrictEqual(of(posted, "built").map((m) => m.id), [3, 4]);
+    assert.deepStrictEqual(of(posted, "group").map((m) => [m.id, m.state, m.error]), [[2, "ok", null]]);
+    assert.ok(s.solidOf(3) && !s.solidOf(2));
+    posted.length = 0;
+    await run({ op: "set", id: 4, name: "renamed" });
+    assert.deepStrictEqual(of(posted, "group"), [], "posted once");
+    await run({ op: "delete", ids: [1] });
+    assert.deepStrictEqual(of(posted, "group").map((m) => [m.id, m.state, m.error]), [[2, "error", "i2: body #1 is gone"]]);
+    assert.deepStrictEqual(of(posted, "failed").map((m) => [m.id, m.by]), [[3, "i2"], [4, "i2"]]);
+    assert.deepStrictEqual(of(posted, "forgotten").map((m) => m.ids), [[1]], "the group is never forgotten as a body");
+}
+
 console.log("forge-scene: ok");
