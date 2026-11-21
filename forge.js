@@ -1328,12 +1328,12 @@ let selected = null;
 let selectedPoint = null;   // an index into the active NURBS's or polyline's points, or null
 const LABELS = { held: "Body", held_profile: "Profile", image: "Image", line: "Line", polyline: "Polyline", rect: "Rectangle", circle: "Circle", arc: "Arc", ellipse: "Ellipse", polygon: "Polygon", nurbs: "NURBS", polycurve: "Polycurve", surface: "Surface", extrusion: "Extrusion", revolution: "Revolution", solid: "Solid", sweep: "Sweep", loft: "Loft", join: "Join", cut: "Cut", intersect: "Intersect", chamfer: "Chamfer", shell: "Shell", thicken: "Thicken", trim: "Trim", prism: "Solid", press: "Press Pull", refillet: "Refillet", rechamfer: "Rechamfer", remove: "Remove", fillet: "Fillet", sketch: "Sketch", face: "Face",
                  box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split",
-                 pattern: "Pattern", instance: "Instance", pattern_feature: "Pattern", mirror: "Mirror" };
-const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽", pattern: "⁂", instance: "◇", pattern_feature: "⁂", mirror: "⧎" };
+                 pattern: "Pattern", instance: "Instance", pattern_feature: "Pattern", mirror: "Mirror", move: "Move", "sketch-move": "Move" };
+const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽", pattern: "⁂", instance: "◇", pattern_feature: "⁂", mirror: "⧎", move: "✥" };
 // A kind's icon (the sprite in forge.html), or its glyph as text where there is none.
-const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror", "pattern_feature", "copy-sketch"]);
-// A kind drawn with another's icon: a feature pattern is a pattern.
-const ICON_OF = { pattern_feature: "pattern" };
+const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror", "pattern_feature", "copy-sketch", "move", "sketch-move"]);
+// A kind drawn with another's icon: a feature pattern is a pattern, a sketch's move a move.
+const ICON_OF = { pattern_feature: "pattern", "sketch-move": "move" };
 function iconOf(kind, glyph = GLYPHS[kind] ?? "•") {
     if (!ICONS.has(kind)) { const span = document.createElement("span"); span.textContent = glyph; return span; }
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -3974,7 +3974,7 @@ function timelineChips() {
             else { chip = { at: i, ids: added.slice(), glyph: GLYPHS.sketch, kind: "sketch", plane }; if (plane !== undefined) bySketch.set(plane, chip); }
             break;
         }
-        case "round": case "explode": case "snip": case "sketch_pattern": case "sketch_mirror": {
+        case "round": case "explode": case "snip": case "sketch_pattern": case "sketch_mirror": case "sketch_move": {
             const ch = chipOf([...touched, ...removed]);
             if (ch) { ch.end = i; ch.ids.push(...added); }
             break;
@@ -3999,6 +3999,15 @@ function timelineChips() {
         case "state":
             chip = { at: i, ids: added.slice(), glyph: "▤", kind: "state", label: "a version-1 file" };
             break;
+        // A move of bodies: a chip of its own, as Fusion's is a feature; a click selects what it
+        // moved (the copies, when it copied).
+        case "move": {
+            // A body placed for the first time has its head replaced: removed and added again.
+            const copies = added.filter((id) => !removed.includes(id));
+            const ids = (copies.length ? copies : [...touched, ...added]).filter((id) => isBody(byId(id)) || !byId(id));
+            chip = { at: i, ids, glyph: GLYPHS.move, kind: "move", label: `move ${ids.length} ${ids.length === 1 ? "body" : "bodies"}${copies.length ? " (copies)" : ""}` };
+            break;
+        }
         default: {
             // A command that made an item is a feature of its own; one that only changed some
             // (a set, an edit) belongs to the chip of what it changed.
@@ -4023,7 +4032,7 @@ function renderTimeline() {
         el.className = "chip";
         el.dataset.at = chip.at; el.dataset.end = chip.end;
         const item = chip.ids.map(byId).find((c) => c);
-        const name = item ? (chip.kind === "sketch" && chip.plane ? `${PLANES[chip.plane]?.name ?? chip.plane} sketch` : item.name) : chip.label ?? LABELS[chip.kind] ?? chip.kind;
+        const name = chip.kind === "move" ? chip.label : item ? (chip.kind === "sketch" && chip.plane ? `${PLANES[chip.plane]?.name ?? chip.plane} sketch` : item.name) : chip.label ?? LABELS[chip.kind] ?? chip.kind;
         el.replaceChildren(iconOf(chip.kind, chip.glyph));
         el.title = `${name} · ${chip.at + 1}${chip.end > chip.at ? `–${chip.end + 1}` : ""}`;
         el.classList.toggle("rolled", head <= chip.at);

@@ -20,6 +20,7 @@
 //     node test/browser.mjs --no-sketch-tools       # no sketch pattern / mirror check
 //     node test/browser.mjs --no-sketch-copy        # no sketch copy to plane / duplicate check
 //     node test/browser.mjs --no-solid-tools        # no solid pattern / mirror check
+//     node test/browser.mjs --no-move               # no Move/Copy check
 //     node test/browser.mjs --no-sketch-move        # no Sketch › move check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
@@ -751,6 +752,221 @@ async function checkSolidCopies(cdp, base, { webgl2, out }) {
     }
 }
 
+// ---- Solid › move, through the page's own button, key and picks --------------------------
+// Two boxes of 4 at x 20 and x 40 selected: no manipulator; M opens the Move session with the
+// manipulator at their box centre (30, 0, 2). Z° 90 and OK: one commit, one move chip, the
+// boxes centred at (30, -10, 2) and (30, 10, 2). Esc in a fresh session changes nothing. Set
+// pivot onto a corner (a vertex snap): the pivot readout is that corner. Point to point from a
+// corner of box 1 to the same corner of box 2: box 1 lands on box 2. Copy: the originals
+// stay, the copies move. Then six boxes in a ring (a box and its pattern): the session about
+// their middle, and Set pivot onto a corner of one. `--out`: those two pictures
+// (move-session.png, move-pivot.png).
+async function checkMove(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    const settled = () => evaluate("window.__forgeTest.settled()");
+    const T = (expr) => evaluate(`window.__forgeTest.${expr}`);
+    const key = async (k, code, vk) => {
+        await evaluate("document.activeElement?.blur?.()");
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk });
+        await sleep(100); await settled();
+    };
+    const press = async (id) => { await evaluate(`document.getElementById(${JSON.stringify(id)}).click()`); await sleep(100); await settled(); };
+    const field = async (id, v) => {
+        await evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); el.value = ${JSON.stringify(String(v))}; el.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+        await sleep(100); await settled();
+    };
+    const origin = await evaluate(`(() => { const r = document.getElementById("overlay").getBoundingClientRect(); return [r.left, r.top]; })()`);
+    // A world point in the Perspective view, in page pixels.
+    const at = async (p) => {
+        const q = await T(`screenOf(1, ${JSON.stringify(p)})`);
+        if (!q) throw new Error(`no pixel for ${JSON.stringify(p)} in Perspective`);
+        return [origin[0] + q[0], origin[1] + q[1]];
+    };
+    const mouse = (type, [x, y]) => send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left",
+        buttons: type === "mousePressed" ? 1 : 0, clickCount: type === "mouseMoved" ? 0 : 1, pointerType: "mouse" });
+    async function click(px) {
+        await mouse("mouseMoved", [px[0] - 6, px[1] - 6]);
+        await mouse("mouseMoved", px);
+        await sleep(250);
+        await mouse("mousePressed", px);
+        await mouse("mouseReleased", px);
+        await sleep(150);
+        await settled();
+    }
+    const near = (a, b, tol = 1e-3) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) <= tol);
+    const boxOf = async (id) => { const b = await T(`box(${id})`); if (!b) throw new Error(`#${id} has no box`); return b; };
+    const centre = (b) => [0, 1, 2].map((k) => (b.lo[k] + b.hi[k]) / 2);
+    const moveChips = () => evaluate(`document.querySelectorAll('#timeline-chips .chip use[href="#i-move"]').length`);
+    const text = (p) => `(${p.map((v) => +v.toFixed(4)).join(", ")})`;
+    try {
+        await settled();
+        const own = (await T("bodies()")).map((b) => b.id);
+        await T(`run({ op: "edit", items: ${JSON.stringify(own)}.map((id) => ({ id, hidden: true })) })`);
+        const B = await T("nextId()");
+        for (const c of [{ op: "primitive", id: B, kind: "box", plane: "top", dims: [4, 4, 4] }, { op: "set", id: B, place: { offset: [20, 0, 0], turn: [0, 0, 0] } },
+            { op: "primitive", id: B + 1, kind: "box", plane: "top", dims: [4, 4, 4] }, { op: "set", id: B + 1, place: { offset: [40, 0, 0], turn: [0, 0, 0] } }]) await T(`run(${JSON.stringify(c)})`);
+        await settled();
+        await T(`select([${B}, ${B + 1}])`);
+        await key("f", "KeyF", 70);
+        await frame(); await sleep(300); await frame();
+
+        // Selected: no manipulator. M: the session, the manipulator at the box centre.
+        if (await T("gizmo()")) throw new Error("two selected boxes show a manipulator outside the Move session");
+        if (await evaluate(`document.getElementById("move").disabled`)) throw new Error("Solid › move is off with two boxes selected");
+        await key("m", "KeyM", 77);
+        let st = await T("moveState()");
+        if (!st || !near(st.pivot, [30, 0, 2])) throw new Error(`M opens ${JSON.stringify(st)}, not a session with its pivot at (30, 0, 2)`);
+        const g = await T("gizmo()");
+        if (!g) throw new Error("the Move session shows no manipulator");
+        const want = await T(`screenOf(${g.view}, [30, 0, 2])`);
+        if (!near([g.centre[0] - origin[0], g.centre[1] - origin[1]], want, 1)) throw new Error(`the manipulator is at ${text(g.centre)}, the box centre at ${text(want)}`);
+        const head0 = await T("headCount()"), chips0 = await moveChips();
+        await field("move-rz", 90);
+        await press("dialog-ok");
+        if (await T("moveState()")) throw new Error("OK leaves the Move session open");
+        if (await T("headCount()") !== head0 + 1) throw new Error(`the move is ${await T("headCount()") - head0} commits, not one`);
+        if (await moveChips() !== chips0 + 1) throw new Error(`the move makes ${await moveChips() - chips0} move chips, not one`);
+        const c1 = centre(await boxOf(B)), c2 = centre(await boxOf(B + 1));
+        if (!near(c1, [30, -10, 2]) || !near(c2, [30, 10, 2])) throw new Error(`the boxes turned are centred at ${text(c1)} and ${text(c2)}, not (30, -10, 2) and (30, 10, 2)`);
+
+        // Esc in a fresh session: nothing changed.
+        const head1 = await T("headCount()");
+        await T(`select([${B}, ${B + 1}])`);
+        await key("m", "KeyM", 77);
+        await field("move-x", 10);
+        if (!near(centre(await boxOf(B)), [40, -10, 2])) throw new Error(`X 10 previews box 1 at ${text(centre(await boxOf(B)))}, not (40, -10, 2)`);
+        await key("Escape", "Escape", 27);
+        if (await T("moveState()")) throw new Error("Esc leaves the Move session open");
+        if (await T("headCount()") !== head1) throw new Error("Esc left a commit behind");
+        if (!near(centre(await boxOf(B)), c1)) throw new Error(`Esc leaves box 1 at ${text(centre(await boxOf(B)))}`);
+
+        // A drag of the X arrow: its slide is the dialog's X, both boxes moved, no commit until OK.
+        // Ctrl-click on the centre arms Set pivot; Esc puts the pick down, Esc again cancels.
+        await T(`select([${B}, ${B + 1}])`);
+        await key("m", "KeyM", 77);
+        const g3 = await T("gizmo()");
+        const tip = g3.axes.find((a) => a.name === "X").tip, dir = [tip[0] - g3.centre[0], tip[1] - g3.centre[1]];
+        const len = Math.hypot(...dir), to = [tip[0] + dir[0] / len * 60, tip[1] + dir[1] / len * 60];
+        await mouse("mouseMoved", tip);
+        await sleep(100);
+        await send("Input.dispatchMouseEvent", { type: "mousePressed", x: tip[0], y: tip[1], button: "left", buttons: 1, clickCount: 1, pointerType: "mouse" });
+        for (let k = 1; k <= 20; k++) {
+            await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: tip[0] + (to[0] - tip[0]) * k / 20, y: tip[1] + (to[1] - tip[1]) * k / 20, button: "left", buttons: 1, pointerType: "mouse" });
+            await sleep(16);
+        }
+        await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: to[0], y: to[1], button: "left", buttons: 0, clickCount: 1, pointerType: "mouse" });
+        await sleep(200); await settled();
+        st = await T("moveState()");
+        if (!(st.by[0] > 1) || Math.abs(st.by[1]) > 1e-6 || Math.abs(st.by[2]) > 1e-6) throw new Error(`a drag along X gives by ${text(st.by)}`);
+        const typed = Number(await evaluate(`document.getElementById("move-x").value`));
+        if (Math.abs(typed - st.by[0]) > 1e-3) throw new Error(`the drag's X ${st.by[0]} shows as ${typed}`);
+        if (!near(centre(await boxOf(B + 1)), [c2[0] + st.by[0], c2[1], c2[2]])) throw new Error(`the drag left box 2 at ${text(centre(await boxOf(B + 1)))}`);
+        if (await T("headCount()") !== head1 + 1) throw new Error("a drag in the session is not the session's one command");
+        const g4 = await T("gizmo()");
+        await mouse("mouseMoved", g4.centre);
+        await sleep(100);
+        await send("Input.dispatchMouseEvent", { type: "mousePressed", x: g4.centre[0], y: g4.centre[1], button: "left", buttons: 1, clickCount: 1, modifiers: 2, pointerType: "mouse" });
+        await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: g4.centre[0], y: g4.centre[1], button: "left", buttons: 0, clickCount: 1, modifiers: 2, pointerType: "mouse" });
+        await sleep(100); await settled();
+        if ((await T("moveState()"))?.picking !== "pivot") throw new Error("Ctrl-click on the manipulator's centre does not arm Set pivot");
+        await key("Escape", "Escape", 27);
+        if ((await T("moveState()"))?.picking !== null) throw new Error("Esc does not put the pivot's pick down");
+        await key("Escape", "Escape", 27);
+        if (await T("headCount()") !== head1) throw new Error("Esc after a drag left a commit behind");
+        if (!near(centre(await boxOf(B)), c1)) throw new Error(`Esc after a drag leaves box 1 at ${text(centre(await boxOf(B)))}`);
+
+        // Set pivot onto a vertex snap: the readout is that corner, the manipulator there.
+        await T(`snap({ on: true, kinds: { vertex: true, midpoint: false, centre: false, quadrant: false, edge: false, face: false, grid: false } })`);
+        await T(`select([${B}])`);
+        await key("m", "KeyM", 77);
+        await press("move-pivot-set");
+        if ((await T("moveState()")).picking !== "pivot") throw new Error("set does not arm the pivot's pick");
+        const corner = [32, -8, 4];
+        const cp = await at(corner);
+        await click([cp[0] + 3, cp[1] - 2]);
+        st = await T("moveState()");
+        if (!near(st.pivot, corner, 1e-6)) throw new Error(`the pivot set onto the corner ${text(corner)} is ${text(st.pivot)}`);
+        const readout = await evaluate(`document.getElementById("move-pivot").textContent`);
+        if (!/^32, -8, 4$/.test(readout)) throw new Error(`the pivot readout says ${JSON.stringify(readout)}`);
+        const g2 = await T("gizmo()");
+        const want2 = await T(`screenOf(${g2.view}, ${JSON.stringify(corner)})`);
+        if (!near([g2.centre[0] - origin[0], g2.centre[1] - origin[1]], want2, 1)) throw new Error("the manipulator did not go to the pivot");
+        await key("Escape", "Escape", 27);
+
+        // Point to point: box 1's corner onto box 2's: box 1 lands on box 2.
+        await T(`select([${B}])`);
+        await key("m", "KeyM", 77);
+        await evaluate(`document.querySelector('[data-move-type="points"]').click()`);
+        await sleep(100); await settled();
+        if ((await T("moveState()")).picking !== "from") throw new Error("point to point does not arm its first pick");
+        const fp = await at(corner);
+        await click([fp[0] + 3, fp[1] - 2]);
+        const tp = await at([32, 12, 4]);
+        await click([tp[0] + 3, tp[1] - 2]);
+        st = await T("moveState()");
+        if (!near(st.by, [0, 20, 0], 1e-6)) throw new Error(`point to point gives by ${text(st.by)}, not (0, 20, 0)`);
+        await press("dialog-ok");
+        if (!near(centre(await boxOf(B)), c2)) throw new Error(`box 1 lands at ${text(centre(await boxOf(B)))}, not on box 2 at ${text(c2)}`);
+
+        // Copy: the originals stay, the copies move.
+        await T(`select([${B}, ${B + 1}])`);
+        await key("m", "KeyM", 77);
+        await evaluate(`(() => { const el = document.getElementById("move-copy"); el.checked = true; el.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+        await sleep(100); await settled();
+        await field("move-z", 50);
+        await press("dialog-ok");
+        const copies = (await T("bodies()")).filter((b) => / copy$/.test(b.name));
+        if (copies.length !== 2) throw new Error(`copy makes ${copies.length} copies, not 2`);
+        if (!near(centre(await boxOf(B + 1)), c2)) throw new Error("copy moved an original");
+        for (const c of copies) { const z = centre(await boxOf(c.id))[2]; if (!near([z], [52])) throw new Error(`a copy is at z ${z}, not 52`); }
+
+        // Six boxes in a ring (a box and its pattern), the session over them: the pictures.
+        await T(`run({ op: "edit", items: ${JSON.stringify([B, B + 1, ...copies.map((c) => c.id)])}.map((id) => ({ id, hidden: true })) })`);
+        const R = await T("nextId()");
+        await T(`run({ op: "primitive", id: ${R}, kind: "box", plane: "top", dims: [6, 6, 10] })`);
+        await T(`run({ op: "set", id: ${R}, place: { offset: [30, 0, 0], turn: [0, 0, 0] } })`);
+        await T(`run({ op: "pattern", id: ${R + 1}, sources: [${R}], type: "circular", axis: "z", count: 6, instances: [${R + 2}, ${R + 3}, ${R + 4}, ${R + 5}, ${R + 6}] })`);
+        await settled();
+        await T(`select([${R}, ${R + 1}])`);
+        await key("f", "KeyF", 70);
+        await key("m", "KeyM", 77);
+        st = await T("moveState()");
+        if (!st || st.ids.length !== 6 || !near(st.pivot, [0, 0, 5], 1e-3)) throw new Error(`the ring's session is ${JSON.stringify(st)}, not 6 bodies about (0, 0, 5)`);
+        await frame(); await sleep(500); await frame();
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `move-session${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        }
+        await press("move-pivot-set");
+        const ring = [33, 3, 10];
+        const rp = await at(ring);
+        await click([rp[0] + 3, rp[1] - 2]);
+        st = await T("moveState()");
+        if (!near(st.pivot, ring, 1e-6)) throw new Error(`the ring's pivot set onto ${text(ring)} is ${text(st.pivot)}`);
+        await frame(); await sleep(300); await frame();
+        if (out) {
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `move-pivot${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        }
+        await key("Escape", "Escape", 27);
+        await sleep(300);
+        if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
+        console.log(`ok - move: no manipulator on a selection; M at the box centre; Z° 90 one commit and one chip, the boxes at ${text(c1)} ${text(c2)}; Esc restores; Set pivot onto ${text(corner)}; point to point lands box 1 on box 2; copy keeps the originals; the ring's session about (0, 0, 5)`);
+    } catch (e) {
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+            if (shot) writeFileSync(join(out, `move${webgl2 ? "-webgl2" : ""}-failed.png`), Buffer.from(shot.data, "base64"));
+        }
+        throw e;
+    } finally {
+        await close();
+    }
+}
+
 // ---- Sketch › move, through the page's key ------------------------------------------------
 // A circle on a sketch selected: no manipulator; M opens Sketch › move with one; X 10 and OK:
 // the circle's centre 10 over, one commit, and no chip of its own (its sketch's chip covers
@@ -899,6 +1115,14 @@ async function main() {
             } catch (e) {
                 failed++;
                 console.error(`not ok - solid tools: ${e.message}`);
+            }
+        }
+        if (!failed && !flag("--no-move")) {
+            try {
+                await checkMove(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - move: ${e.message}`);
             }
         }
         if (!failed && !flag("--no-sketch-move")) {

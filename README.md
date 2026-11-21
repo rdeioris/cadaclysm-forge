@@ -37,8 +37,10 @@ name last opened or saved, `forge.json` at first), and **load** opens one.
 
 ## Tools
 
-The pattern and mirror tools on the Sketch and Solid tabs, and Sketch › copy to plane. Each
-OK is one command, one timeline chip and one undo. The browser's **duplicate** on a sketch
+The move, pattern and mirror tools on the Sketch and Solid tabs, and Sketch › copy to plane.
+Each OK is one command, one timeline chip and one undo. **M** opens move on what is selected:
+Solid › move on bodies, Sketch › move on curves. Selecting a body or curves shows no
+manipulator; it shows only inside a move. The browser's **duplicate** on a sketch
 copies the whole sketch on its own plane: its curves, their constraints and construction
 flags. `examples/pattern-mirror.json` (written by
 `scripts/pattern-example.mjs`) holds a sketch pattern cut through a plate, a body pattern
@@ -48,7 +50,9 @@ and a body mirror.
 |---|---|---|---|
 | Sketch | pattern | copies of the picked curves on the same sketch, circular about the origin or a picked point (count, angle) or rectangular (two directions, counts and spacings), held by constraints so the original's size and the step drive them | `cadaclysm_blacksmith_sketch_pattern_circular`, `cadaclysm_blacksmith_sketch_pattern_rectangular` on the sketch session |
 | Sketch | mirror | the picked curves reflected across a line of the sketch, held symmetric to the originals | `cadaclysm_blacksmith_sketch_mirror` on the sketch session |
+| Sketch | move | the selected curves of one sketch slid and turned as a block in its plane (x, y, angle) about a pivot (their box's middle, or a snapped point), or copies of them so moved; on a constrained sketch what is held to them follows | the sketch session's solve (`cadaclysm_blacksmith_sketch_drag`) where it has constraints |
 | Sketch | copy to plane | a sketch, its curves and constraints on another plane | none (page) |
+| Solid | move | every selected body (a pattern group: its instances) slid and turned about a pivot -- the middle of their box, or a snapped point (Set pivot, or Ctrl-click the manipulator's centre) -- by the manipulator or typed X, Y, Z and angles in world or object axes, or from one picked point to another; or copies of them so moved | each body's place, its `solid.transform` |
 | Solid | pattern | bodies: a pattern group and one body per copy, circular about an axis, rectangular, or along a path; a feature: the cut or join placed again on its target | `placements.circular` / `placements.rectangular` / `placements.along` with `solid.pattern` and `solid.nth`; `solid.pattern_feature` |
 | Solid | mirror | bodies: a new mirrored body each, or the body joined with its mirror; a feature: the cut or join repeated across the plane | `placements.mirror` with `solid.pattern` and `solid.nth`; `solid.mirror` and `solid.join` (`solid.mirror_join` for a sheet on the plane); `solid.pattern_feature` |
 
@@ -324,7 +328,7 @@ snap check in box-fillet's Top view with real pointer events:
 | `forge-items.js`, `forge-wanted.js` | what the View shows, synced by key |
 | `forge-input.js`, `forge-cameras.js`, `forge-order.js` | input routing, camera moves in the worker, command order |
 | `forge-snap.js` | snapping onto bodies and the grid: the settings, which View answers count |
-| `projection.js`, `view-cube.js`, `manipulator.js` | the overlay's maths, the view cube, the move/turn/scale gizmo |
+| `projection.js`, `view-cube.js`, `manipulator.js`, `forge-move.js` | the overlay's maths, the view cube, the move sessions' manipulator, a move about a pivot composed into a body's place |
 | `examples/` | example documents |
 | `scripts/setup.mjs`, `scripts/serve.mjs`, `scripts/pattern-example.mjs` | fetch the package; a static server; write `examples/pattern-mirror.json` |
 | `test/` | node tests, `browser.mjs` (the headless check), fixtures |
