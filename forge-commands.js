@@ -60,7 +60,9 @@
 // curve), `solid`, `revolved`, `lofted`, `swept`, `primitive`, `pipe` (5.3b); the body verbs
 // `join`, `cut`, `intersect`, `shell`, `thicken`, `trim`, `face`, `prism`, `press`,
 // `rechamfer`, `remove`, `refillet`, `fillet`, `split` (5.3c); `pattern`, `pattern_feature`,
-// `mirror` (see Patterns); `set` / `edit` of curves,
+// `mirror` (see Patterns); `move` (bodies moved about a pivot, their places composed;
+// `moveBodies`) and `sketch_move` (a sketch's curves moved as a block: `edit` under its own
+// name); `set` / `edit` of curves,
 // sketches, held items and every body: a body's in-plane move and its place in the world, a
 // rename, a hide (5.3d). `state` (a version-1 file's items, whole) is refused: the page
 // sends it for no file it opens, and a forge file of before is not loaded (spec, decision 2;
@@ -232,6 +234,8 @@
 // item.
 import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, isPattern, metaOp, bumpId, heldOf } from "./forge-model.js";
 import { bodyNode, facePlaneId, docPicks } from "./forge-picks.js";
+import { Q } from "./forge-curves.js";
+import { composeMove, turnOf } from "./forge-move.js";
 import { buildModel, freeModel, madeByCall, curveName, pruneConstraints } from "./forge-constraints.js";
 
 /// How close the pieces of a curve must meet (the page's `LOOP_TOLERANCE`).
@@ -2238,6 +2242,111 @@ function editItems(d, list) {
     }
 }
 
+/// `duplicate`'s copies: `copies` one id per picked item, in the order picked -- a curve on
+/// a picked sketch is not one: it is copied with its sketch -- then each copied sketch's
+/// curves (`copySketch`), sketch after sketch.
+function duplicateItems(d, op, picked, copies) {
+    const sketches = new Set(picked.filter((n) => isSketch(d.item(n))));
+    const own = picked.filter((n) => {
+        const it = d.item(n);
+        return !(it && it.of === undefined && isCurve(it) && sketches.has(readItem(d, n).plane));
+    });
+    let tail = own.length;
+    d.skipped = 0;
+    own.forEach((n, k) => {
+        const copy = copies[k];
+        if (copy === undefined) return;
+        d.bump(copy);   // an image's copy (the page's) takes its id all the same
+        const it = d.item(n);
+        if (!it) return;
+        const name = `${nameText(it.name)} copy`;
+        if (it.of !== undefined) {
+            // A held item copied: the held node gets a head for each, so the model
+            // lists both (and not the node) from here on.
+            const c = readItem(d, n);
+            const at = d.index(it.node) + 1;
+            writeItem(d, n, c, at);
+            writeItem(d, copy, { ...c, name }, d.index(headId(n)) + 1);
+            return;
+        }
+        const cls = classOf(it.kind);
+        if (cls === "curve" && d.node(headId(n)).kind !== "value.unresolved") {
+            const c = readItem(d, n);
+            const out = { id: copy, name };
+            for (const key of ["kind", "plane", "shape", "node"]) if (c[key] !== undefined) out[key] = clone(c[key]);
+            out.hidden = c.hidden;
+            writeItem(d, copy, out, d.index(headId(n)) + 1);
+        } else if (cls === "sketch") {
+            const count = curvesOnSketch(d, n).length;
+            d.skipped += copySketch(d, op, n, copy, copies.slice(tail, tail + count)).skipped;
+            tail += count;
+        } else copyNodes(d, n, copy, name);
+    });
+}
+
+/// The world axes of the origin frames: their x and y (`ORIGIN_NORMALS` their z).
+const ORIGIN_AXES = { xy: [[1, 0, 0], [0, 1, 0]], xz: [[1, 0, 0], [0, 0, 1]], yz: [[0, 1, 0], [0, 0, 1]] };
+
+/// Body `c`'s world pivot without its place's offset, as its `placed` step turns about it
+/// (`bodyNodes`): its in-plane pivot moved by its in-plane transform, on its plane's frame.
+function worldPivotOf(d, c, base) {
+    const pivot = nums(get(c, "pivot"), 2) ?? [0, 0];
+    const t = moveOf(c);
+    const p = [pivot[0] + t.tx, pivot[1] + t.ty];
+    const f = frameFor(d, c.plane, []);
+    let origin, x, y;
+    if (Object.hasOwn(ORIGIN_AXES, f)) [origin, [x, y]] = [[0, 0, 0], ORIGIN_AXES[f]];
+    else {
+        const s = itemOfId(f);
+        const id = s !== undefined ? helperId(s, "frame") : f;
+        const v = nums(d.frameValue(id), 12) ?? fail(`${base}: \`${id}\` is not a frame`);
+        [origin, x, y] = [v.slice(0, 3), v.slice(3, 6), v.slice(6, 9)];
+    }
+    return [0, 1, 2].map((k) => origin[k] + x[k] * p[0] + y[k] * p[1]);
+}
+
+/// `{ op: "move", ids, pivot, by, turn, axes?, copies? }`: every body of `ids` (a pattern
+/// group: each of its instances) moved about `pivot` -- turned by `turn` (Euler degrees, in
+/// the world's axes, or with `axes` "object" in the first body's own), then slid by `by` --
+/// its place composed with the move (forge-move.js `composeMove`). With `copies`, the bodies
+/// are duplicated first (`duplicateItems`, one id per body) and the copies moved. Refused in
+/// the command's words: nothing to move, an id that is not a body, a field that is not three
+/// numbers, fewer copies than bodies.
+function moveBodies(d, cmd) {
+    const list = Array.isArray(get(cmd, "ids")) ? cmd.ids : [];
+    if (!list.length) fail("move: nothing to move");
+    const ids = [];
+    for (const v of list) {
+        const n = idOf(v), it = n === undefined ? undefined : d.item(n);
+        if (it && isPattern(it)) {
+            for (const m of idsOf(readItem(d, n).instances)) if (d.item(m)?.kind === "instance" && !ids.includes(m)) ids.push(m);
+            continue;
+        }
+        if (!it || !isBody(it)) fail(`move: #${n ?? "?"} is not a body`);
+        if (!ids.includes(n)) ids.push(n);
+    }
+    if (!ids.length) fail("move: nothing to move");
+    const three = (k) => nums(get(cmd, k), 3) ?? fail(`move: \`${k}\` is not three numbers`);
+    const pivot = three("pivot"), by = three("by"), turn = three("turn");
+    let targets = ids;
+    if (get(cmd, "copies") !== undefined) {
+        const copies = idsOf(get(cmd, "copies"));
+        if (copies.length < ids.length) fail("move: fewer `copies` ids than bodies");
+        targets = copies.slice(0, ids.length);
+        duplicateItems(d, "move", ids, targets);
+    }
+    const first = readItem(d, targets[0]);
+    const q = turnOf(turn, get(cmd, "axes") === "object" ? "object" : "world", Q.fromEuler((placeOfBody(first) ?? noPlace()).turn));
+    const turning = turn.some((v) => v !== 0);
+    for (const n of targets) {
+        const c = readItem(d, n);
+        const place = placeOfBody(c) ?? noPlace();
+        const pv = turning ? worldPivotOf(d, c, headId(n)) : [0, 0, 0];
+        c.place = composeMove(place, pv, { pivot, by, q: turning ? q : [0, 0, 0, 1] });
+        writeAny(d, n, c);
+    }
+}
+
 /// Item `n` copied as `copy` (named `name`), its nodes right after its head.
 function copyNodes(d, n, copy, name) {
     const ids = d.nodesOf(n);
@@ -2651,48 +2760,19 @@ function build(model, cmd, env, broken) {
             d.skipped = copySketch(d, op, s, n, idsOf(get(cmd, "copies")), plane).skipped;
             break;
         }
-        // `copies`: one id per picked item, in the order picked -- a curve on a picked
-        // sketch is not one: it is copied with its sketch -- then each copied sketch's
-        // curves (`copySketch`), sketch after sketch.
-        case "duplicate": {
-            const copies = idsOf(get(cmd, "copies"));
-            const picked = idsOf(get(cmd, "ids"));
-            const sketches = new Set(picked.filter((n) => isSketch(d.item(n))));
-            const own = picked.filter((n) => {
-                const it = d.item(n);
-                return !(it && it.of === undefined && isCurve(it) && sketches.has(readItem(d, n).plane));
-            });
-            let tail = own.length;
-            d.skipped = 0;
-            own.forEach((n, k) => {
-                const copy = copies[k];
-                if (copy === undefined) return;
-                d.bump(copy);   // an image's copy (the page's) takes its id all the same
-                const it = d.item(n);
-                if (!it) return;
-                const name = `${nameText(it.name)} copy`;
-                if (it.of !== undefined) {
-                    // A held item copied: the held node gets a head for each, so the model
-                    // lists both (and not the node) from here on.
-                    const c = readItem(d, n);
-                    const at = d.index(it.node) + 1;
-                    writeItem(d, n, c, at);
-                    writeItem(d, copy, { ...c, name }, d.index(headId(n)) + 1);
-                    return;
-                }
-                const cls = classOf(it.kind);
-                if (cls === "curve" && d.node(headId(n)).kind !== "value.unresolved") {
-                    const c = readItem(d, n);
-                    const out = { id: copy, name };
-                    for (const key of ["kind", "plane", "shape", "node"]) if (c[key] !== undefined) out[key] = clone(c[key]);
-                    out.hidden = c.hidden;
-                    writeItem(d, copy, out, d.index(headId(n)) + 1);
-                } else if (cls === "sketch") {
-                    const count = curvesOnSketch(d, n).length;
-                    d.skipped += copySketch(d, op, n, copy, copies.slice(tail, tail + count)).skipped;
-                    tail += count;
-                } else copyNodes(d, n, copy, name);
-            });
+        case "duplicate":
+            duplicateItems(d, op, idsOf(get(cmd, "ids")), idsOf(get(cmd, "copies")));
+            break;
+        // The bodies moved about a pivot (`moveBodies`); with `copies`, duplicate's copies
+        // of them moved instead, in the one batch.
+        case "move":
+            moveBodies(d, cmd);
+            break;
+        // A sketch's curves moved as a block: `edit`'s items, under a name of its own.
+        case "sketch_move": {
+            const s = idOf(get(cmd, "sketch"));
+            if (s === undefined || !isSketch(d.item(s))) fail(`sketch_move: #${s ?? "?"} is not a sketch`);
+            editItems(d, get(cmd, "items"));
             break;
         }
         case "delete": {

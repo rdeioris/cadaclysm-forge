@@ -12,6 +12,7 @@ import { Model, UNITS } from "../forge-model.js";
 import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes, pageItems, touchesPlane } from "../forge-commands.js";
 import { buildModel, freeModel, solveModel, writeBack, addConstraint, removeConstraint, dragModel, setValue } from "../forge-constraints.js";
 import { isBody } from "../forge-model.js";
+import { docPicks } from "../forge-picks.js";
 import { readFileSync } from "node:fs";
 
 const wasm = await loadWasm();
@@ -1651,6 +1652,141 @@ const HOLE = Math.PI * 2 * 2 * 4;
     t.run({ op: "set", id: 3, look: own });
     t.run({ op: "set", id: 2, count: 4, instances: [3, 4, 7] });
     assert.deepStrictEqual([t.item(3).look, t.item(4).look, t.item(7).look], [own, look, look]);
+    t.free();
+}
+
+// move: the bodies' places composed with a move about a pivot (forge-move.js), one commit.
+// Two boxes of 4 at x 20 and x 40 turned a quarter about Z through their shared box centre
+// (30, 0, 2): box 1 lands centred at (30, -10, 2), box 2 at (30, 10, 2).
+const placeOfItem = (t, n) => t.item(n).place;
+const centreOf = (b) => [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2];
+{
+    const t = fresh();
+    for (const c of [...BOX_AT(1, 4, 20, 0), ...BOX_AT(2, 4, 40, 0)]) t.run(c);
+    const before = JSON.stringify(t.nodes()), rev = t.revision();
+    const r = t.run({ op: "move", ids: [1, 2], pivot: [30, 0, 2], by: [0, 0, 0], turn: [0, 0, 90], axes: "world" });
+    assert.strictEqual(r.op.message, "forge: move");
+    assert.strictEqual(t.revision(), rev + 1);
+    assert.ok(close(placeOfItem(t, 1), { offset: [30, -10, 0], turn: [0, 0, 90] }, 1e-12), JSON.stringify(placeOfItem(t, 1)));
+    assert.ok(close(placeOfItem(t, 2), { offset: [30, 10, 0], turn: [0, 0, 90] }, 1e-12), JSON.stringify(placeOfItem(t, 2)));
+    assert.ok(close(solidNow(t, "i1").bounds, [28, -12, 0, 32, -8, 4], 1e-6), JSON.stringify(solidOf(t.doc, "i1").bounds));
+    assert.ok(close(solidNow(t, "i2").bounds, [28, 8, 0, 32, 12, 4], 1e-6), JSON.stringify(solidOf(t.doc, "i2").bounds));
+    // undo: the nodes byte for byte
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    // `by` only: both offsets gain it (no turn written)
+    t.run({ op: "move", ids: [1, 2], pivot: [30, 0, 2], by: [1, 2, 3], turn: [0, 0, 0] });
+    assert.deepStrictEqual([placeOfItem(t, 1), placeOfItem(t, 2)], [{ offset: [21, 2, 3], turn: [0, 0, 0] }, { offset: [41, 2, 3], turn: [0, 0, 0] }]);
+    t.free();
+}
+
+// move with `copies`: duplicate's copies ("<name> copy") moved, the originals where they
+// were, all in one commit; a pivot at box 1's corner (22, 2, 0), a quarter turn about Z.
+{
+    const t = fresh();
+    for (const c of [...BOX_AT(1, 4, 20, 0), ...BOX_AT(2, 4, 40, 0)]) t.run(c);
+    const rev = t.revision();
+    t.run({ op: "move", ids: [1, 2], pivot: [22, 2, 0], by: [0, 0, 10], turn: [0, 0, 90], copies: [3, 4] });
+    assert.strictEqual(t.revision(), rev + 1);
+    assert.deepStrictEqual([t.item(3).name, t.item(4).name, t.item(3).kind], ["Box 1 copy", "Box 2 copy", "box"]);
+    assert.deepStrictEqual([placeOfItem(t, 1), placeOfItem(t, 2)], [{ offset: [20, 0, 0], turn: [0, 0, 0] }, { offset: [40, 0, 0], turn: [0, 0, 0] }]);
+    // the corner stays put: the box turned about it, then lifted 10
+    assert.ok(close(solidNow(t, "i3").bounds, [22, -2, 10, 26, 2, 14], 1e-6), JSON.stringify(solidOf(t.doc, "i3").bounds));
+    assert.ok(close(solidNow(t, "i4").bounds, [22, 18, 10, 26, 22, 14], 1e-6), JSON.stringify(solidOf(t.doc, "i4").bounds));
+    assert.ok(close(solidNow(t, "i1").bounds, [18, -2, 0, 22, 2, 4], 1e-6));
+    assert.strictEqual(t.meta().nextId, 5);
+    t.free();
+}
+
+// move in the object's axes: on a box already turned a quarter about Z, a quarter about its
+// own X is a quarter about the world's Y.
+{
+    const places = ["object", "world"].map((axes) => {
+        const t = fresh();
+        for (const c of BOX_AT(1, 4, 20, 0)) t.run(c);
+        t.run({ op: "set", id: 1, place: { offset: [20, 0, 0], turn: [0, 0, 90] } });
+        t.run({ op: "move", ids: [1], pivot: [20, 0, 2], by: [0, 0, 0], turn: axes === "object" ? [90, 0, 0] : [0, 90, 0], axes });
+        const out = { place: placeOfItem(t, 1), bounds: solidNow(t, "i1").bounds };
+        t.free();
+        return out;
+    });
+    assert.ok(close(places[0].place.offset, places[1].place.offset, 1e-9), JSON.stringify(places));
+    assert.ok(close(places[0].bounds, places[1].bounds, 1e-6), JSON.stringify(places));
+}
+
+// move of a pattern instance, a pattern group (every one of its instances) and a mirror join.
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "pattern", id: 2, sources: [1], type: "circular", count: 3, instances: [3, 4] });
+    const b3 = solidNow(t, "i3").bounds, b4 = solidNow(t, "i4").bounds;
+    t.run({ op: "move", ids: [3], pivot: centreOf(b3), by: [0, 0, 5], turn: [0, 0, 0] });
+    assert.ok(close(solidNow(t, "i3").bounds, [b3[0], b3[1], b3[2] + 5, b3[3], b3[4], b3[5] + 5], 1e-6), JSON.stringify(solidOf(t.doc, "i3").bounds));
+    t.run({ op: "move", ids: [2], pivot: [0, 0, 0], by: [0, 0, 1], turn: [0, 0, 0] });
+    assert.ok(close(solidNow(t, "i3").bounds, [b3[0], b3[1], b3[2] + 6, b3[3], b3[4], b3[5] + 6], 1e-6));
+    assert.ok(close(solidNow(t, "i4").bounds, [b4[0], b4[1], b4[2] + 1, b4[3], b4[4], b4[5] + 1], 1e-6));
+    assert.ok(close(solidNow(t, "i1").bounds, [9, -1, 0, 11, 1, 2], 1e-6), "the source stays");
+    // the group's count set again keeps the instances' moves
+    t.run({ op: "set", id: 2, count: 3 });
+    assert.ok(close(solidNow(t, "i4").bounds, [b4[0], b4[1], b4[2] + 1, b4[3], b4[4], b4[5] + 1], 1e-6));
+    // a mirror join turned about its centre
+    for (const c of BOX_AT(5, 6, 3, 30)) t.run(c);
+    t.run({ op: "set", id: 5, dims: [6, 6, 4] });
+    t.run({ op: "mirror", id: 6, objects: "bodies", sources: [5], plane: "right", operation: "join" });
+    const m = solidNow(t, "i6").bounds;
+    assert.ok(close(m, [-6, 27, 0, 6, 33, 4], 1e-6), JSON.stringify(m));
+    t.run({ op: "move", ids: [6], pivot: centreOf(m), by: [0, 0, 0], turn: [0, 0, 90] });
+    assert.ok(close(solidNow(t, "i6").bounds, [-3, 24, 0, 3, 36, 4], 1e-6), JSON.stringify(solidOf(t.doc, "i6").bounds));
+    t.free();
+}
+
+// move of a body off the origin planes, its pivot not the origin: a solid on a sketch 5 over
+// Top, its pivot the circle's centre (10, 4) -- (10, 4, 5) in the world, read off the sketch's
+// frame -- turned a quarter about Z through the origin, twice.
+{
+    const t = fresh();
+    const env = { kernel: wasm, picks: docPicks(wasm, t.doc, t.model) };
+    const run = (cmd) => { wasm[K + "document_evaluate"](t.doc, false); return command(wasm, t.model, t.doc, cmd, env); };
+    run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 5 });
+    run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 10, cy: 4, r: 2 } });
+    run({ op: "surface", id: 3, loops: [[2]], plane: 1 });
+    run({ op: "solid", id: 4, from: 3, height: 6 });
+    assert.ok(close(solidNow(t, "i4").bounds, [8, 2, 5, 12, 6, 11], 1e-6), JSON.stringify(solidOf(t.doc, "i4").bounds));
+    run({ op: "move", ids: [4], pivot: [0, 0, 0], by: [0, 0, 0], turn: [0, 0, 90] });
+    assert.ok(close(solidNow(t, "i4").bounds, [-6, 8, 5, -2, 12, 11], 1e-6), JSON.stringify(solidOf(t.doc, "i4").bounds));
+    run({ op: "move", ids: [4], pivot: [0, 0, 0], by: [0, 0, 0], turn: [0, 0, 90] });
+    assert.ok(close(solidNow(t, "i4").bounds, [-12, -6, 5, -8, -2, 11], 1e-6), JSON.stringify(solidOf(t.doc, "i4").bounds));
+    t.free();
+}
+
+// move refusals: in the command's words, the document untouched
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "sketch", id: 2, mode: "offset", base: "top", offset: 0 });
+    refused(t, { op: "move", ids: [], pivot: [0, 0, 0], by: [1, 0, 0], turn: [0, 0, 0] }, /^move: nothing to move/);
+    refused(t, { op: "move", ids: [2], pivot: [0, 0, 0], by: [1, 0, 0], turn: [0, 0, 0] }, /^move: #2 is not a body/);
+    refused(t, { op: "move", ids: [9], pivot: [0, 0, 0], by: [1, 0, 0], turn: [0, 0, 0] }, /^move: #9 is not a body/);
+    refused(t, { op: "move", ids: [1], pivot: [0, 0, 0], by: [1, NaN, 0], turn: [0, 0, 0] }, /^move: `by` is not three numbers/);
+    refused(t, { op: "move", ids: [1], pivot: [0, 0], by: [1, 0, 0], turn: [0, 0, 0] }, /^move: `pivot` is not three numbers/);
+    refused(t, { op: "move", ids: [1], pivot: [0, 0, 0], by: [1, 0, 0], turn: [0, "x", 0] }, /^move: `turn` is not three numbers/);
+    refused(t, { op: "move", ids: [1], pivot: [0, 0, 0], by: [1, 0, 0], turn: [0, 0, 0], copies: [] }, /^move: fewer `copies` ids than bodies/);
+    t.free();
+}
+
+// sketch_move: edit's items under its own name, one commit.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 0, cy: 0, r: 3 } });
+    t.run({ op: "add", id: 3, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 5, y1: 0 } });
+    const rev = t.revision();
+    const r = t.run({ op: "sketch_move", sketch: 1, items: [{ id: 2, kind: "circle", shape: { cx: 10, cy: 0, r: 3 } }, { id: 3, kind: "line", shape: { x0: 10, y0: 0, x1: 15, y1: 0 } }] });
+    assert.strictEqual(r.op.message, "forge: sketch_move");
+    assert.strictEqual(t.revision(), rev + 1);
+    assert.deepStrictEqual([t.item(2).shape, t.item(3).shape], [{ cx: 10, cy: 0, r: 3 }, { x0: 10, y0: 0, x1: 15, y1: 0 }]);
+    assert.strictEqual(JSON.parse(wasm[K + "document_log"](t.doc, "main"))[0].message, "forge: sketch_move");
+    refused(t, { op: "sketch_move", sketch: 2, items: [] }, /^sketch_move: #2 is not a sketch/);
     t.free();
 }
 
