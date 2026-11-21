@@ -16,10 +16,10 @@ export const KINDS = Object.freeze([
     "perpendicular", "collinear", "tangent", "tangent_at_end", "concentric", "equal_length",
     "equal_radius", "midpoint", "symmetric", "fix", "distance", "point_line_distance",
     "line_distance", "circle_line_distance", "circle_distance", "horizontal_distance",
-    "vertical_distance", "length", "angle", "radius", "diameter",
+    "vertical_distance", "length", "angle", "radius", "diameter", "smooth", "translated", "rotated",
 ]);
 // The kinds that carry a value.
-export const DIMENSIONS = new Set(KINDS.slice(KINDS.indexOf("distance")));
+export const DIMENSIONS = new Set(KINDS.slice(KINDS.indexOf("distance"), KINDS.indexOf("diameter") + 1));
 
 const SENSE = { auto: 0, positive: 1, negative: 2 };
 const END = { start: 0, end: 1 };

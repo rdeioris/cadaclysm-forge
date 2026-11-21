@@ -19,10 +19,11 @@ const sketch = (constraints) => ({ id: 1, kind: "sketch", constraints });
 const curve = (id, kind, shape) => ({ id, kind, plane: 1, shape });
 const byId = (cs) => new Map(cs.map((c) => [c.id, c]));
 
-// 27 kinds in code order, 11 dimensions
-assert.equal(KINDS.length, 27);
+// 30 kinds in code order, 11 dimensions
+assert.equal(KINDS.length, 30);
 assert.equal(KINDS[0], "coincident");
 assert.equal(KINDS[26], "diameter");
+assert.deepEqual(KINDS.slice(27), ["smooth", "translated", "rotated"]);
 assert.equal(DIMENSIONS.size, 11);
 
 // spots per kind
@@ -595,5 +596,86 @@ function stackLinear(anchors) {
     // a conflict-red refusal is still one (the object form and the text form agree)
     assert.equal(isConflictRefusal({ error: "sketch_constrain: over-constrained: conflicts with [2]" }), true);
     assert.equal(isConflictRefusal({ error: "over-constrained", collapse: true }), false);
+}
+// a pattern's holds (ROTATED, TRANSLATED) as stored records: the session's new entities
+// written as page curves, its new constraints mapped to spots, and a fresh model built
+// from those alone solves with every copy where the pattern put it
+{
+    const ent = (h) => Array.from(w.cadaclysm_blacksmith_sketch_entities(h));
+    const cons = (h) => Array.from(w.cadaclysm_blacksmith_sketch_constraints(h));
+    const pt = (h, id) => Array.from(w.cadaclysm_blacksmith_sketch_point(h, id));
+    // The records and page curves a pattern call `call(m)` made on model `m` (freed).
+    const capture = (cs, call) => {
+        const m = buildModel(w, sketch([]), cs);
+        const e0 = new Set(ent(m.h)), k0 = new Set(cons(m.h));
+        const out = Array.from(call(m));
+        const [k, n, s] = out;
+        const copies = out.slice(4, 4 + k * n), steps = out.slice(4 + k * n, 4 + k * n + s);
+        const owner = new Map(m.owner), added = [], records = [];
+        const claim = (curveId, at, kid) => {
+            if (owner.has(kid)) records.push({ id: records.length + 1, kind: "coincident", refs: [{ curve: curveId, at }, owner.get(kid)], driving: true });
+            else owner.set(kid, { curve: curveId, at });
+        };
+        const lineOf = (id, e, extra) => {
+            const [a, b] = Array.from(w.cadaclysm_blacksmith_sketch_ends(m.h, e));
+            const [x0, y0] = pt(m.h, a), [x1, y1] = pt(m.h, b);
+            added.push({ ...curve(id, "line", { x0, y0, x1, y1 }), ...extra });
+            claim(id, "curve", e); claim(id, "start", a); claim(id, "end", b);
+        };
+        copies.forEach((e, i) => {
+            const id = 10 + i;
+            if (w.cadaclysm_blacksmith_sketch_kind(m.h, e) === 1) { lineOf(id, e); return; }
+            const c = w.cadaclysm_blacksmith_sketch_centre(m.h, e);
+            const [cx, cy] = pt(m.h, c);
+            added.push(curve(id, "circle", { cx, cy, r: w.cadaclysm_blacksmith_sketch_radius(m.h, e) }));
+            claim(id, "curve", e); claim(id, "centre", c);
+        });
+        steps.forEach((e, i) => lineOf(20 + i, e, { construction: true }));
+        for (const e of ent(m.h)) if (!e0.has(e)) assert.ok(owner.has(e), `entity ${e} has a page curve`);
+        for (const c of cons(m.h)) {
+            if (k0.has(c)) continue;
+            const kind = KINDS[w.cadaclysm_blacksmith_sketch_constraint_kind(m.h, c)];
+            const refs = Array.from(w.cadaclysm_blacksmith_sketch_constraint_refs(m.h, c)).map((r) => owner.get(r));
+            const rec = { id: records.length + 1, kind, refs, driving: w.cadaclysm_blacksmith_sketch_constraint_driving(m.h, c) };
+            if (DIMENSIONS.has(kind)) rec.value = w.cadaclysm_blacksmith_sketch_constraint_value(m.h, c);
+            records.push(rec);
+        }
+        freeModel(w, m);
+        return { curves: [...cs, ...added], records };
+    };
+    const rebuilt = ({ curves, records }) => {
+        const m = buildModel(w, sketch(records), curves);
+        assert.deepEqual([m.stale, m.refused], [[], []], "every pattern record replays");
+        w.cadaclysm_blacksmith_sketch_solve(m.h);
+        return m;
+    };
+    // circular: a circle r 3 at (10, 0) turned 3 times about the centre of a circle at the origin
+    const circ = capture([curve(2, "circle", { cx: 10, cy: 0, r: 3 }), curve(3, "circle", { cx: 0, cy: 0, r: 1 })],
+        (m) => w.cadaclysm_blacksmith_sketch_pattern_circular(m.h, Uint32Array.of(m.entity.get("2:curve")), m.entity.get("3:centre"), 3, 2 * Math.PI / 3));
+    assert.ok(circ.records.some((k) => k.kind === "rotated"), JSON.stringify(circ.records));
+    assert.ok(circ.records.some((k) => k.kind === "angle" && Math.abs(k.value - 2 * Math.PI / 3) < 1e-12));
+    {
+        const m = rebuilt(circ);
+        const r0 = w.cadaclysm_blacksmith_sketch_radius(m.h, m.entity.get("2:curve"));
+        [10, 11].forEach((id, i) => {
+            const [x, y] = pt(m.h, m.entity.get(`${id}:centre`)), t = 2 * Math.PI * (i + 1) / 3;
+            assert.ok(Math.abs(x - 10 * Math.cos(t)) < 1e-9 && Math.abs(y - 10 * Math.sin(t)) < 1e-9, `copy ${id} at ${x}, ${y}`);
+            assert.ok(Math.abs(w.cadaclysm_blacksmith_sketch_radius(m.h, m.entity.get(`${id}:curve`)) - r0) < 1e-9);
+        });
+        freeModel(w, m);
+    }
+    // rectangular: a line copied 3 along x by 5 and 2 along y by 4
+    const rect = capture([curve(2, "line", { x0: 0, y0: 0, x1: 2, y1: 1 })],
+        (m) => w.cadaclysm_blacksmith_sketch_pattern_rectangular(m.h, Uint32Array.of(m.entity.get("2:curve")), 5, 0, 3, 0, 4, 2));
+    assert.ok(rect.records.some((k) => k.kind === "translated"), JSON.stringify(rect.records));
+    {
+        const m = rebuilt(rect);
+        const grid = [[5, 0], [10, 0], [0, 4], [5, 4], [10, 4]];
+        grid.forEach(([dx, dy], i) => {
+            const id = 10 + i;
+            assert.deepEqual([...pt(m.h, m.entity.get(`${id}:start`)), ...pt(m.h, m.entity.get(`${id}:end`))].map((v, j) => Math.abs(v - [dx, dy, 2 + dx, 1 + dy][j]) < 1e-9), [true, true, true, true], `copy ${id}`);
+        });
+        freeModel(w, m);
+    }
 }
 console.log("forge-constraints.mjs: ok");
