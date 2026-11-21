@@ -1145,4 +1145,144 @@ function refused(t, cmd, words) {
     t.free();
 }
 
+// A box's bounds turned `deg` about the world Z through the origin: the box of its eight
+// corners turned (exact for a box).
+function turnedBounds(b, deg) {
+    const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    const xs = [], ys = [];
+    for (const x of [b[0], b[3]]) for (const y of [b[1], b[4]]) { xs.push(c * x - s * y); ys.push(s * x + c * y); }
+    return [Math.min(...xs), Math.min(...ys), b[2], Math.max(...xs), Math.max(...ys), b[5]];
+}
+const BOX_AT = (id, s, x, y) => [{ op: "primitive", id, kind: "box", plane: "top", dims: [s, s, s] }, { op: "set", id, place: { offset: [x, y, 0], turn: [0, 0, 0] } }];
+
+// pattern of bodies, circular about Z: one group item (kind `pattern`, no parts: the sources
+// stay tips) whose head `i<id>` is `solid.pattern` over `i<id>_at` `placements.circular`, and
+// one instance item per (placement >= 1, source), instance-major, each `solid.nth` of the
+// list, named "<source> <p+1>". An edit of a source flows into its instances; a `set` of
+// the group's count re-makes the instances in one command; undo takes it all back.
+{
+    const t = fresh();
+    for (const c of [...BOX_AT(1, 4, 20, 0), ...BOX_AT(2, 2, 30, 5)]) t.run(c);
+    const before = JSON.stringify(t.nodes());
+    const ids = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+    t.run({ op: "pattern", id: 3, sources: [1, 2], type: "circular", axis: "z", count: 6, instances: ids });
+    assert.deepStrictEqual(t.node("i3_at"), { id: "i3_at", kind: "placements.circular", axis: "xy", count: 6 });
+    assert.deepStrictEqual([t.node("i3").kind, t.node("i3").solids, t.node("i3").placements, t.node("i3").combine], ["solid.pattern", ["i1", "i2"], "i3_at", "separate"]);
+    const g = t.item(3);
+    assert.deepStrictEqual([g.kind, g.name, g.sources, g.type, g.axis, g.count, g.instances, g.parts], ["pattern", "Pattern 1", [1, 2], "circular", "z", 6, ids, undefined]);
+    assert.deepStrictEqual(t.model.items().filter((i) => i.kind === "instance").map((i) => i.id), ids);
+    assert.ok(!isBody(t.model.item(3)) && isBody(t.model.item(4)));
+    assert.deepStrictEqual(ids.map((n) => t.item(n).name), ["Box 1 2", "Box 2 2", "Box 1 3", "Box 2 3", "Box 1 4", "Box 2 4", "Box 1 5", "Box 2 5", "Box 1 6", "Box 2 6"]);
+    assert.deepStrictEqual(ids.map((n) => [t.node(`i${n}`).kind, t.node(`i${n}`).list, t.node(`i${n}`).index]), ids.map((_, k) => ["solid.nth", "i3", k + 2]));
+    assert.deepStrictEqual([t.item(7).pattern, t.item(7).index, t.item(7).source, t.item(7).kind, t.item(7).parts], [3, 5, 2, "instance", []]);
+    assert.ok(!t.item(1).hidden && !t.item(2).hidden, "the sources are not consumed");
+    const b1 = solidNow(t, "i1"), b2 = solidNow(t, "i2");
+    ids.forEach((n, k) => assert.ok(close(solidOf(t.doc, `i${n}`).volume, k % 2 ? 8 : 64, 1e-9), `#${n} ${solidOf(t.doc, `i${n}`).volume}`));
+    // (p = 2, s = 1): box 2 turned 120 degrees
+    assert.ok(close(solidOf(t.doc, "i7").bounds, turnedBounds(b2.bounds, 120), 1e-3), JSON.stringify([solidOf(t.doc, "i7").bounds, turnedBounds(b2.bounds, 120)]));
+    assert.ok(close(solidOf(t.doc, "i4").bounds, turnedBounds(b1.bounds, 60), 1e-3));
+    // the source's size: every instance of it follows
+    t.run({ op: "set", id: 1, dims: [5, 5, 5] });
+    for (const n of [4, 6, 8, 10, 12]) assert.ok(close(solidNow(t, `i${n}`).volume, 125, 1e-9), `#${n}`);
+    // the count set to 4: the group and its instances re-made in one command
+    const rev = t.revision();
+    t.run({ op: "set", id: 3, count: 4 });
+    assert.strictEqual(t.revision(), rev + 1);
+    assert.strictEqual(t.node("i3_at").count, 4);
+    assert.deepStrictEqual(t.item(3).instances, [4, 5, 6, 7, 8, 9]);
+    assert.deepStrictEqual(t.model.items().filter((i) => i.kind === "instance").map((i) => [i.id, i.name]), [[4, "Box 1 2"], [5, "Box 2 2"], [6, "Box 1 3"], [7, "Box 2 3"], [8, "Box 1 4"], [9, "Box 2 4"]]);
+    for (const n of [10, 11, 12, 13]) assert.strictEqual(t.node(`i${n}`), undefined);
+    assert.ok(close(solidNow(t, "i7").bounds, turnedBounds(b2.bounds, 180), 1e-3));
+    // up again: the command names the new ids
+    t.run({ op: "set", id: 3, count: 5, instances: [4, 5, 6, 7, 8, 9, 14, 15] });
+    assert.deepStrictEqual(t.model.items().filter((i) => i.kind === "instance").map((i) => i.id), [4, 5, 6, 7, 8, 9, 14, 15]);
+    assert.strictEqual(t.meta().nextId, 16);
+    // too few ids: refused, nothing written
+    refused(t, { op: "set", id: 3, count: 7 }, /^pattern: fewer `instances` ids than instances/);
+    // undo, back to before the pattern (the three sets, then the pattern)
+    for (let k = 0; k < 4; k++) t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    assert.deepStrictEqual(t.model.nodes(), t.nodes());
+    t.free();
+}
+
+// skip: the skipped placement is absent, the rest named in order; rectangular and along a
+// sketch line (its `curve.as_nurbs` the path) once each; an axis picked off geometry is
+// numbers; the pattern round-trips through a save and a load (the same page items).
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "pattern", id: 2, sources: [1], type: "circular", count: 6, skip: [2], instances: [3, 4, 5, 6, 7] });
+    assert.deepStrictEqual(t.node("i2_at").skip, [2]);
+    assert.deepStrictEqual(t.item(2).instances, [3, 4, 5, 6]);
+    assert.deepStrictEqual([3, 4, 5, 6].map((n) => [t.item(n).name, t.item(n).index]), [["Box 1 2", 1], ["Box 1 3", 2], ["Box 1 4", 3], ["Box 1 5", 4]]);
+    const b = solidNow(t, "i1").bounds;
+    // index 2 (120 degrees) skipped: the second instance is the one at 180
+    assert.ok(close(solidOf(t.doc, "i4").bounds, turnedBounds(b, 180), 1e-3), JSON.stringify(solidOf(t.doc, "i4").bounds));
+    t.run({ op: "pattern", id: 8, sources: [1], type: "rectangular", d1: "x", count1: 3, spacing1: 5, d2: [0, 1, 0], count2: 2, spacing2: 7, instances: [9, 10, 11, 12, 13] });
+    assert.deepStrictEqual(t.node("i8_at"), { id: "i8_at", kind: "placements.rectangular", direction1: [1, 0, 0], count1: 3, spacing1: 5, direction2: [0, 1, 0], count2: 2, spacing2: 7 });
+    [[5, 0], [10, 0], [0, 7], [5, 7], [10, 7]].forEach(([dx, dy], k) => {
+        const got = solidNow(t, `i${9 + k}`).bounds;
+        assert.ok(close(got, [b[0] + dx, b[1] + dy, b[2], b[3] + dx, b[4] + dy, b[5]], 1e-6), `#${9 + k} ${JSON.stringify(got)}`);
+    });
+    t.run({ op: "sketch", id: 14, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 15, kind: "line", plane: 14, shape: { x0: 0, y0: 0, x1: 0, y1: 30 } });
+    t.run({ op: "pattern", id: 16, sources: [1], type: "along", path: 15, count: 4, instances: [17, 18, 19] });
+    assert.deepStrictEqual(t.node("i16_path"), { id: "i16_path", kind: "curve.as_nurbs", curve: "i15" });
+    assert.deepStrictEqual(t.node("i16_at"), { id: "i16_at", kind: "placements.along", path: "i16_path", count: 4 });
+    [10, 20, 30].forEach((dy, k) => {
+        const got = solidNow(t, `i${17 + k}`).bounds;
+        assert.ok(close(got, [b[0], b[1] + dy, b[2], b[3], b[4] + dy, b[5]], 1e-6), `#${17 + k} ${JSON.stringify(got)}`);
+    });
+    assert.deepStrictEqual([t.item(16).path, t.item(16).type, t.item(16).count], [15, "along", 4]);
+    // the axis picked off geometry: numbers, a `frame.at` helper (and Y, the world's, the same)
+    t.run({ op: "pattern", id: 20, sources: [1], type: "circular", axis: { origin: [10, 0, 0], dir: [0, 0, 1] }, count: 2, angle: 180, instances: [21] });
+    assert.deepStrictEqual(t.node("i20_axis"), { id: "i20_axis", kind: "frame.at", origin: [10, 0, 0], normal: [0, 0, 1] });
+    assert.strictEqual(t.node("i20_at").axis, "i20_axis");
+    assert.deepStrictEqual(t.item(20).axis, { origin: [10, 0, 0], dir: [0, 0, 1] });
+    assert.ok(close(solidNow(t, "i21").bounds, b, 1e-6), "a box centred on the axis turned half a turn is where it was");
+    t.run({ op: "pattern", id: 22, sources: [1], type: "circular", axis: "y", count: 4, instances: [23, 24, 25] });
+    assert.deepStrictEqual(t.node("i22_axis"), { id: "i22_axis", kind: "frame.at", origin: [0, 0, 0], normal: [0, 1, 0] });
+    assert.strictEqual(t.item(22).axis, "y");
+    // a quarter turn about +Y takes +X to -Z
+    assert.ok(close(solidNow(t, "i23").bounds, [b[2], b[1], -b[3], b[5], b[4], -b[0]], 1e-6), JSON.stringify(solidOf(t.doc, "i23").bounds));
+    t.run({ op: "pattern", id: 26, sources: [1], type: "circular", axis: "x", count: 2, instances: [27] });
+    assert.strictEqual(t.node("i26_at").axis, "yz");
+    // a save, a load: the same page items
+    const items = pageItems(t.model);
+    const text = wasm[K + "document_save"](t.doc);
+    const again = wasm[K + "document_load"](text);
+    assert.deepStrictEqual(pageItems(new Model(wasm, again)), items);
+    wasm[K + "document_free"](again);
+    t.free();
+}
+
+// pattern refusals: in the command's words, the document untouched
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "sketch", id: 2, mode: "offset", base: "top", offset: 0 });
+    refused(t, { op: "pattern", id: 3, sources: [], type: "circular", count: 6, instances: [4, 5, 6, 7, 8] }, /^pattern: nothing to pattern/);
+    refused(t, { op: "pattern", id: 3, sources: [1], type: "circular", count: 1, instances: [4] }, /^pattern: `count` must be a whole number, 2 or more/);
+    refused(t, { op: "pattern", id: 3, sources: [1], type: "along", path: 2, count: 3, instances: [4, 5] }, /^pattern: the path is not a curve/);
+    refused(t, { op: "pattern", id: 3, sources: [2], type: "circular", count: 3, instances: [4, 5] }, /^pattern: #2 is not a body/);
+    refused(t, { op: "pattern", id: 3, sources: [1], type: "circular", count: 3, skip: [0], instances: [4, 5] }, /^pattern: the original \(instance 0\) cannot be skipped/);
+    t.free();
+}
+
+// A pattern group deleted takes its instances along; a source deleted leaves the group and
+// its instances standing, failed (the group a stand-in, the instances blocked by it).
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 2, 10, 0)) t.run(c);
+    t.run({ op: "pattern", id: 2, sources: [1], type: "circular", count: 3, instances: [3, 4] });
+    t.run({ op: "delete", ids: [2] });
+    assert.deepStrictEqual(t.model.items().map((i) => [i.id, i.kind]), [[1, "box"]]);
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    t.run({ op: "delete", ids: [1] });
+    assert.deepStrictEqual(t.model.items().map((i) => [i.id, i.kind]), [[2, "pattern"], [3, "instance"], [4, "instance"]]);
+    assert.deepStrictEqual([t.statusOf("i2").state, t.statusOf("i3").state, t.statusOf("i3").by], ["error", "blocked", "i2"]);
+    t.free();
+}
+
 console.log("forge-commands: ok");
