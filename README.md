@@ -37,8 +37,10 @@ name last opened or saved, `forge.json` at first), and **load** opens one.
 
 ## Tools
 
-The pattern and mirror tools on the Sketch and Solid tabs. Each OK is one command, one
-timeline chip and one undo. `examples/pattern-mirror.json` (written by
+The pattern and mirror tools on the Sketch and Solid tabs, and Sketch › copy to plane. Each
+OK is one command, one timeline chip and one undo. The browser's **duplicate** on a sketch
+copies the whole sketch on its own plane: its curves, their constraints and construction
+flags. `examples/pattern-mirror.json` (written by
 `scripts/pattern-example.mjs`) holds a sketch pattern cut through a plate, a body pattern
 and a body mirror.
 
@@ -46,6 +48,7 @@ and a body mirror.
 |---|---|---|---|
 | Sketch | pattern | copies of the picked curves on the same sketch, circular about the origin or a picked point (count, angle) or rectangular (two directions, counts and spacings), held by constraints so the original's size and the step drive them | `cadaclysm_blacksmith_sketch_pattern_circular`, `cadaclysm_blacksmith_sketch_pattern_rectangular` on the sketch session |
 | Sketch | mirror | the picked curves reflected across a line of the sketch, held symmetric to the originals | `cadaclysm_blacksmith_sketch_mirror` on the sketch session |
+| Sketch | copy to plane | a sketch, its curves and constraints on another plane | none (page) |
 | Solid | pattern | bodies: a pattern group and one body per copy, circular about an axis, rectangular, or along a path; a feature: the cut or join placed again on its target | `placements.circular` / `placements.rectangular` / `placements.along` with `solid.pattern` and `solid.nth`; `solid.pattern_feature` |
 | Solid | mirror | bodies: a new mirrored body each, or the body joined with its mirror; a feature: the cut or join repeated across the plane | `placements.mirror` with `solid.pattern` and `solid.nth`; `solid.mirror` and `solid.join` (`solid.mirror_join` for a sheet on the plane); `solid.pattern_feature` |
 
