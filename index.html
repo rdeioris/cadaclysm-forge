@@ -235,6 +235,7 @@
     <symbol id="i-c-fix" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.5" fill="currentColor" fill-opacity=".25"/><path d="M12 12.5 V21 M7 21 H17"/></symbol>
     <symbol id="i-c-dimension" viewBox="0 0 24 24"><path d="M4 7 V17 M20 7 V17 M4 12 H20 M4 12 L7 10 M4 12 L7 14 M20 12 L17 10 M20 12 L17 14"/></symbol>
     <symbol id="i-sketch" viewBox="0 0 24 24"><path d="M14 4 L20 10 L8 22 H2 V16 Z M11 7 L17 13"/></symbol>
+    <symbol id="i-copy-sketch" viewBox="0 0 24 24"><path d="M2 21 L6 15 H16 L12 21 Z" stroke-dasharray="2 2"/><path d="M8 11 L12 5 H22 L18 11 Z" fill="currentColor" fill-opacity=".25"/><path d="M9 17 V12 M7 14 L9 12 L11 14"/></symbol>
     <symbol id="i-plane-offset" viewBox="0 0 24 24"><path d="M2 20 L7 15 H22 L17 20 Z" stroke-dasharray="2 2"/><path d="M2 10 L7 5 H22 L17 10 Z" fill="currentColor" fill-opacity=".25"/><path d="M12 17 V11 M10 13 L12 11 L14 13"/></symbol>
     <symbol id="i-plane-angle" viewBox="0 0 24 24"><path d="M2 20 L7 15 H22 L17 20 Z" stroke-dasharray="2 2"/><path d="M2 20 L6 4 H21 L17 20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-plane-mid" viewBox="0 0 24 24"><path d="M2 22 L6 18 H22 L18 22 Z M2 6 L6 2 H22 L18 6 Z" stroke-dasharray="2 2"/><path d="M2 14 L6 10 H22 L18 14 Z" fill="currentColor" fill-opacity=".25"/></symbol>
@@ -362,6 +363,7 @@
         <div class="group">
             <div>
                 <button id="add-sketch"><svg class="g"><use href="#i-sketch"/></svg>new sketch</button>
+                <button id="copy-sketch" aria-pressed="false" disabled title="copy the selected sketch -- its curves and constraints -- onto another plane: set the plane in the dialog, OK or Enter"><svg class="g"><use href="#i-copy-sketch"/></svg>copy to plane</button>
             </div>
             <span>sketch</span>
         </div>
@@ -528,6 +530,7 @@
                 <label class="row" data-for="solid-join-op">operation <select id="solid-operation"><option value="new">new body</option><option value="join">join</option></select></label>
                 <div class="row" data-for="solid-pattern solid-mirror"><span id="solid-picks-label">copying</span><span id="solid-picks"></span></div>
                 <label class="row" data-for="operation">operation <select id="operation"><option value="new">new body</option><option value="join">join</option><option value="cut">cut</option><option value="intersect">intersect</option></select></label>
+                <div class="row" data-for="sketch-copy">copying <span id="copy-sketch-what"></span></div>
                 <span id="sketch-tools" data-for="sketch" style="display: contents">
                     <label class="row">plane <select id="mode"><option value="offset">offset</option><option value="angle">at angle</option><option value="path">along path</option><option value="face">on face</option><option value="mid">midplane</option><option value="points">3 points</option></select></label>
                     <label class="row" id="base-field">from <select id="base"><option value="top">Top</option><option value="front">Front</option><option value="right">Right</option></select></label>

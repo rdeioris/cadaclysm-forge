@@ -18,6 +18,7 @@
 //     node test/browser.mjs --headed                # watch it
 //     node test/browser.mjs --no-snap               # the examples alone, no snap check
 //     node test/browser.mjs --no-sketch-tools       # no sketch pattern / mirror check
+//     node test/browser.mjs --no-sketch-copy        # no sketch copy to plane / duplicate check
 //     node test/browser.mjs --no-solid-tools        # no solid pattern / mirror check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
@@ -501,6 +502,118 @@ async function checkSketchCopies(cdp, base, { webgl2, out }) {
     }
 }
 
+// ---- Sketch › copy to plane and the browser's duplicate of a sketch ---------------------
+// A circle on an offset sketch (Top, 30): the sketch row selected and Copy to plane pressed
+// opens the session over a copy at once (offset 50); the dialog's offset typed as 36 runs it
+// again; OK keeps two sketches, the second at 36 with one circle of the same radius, in one
+// commit whose command is `sketch_copy`. Copied again and Esc: still two sketches, no
+// commit. The browser's duplicate on the sketch row: a third sketch on the same plane, with
+// its circle. `--out`: a picture of the copy dialog over a hexagon plate (a hexagon, six
+// holes patterned round the origin, a rectangle) copied to offset 36, in Perspective.
+async function checkSketchCopy(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    const settled = () => evaluate("window.__forgeTest.settled()");
+    const key = async (k, code, vk) => {
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk });
+    };
+    const press = async (id) => { await evaluate(`document.getElementById(${JSON.stringify(id)}).click()`); await sleep(100); await settled(); };
+    const field = async (id, v) => {
+        await evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); el.value = ${JSON.stringify(String(v))}; el.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+        await sleep(100);
+        await settled();
+    };
+    const items = () => evaluate("window.__forgeTest.items()");
+    const sketches = async () => (await items()).filter((c) => c.kind === "sketch");
+    const on = async (s) => (await items()).filter((c) => c.plane === s && c.kind !== "image");
+    try {
+        const S = await evaluate("window.__forgeTest.nextId()"), C = S + 1;
+        await evaluate(`window.__forgeTest.run({ op: "sketch", id: ${S}, mode: "offset", base: "top", offset: 30 })`);
+        await evaluate(`window.__forgeTest.run({ op: "add", id: ${C}, kind: "circle", plane: ${S}, shape: { cx: 10, cy: 0, r: 3 } })`);
+        await settled();
+        const n0 = (await sketches()).length;
+        const head0 = await evaluate("window.__forgeTest.headCount()");
+
+        // Copy to plane, offset 36, OK: one commit, the copy at 36 with its circle.
+        await evaluate(`window.__forgeTest.select([${S}])`);
+        if (await evaluate(`document.getElementById("copy-sketch").disabled`)) throw new Error("copy to plane is off with a sketch selected");
+        await press("copy-sketch");
+        let copies = (await sketches()).filter((c) => c.id !== S && c.id > S);
+        if (copies.length !== 1 || copies[0].offset !== 50) throw new Error(`copy to plane previews ${JSON.stringify(copies.map((c) => [c.id, c.offset]))}, not one at offset 50`);
+        if (await evaluate(`document.getElementById("dialog").hidden`)) throw new Error("no dialog while the copy previews");
+        const readout = await evaluate(`document.getElementById("copy-sketch-what").textContent`);
+        if (!/· 1 curve$/.test(readout)) throw new Error(`the readout says ${JSON.stringify(readout)}`);
+        await field("offset", 36);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 1) throw new Error("the session is not one commit while it is open");
+        await press("dialog-ok");
+        const all = await sketches();
+        copies = all.filter((c) => c.id > C);
+        if (all.length !== n0 + 1 || copies.length !== 1) throw new Error(`OK leaves ${all.length} sketches (${n0} before)`);
+        const copy = copies[0];
+        if (copy.mode !== "offset" || copy.base !== "top" || copy.offset !== 36) throw new Error(`the copy is on ${JSON.stringify([copy.mode, copy.base, copy.offset])}, not Top 36`);
+        const circles = (await on(copy.id)).filter((c) => c.kind === "circle");
+        if ((await on(copy.id)).length !== 1 || circles.length !== 1 || circles[0].shape.r !== 3) throw new Error(`the copy holds ${JSON.stringify(await on(copy.id))}`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 1) throw new Error("copy to plane is not one commit");
+        const log = await evaluate("window.__forgeTest.history()");
+        if (!JSON.stringify(log[0]).includes("sketch_copy")) throw new Error(`the last commit is not the copy: ${JSON.stringify(log[0]).slice(0, 200)}`);
+
+        // Copied again, Esc: as it was.
+        await evaluate(`window.__forgeTest.select([${S}])`);
+        await press("copy-sketch");
+        if ((await sketches()).length !== n0 + 2) throw new Error(`a second copy previews ${(await sketches()).length} sketches`);
+        await key("Escape", "Escape", 27);
+        await sleep(100); await settled();
+        if ((await sketches()).length !== n0 + 1) throw new Error(`Esc leaves ${(await sketches()).length} sketches, not ${n0 + 1}`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 1) throw new Error("Esc left a commit behind");
+
+        // The browser's duplicate on the sketch row: a third sketch on Top 30, with its circle.
+        await evaluate(`window.__forgeTest.select([${S}])`);
+        await press("duplicate");
+        const third = (await sketches()).filter((c) => c.id !== S && c.id !== copy.id && c.id > C);
+        if (third.length !== 1 || third[0].base !== "top" || third[0].offset !== 30) throw new Error(`duplicate gives ${JSON.stringify(third.map((c) => [c.id, c.base, c.offset]))}`);
+        const dup = await on(third[0].id);
+        if (dup.length !== 1 || dup[0].kind !== "circle" || dup[0].shape.r !== 3 || dup[0].shape.cx !== 10) throw new Error(`the duplicate holds ${JSON.stringify(dup)}`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 2) throw new Error("duplicate is not one commit");
+
+        if (out) {
+            // The hexagon plate copied to offset 36, the session open, in Perspective.
+            const P = await evaluate("window.__forgeTest.nextId()");
+            await evaluate(`window.__forgeTest.run({ op: "sketch", id: ${P}, mode: "offset", base: "top", offset: 0 })`);
+            await evaluate(`window.__forgeTest.run({ op: "add", id: ${P + 1}, kind: "polygon", plane: ${P}, shape: { cx: 0, cy: 0, r: 104, sides: 6, angle: 0 } })`);
+            await evaluate(`window.__forgeTest.run({ op: "add", id: ${P + 2}, kind: "circle", plane: ${P}, shape: { cx: 80, cy: 0, r: 11 } })`);
+            await evaluate(`window.__forgeTest.run({ op: "sketch_pattern", sketch: ${P}, ids: [${P + 2}], type: "circular", centre: null, count: 6, angle: 360, copies: [${[3, 4, 5, 6, 7, 8, 9].map((k) => P + k).join(", ")}] })`);
+            await evaluate(`window.__forgeTest.run({ op: "add", id: ${P + 10}, kind: "rect", plane: ${P}, shape: { x0: -20, y0: -10, x1: 20, y1: 10 } })`);
+            await settled();
+            await evaluate(`document.querySelector('#viewbar [data-view="1"]').click()`);
+            await evaluate(`window.__forgeTest.select([${P}])`);
+            await press("copy-sketch");
+            await field("offset", 36);
+            await key("f", "KeyF", 70);
+            await frame(); await sleep(500); await frame();
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `sketch-copy${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+            await press("dialog-ok");
+            const plate = (await sketches()).filter((c) => c.id > P + 10);
+            if (plate.length !== 1 || plate[0].offset !== 36 || (await on(plate[0].id)).length !== 10) throw new Error(`the plate's copy is ${JSON.stringify(plate)}`);
+        }
+
+        await sleep(300);
+        if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
+        console.log("ok - sketch copy: copy to plane previews at 50, offset 36 re-runs it, OK keeps 2 sketches in one commit (sketch_copy); Esc rolls a second back; duplicate copies the sketch with its circle");
+    } catch (e) {
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+            if (shot) writeFileSync(join(out, `sketch-copy${webgl2 ? "-webgl2" : ""}-failed.png`), Buffer.from(shot.data, "base64"));
+        }
+        throw e;
+    } finally {
+        await close();
+    }
+}
+
 // Solid › pattern and Solid › mirror on a box: the session previews 5 instance items and the
 // outline's group row, Esc leaves none and no commit; OK keeps them in one commit. Mirror
 // across Right as a new body: 1 instance. The STEP of every body: one MANIFOLD_SOLID_BREP per
@@ -678,6 +791,14 @@ async function main() {
             } catch (e) {
                 failed++;
                 console.error(`not ok - sketch tools: ${e.message}`);
+            }
+        }
+        if (!failed && !flag("--no-sketch-copy")) {
+            try {
+                await checkSketchCopy(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - sketch copy: ${e.message}`);
             }
         }
         if (!failed && !flag("--no-solid-tools")) {

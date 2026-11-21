@@ -85,6 +85,8 @@ const angleEl = document.getElementById("angle");
 const offsetEl = document.getElementById("offset");
 const lookAtEl = document.getElementById("look-at");
 const addSketchEl = document.getElementById("add-sketch");
+const copySketchEl = document.getElementById("copy-sketch");
+const copySketchWhatEl = document.getElementById("copy-sketch-what");
 const sketchFilletEl = document.getElementById("sketch-fillet");
 const tabSketchEl = document.getElementById("tab-sketch");
 const tabSolidEl = document.getElementById("tab-solid");
@@ -1328,7 +1330,7 @@ const LABELS = { held: "Body", held_profile: "Profile", image: "Image", line: "L
                  pattern: "Pattern", instance: "Instance", pattern_feature: "Pattern", mirror: "Mirror" };
 const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽", pattern: "⁂", instance: "◇", pattern_feature: "⁂", mirror: "⧎" };
 // A kind's icon (the sprite in forge.html), or its glyph as text where there is none.
-const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror", "pattern_feature"]);
+const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror", "pattern_feature", "copy-sketch"]);
 // A kind drawn with another's icon: a feature pattern is a pattern.
 const ICON_OF = { pattern_feature: "pattern" };
 function iconOf(kind, glyph = GLYPHS[kind] ?? "•") {
@@ -2622,7 +2624,9 @@ function pickMidInto(sketch, ref) {
         const refs = await Promise.all(mid.map((r) => typeof r === "object" ? refsOf(r.body, "faces", [r.index]) : Promise.resolve([null])));
         if (byId(sketch.id) !== sketch) return;
         const faceRefs = refs.every((r) => r) ? refs.map((r) => r[0]) : null;
-        await run({ op: "set", id: sketch.id, mid, mode: "mid", ...(faceRefs && mid.some((r) => typeof r === "object") ? { faceRefs } : {}) });
+        const fields = { mid, mode: "mid", ...(faceRefs && mid.some((r) => typeof r === "object") ? { faceRefs } : {}) };
+        if (copying(sketch)) { setCopyPlane(fields); return; }
+        await run({ op: "set", id: sketch.id, ...fields });
         replaneSketch(sketch);
         if (planeInfo(sketch.id).broken) say("no plane midway between those two", true);
     });
@@ -2634,8 +2638,10 @@ function pickPointInto(sketch, end) {
     if (pickedSoFar.some((e) => e.curve === end.curve && e.end === end.end)) { say("that end is picked already", true); return; }
     pickedSoFar.push(end);
     if (pickedSoFar.length < 3) { pickingHint(); schedule(); return; }
-    run({ op: "set", id: sketch.id, points: pickedSoFar.slice(), mode: "points" });
+    const points = pickedSoFar.slice();
     setPicking(null);
+    if (copying(sketch)) { setCopyPlane({ points, mode: "points" }); return; }
+    run({ op: "set", id: sketch.id, points, mode: "points" });
     replaneSketch(sketch);
     if (planeInfo(sketch.id).broken) say("those three points lie on one line -- no plane through them", true);
 }
@@ -2666,7 +2672,9 @@ function pickFaceInto(sketch, body, index) {
     return act(async () => {
         const faceRefs = await refsOf(body.id, "faces", [index]);
         if (byId(sketch.id) !== sketch) return;
-        await run({ op: "set", id: sketch.id, face: { body: body.id, index }, mode: "face", ...(faceRefs ? { faceRefs } : {}) });
+        const fields = { face: { body: body.id, index }, mode: "face", ...(faceRefs ? { faceRefs } : {}) };
+        if (copying(sketch)) { setCopyPlane(fields); return; }
+        await run({ op: "set", id: sketch.id, ...fields });
         replaneSketch(sketch);
     });
 }
@@ -2682,10 +2690,12 @@ function pickInto(sketch, id) {
     if (picking === "hinge") {
         if (k?.kind !== "line") { say("a hinge must be a line", true); return false; }
         if (k.plane === sketch.id) { say("a hinge cannot lie on the sketch it hinges", true); return false; }
+        if (copying(sketch)) { setPicking(null); setCopyPlane({ hinge: id, mode: "angle" }); return true; }
         run({ op: "set", id: sketch.id, hinge: id, mode: "angle" });
     } else {
         if (!isCurve(k) || !k.sketch.length) { say("a path must be a curve with something drawn", true); return false; }
         if (k.plane === sketch.id) { say("a path cannot lie on the sketch it places", true); return false; }
+        if (copying(sketch)) { setPicking(null); setCopyPlane({ path: id, mode: "path" }); return true; }
         run({ op: "set", id: sketch.id, path: id, mode: "path" });
     }
     setPicking(null);
@@ -3209,6 +3219,7 @@ extrudeEl.addEventListener("click", () => armSketchPick("extrusion"));
 revolveEl.addEventListener("click", () => { if (axisMode) armRevolve(); else armSketchPick("revolution"); });
 sweepEl.addEventListener("click", () => { if (sweepMode) newSweep(); else armSketchPick("sweep"); });
 addSketchEl.addEventListener("click", () => newSketch());
+copySketchEl.addEventListener("click", () => pressCopySketch());
 document.getElementById("add-sketch-solid").addEventListener("click", () => newSketch());
 for (const b of document.querySelectorAll("[data-plane-mode]")) b.addEventListener("click", () => newSketch(b.dataset.planeMode));
 // The toolbar's tabs: Sketch for the curves and the sketch planes, Solid for the
@@ -3247,6 +3258,7 @@ for (const b of midOriginEl.querySelectorAll("[data-mid-plane]")) b.addEventList
 modeEl.addEventListener("change", () => {
     const c = current();
     if (!isSketch(c)) return;
+    if (copying(c)) { copyMode(modeEl.value); return; }
     run({ op: "set", id: c.id, mode: modeEl.value });
     // A mode with nothing picked yet asks for it.
     if (c.mode === "angle" && c.hinge === null) setPicking("hinge");
@@ -3259,6 +3271,7 @@ modeEl.addEventListener("change", () => {
 baseEl.addEventListener("change", () => {
     const c = current();
     if (!isSketch(c) || c.mode !== "offset") return;
+    if (copying(c)) { setCopyPlane({ base: baseEl.value }); return; }
     run({ op: "set", id: c.id, base: baseEl.value });
     replaneSketch(c);
 });
@@ -3267,6 +3280,7 @@ tiltEl.addEventListener("input", () => {
     if (!isSketch(c) || c.mode !== "angle") return;
     const t = +tiltEl.value;
     if (tiltEl.value === "" || !Number.isFinite(t)) return;
+    if (copying(c)) { setCopyPlane({ tilt: t }); return; }
     run({ op: "set", id: c.id, tilt: t }, true);   // the rebuild sees the frame change and moves everything on the sketch
 });
 lookAtEl.addEventListener("click", () => { const c = current(); if (isSketch(c)) lookAt(c); });
@@ -3275,6 +3289,7 @@ offsetEl.addEventListener("input", () => {
     if (!isSketch(c)) return;
     const o = +offsetEl.value;
     if (offsetEl.value === "" || !Number.isFinite(o)) return;
+    if (copying(c)) { setCopyPlane({ offset: o }); return; }
     run({ op: "set", id: c.id, offset: o }, true);
 });
 angleEl.addEventListener("input", () => {
@@ -3384,6 +3399,8 @@ function syncToolbar() {
     explodeEl.setAttribute("aria-pressed", String(sketchPick?.kind === "explode"));
     sketchPatternEl.setAttribute("aria-pressed", String(sketchPick?.kind === "pattern" || tool?.copies?.kind === "pattern"));
     sketchMirrorEl.setAttribute("aria-pressed", String(sketchPick?.kind === "mirror" || tool?.copies?.kind === "mirror"));
+    copySketchEl.setAttribute("aria-pressed", String(!!tool?.copy));
+    copySketchEl.disabled = !tool?.copy && !(selection.length === 1 && isSketch(current()));
     for (const b of constrainEls) b.setAttribute("aria-pressed", String(sketchPick?.kind === b.dataset.constrain));
     syncModifyButtons();
     extrudeEl.setAttribute("aria-pressed", String(sketchPick?.kind === "extrusion"));
@@ -3414,13 +3431,15 @@ function syncToolbar() {
     if (c?.kind === "revolution") angleEl.value = c.angle;
     // The sketch tools' fields are its mode's.
     if (isSketch(c)) {
-        modeEl.value = c.mode; baseEl.value = c.base; offsetEl.value = c.offset; tiltEl.value = c.tilt;
-        baseField.hidden = offsetField.hidden = c.mode !== "offset";
-        pickHingeEl.hidden = tiltField.hidden = c.mode !== "angle";
-        pickPathEl.hidden = c.mode !== "path";
-        pickFaceEl.hidden = c.mode !== "face";
-        pickMidEl.hidden = midOriginEl.hidden = c.mode !== "mid";
-        pickPointsEl.hidden = c.mode !== "points";
+        // A copy to a plane's mode chosen and waiting for its pick shows as chosen.
+        const mode = copying(c) ? (tool.copy.pendingMode ?? c.mode) : c.mode;
+        modeEl.value = mode; baseEl.value = c.base; offsetEl.value = c.offset; tiltEl.value = c.tilt;
+        baseField.hidden = offsetField.hidden = mode !== "offset";
+        pickHingeEl.hidden = tiltField.hidden = mode !== "angle";
+        pickPathEl.hidden = mode !== "path";
+        pickFaceEl.hidden = mode !== "face";
+        pickMidEl.hidden = midOriginEl.hidden = mode !== "mid";
+        pickPointsEl.hidden = mode !== "points";
         lookAtEl.setAttribute("aria-pressed", String(VIEW_PLANE_KEYS.some((k) => viewPlane[k] === c.id)));
     } else if (picking) setPicking(null);
     weightEl.disabled = !(nurbs && selectedPoint !== null);
@@ -3430,7 +3449,7 @@ function syncToolbar() {
     } else {
         weightValueEl.textContent = "";
     }
-    if (!drawing && !picking && !sketchPick && !sweepMode && !axisMode) hintEl.textContent = hintFor(c?.kind);   // a pick in progress keeps its own hint
+    if (!drawing && !picking && !sketchPick && !sweepMode && !axisMode && !tool?.copy) hintEl.textContent = hintFor(c?.kind);   // a pick in progress keeps its own hint
 }
 
 function selectPoint(i) {
@@ -3719,7 +3738,8 @@ function openTool(openedAt, ids, title, glyph) {
 }
 function commitTool() {
     if (!tool) return;
-    const copies = tool.copies ?? tool.solid;
+    const copies = tool.copies ?? tool.solid ?? tool.copy;
+    if (tool.copy && picking) setPicking(null);
     tool = null;
     if (copies) { hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; syncToolbar(); }
     if (shellMode) newShell();
@@ -3732,7 +3752,8 @@ function commitTool() {
 function cancelTool() {
     if (!tool) return;
     const { cancelAt, was } = tool;
-    const copies = tool.copies ?? tool.solid;
+    const copies = tool.copies ?? tool.solid ?? tool.copy;
+    if (tool.copy && picking) setPicking(null);
     if (copies) { copies.cancelled = true; hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; }   // a re-run queued behind this is dropped
     tool = null;
     if (axisMode) setAxisMode(null);
@@ -3790,7 +3811,7 @@ operationEl.addEventListener("change", () => act(async () => {
 // shell being picked, an extrude with an operation to choose.
 function renderDialog() {
     const c = current();
-    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid);
+    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid || tool?.copy);
     // A pattern or a mirror in progress (a sketch's, the bodies'): the dialog is the tool's,
     // as while a pick is.
     const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid);
@@ -3822,6 +3843,7 @@ function renderDialog() {
         if (s.kind === "pattern") kinds.add(`pattern-${s.type}`);
         renderCopies(s);
     }
+    if (tool?.copy) { kinds.add("sketch-copy"); renderCopySketch(tool.copy); }
     if (tool?.solid) {
         const s = tool.solid;
         kinds.add(`solid-${s.kind}`);
@@ -3927,6 +3949,12 @@ function timelineChips() {
         let chip = null;
         switch (op) {
         case "sketch":
+            chip = { at: i, ids: added.slice(), glyph: GLYPHS.sketch, kind: "sketch" };
+            if (added.length) bySketch.set(added[0], chip);
+            break;
+        // A sketch copied to a plane: a new sketch's chip, the sketch first (its first add),
+        // its curves in it; later adds on it join it.
+        case "sketch_copy":
             chip = { at: i, ids: added.slice(), glyph: GLYPHS.sketch, kind: "sketch" };
             if (added.length) bySketch.set(added[0], chip);
             break;
@@ -6230,6 +6258,73 @@ function runSketchPick() {
     syncToolbar();
     renderDialog();
     schedule();
+}
+
+// ------------------------------------------------------------------ Sketch › copy to plane
+
+// Sketch › copy to plane (`sketch_copy`, forge-commands.js `copySketch`): the selected
+// sketch, its curves and their records, copied onto another plane as one command. A tool
+// session (`openTool`, `tool.copy`): the command runs at once, an offset sketch's copy 20
+// further out than it, any other's 20 over Top; the copy is selected, and the dialog's plane
+// rows are the session's -- a mode, a base, an offset, a tilt or a pick changes
+// `tool.copy.fields` and runs the command again from where the session opened
+// (`rerunSession`), never a `set` of the copy. A mode that waits for its pick runs once it
+// is picked. OK (or the button again, or Enter) keeps the one command, Esc rolls it back.
+const copying = (sketch) => !!tool?.copy && !!sketch && tool.copy.made === sketch.id;
+function pressCopySketch() {
+    if (tool?.copy) { commitTool(); return; }
+    const src = current();
+    if (!isSketch(src) || selection.length !== 1) return;
+    return act(async () => {
+        if (tool) commitTool();
+        const session = openTool(headNow(), [src.id], "Copy sketch", "copy-sketch");
+        const fields = src.mode === "offset" ? { mode: "offset", base: src.base, offset: src.offset + 20 } : { mode: "offset", base: "top", offset: 20 };
+        fields.tilt = typeof src.tilt === "number" ? src.tilt : 30;
+        session.copy = { sketch: src.id, name: src.name, fields, made: null, pendingMode: null, count: 0, skipped: 0 };
+        await runCopySketch(session);
+        renderDialog();
+    });
+}
+// One run of the session's command, its ids from `nextId`: the sketch's, then one per curve
+// on the source. The copy selected; a refusal says why and leaves the source selected.
+async function runCopySketch(session) {
+    const s = session.copy;
+    const id = nextId;
+    const count = curves.filter((c) => isCurve(c) && c.plane === s.sketch).length;
+    const copies = Array.from({ length: count }, (_, k) => id + 1 + k);
+    const ok = await run({ op: "sketch_copy", sketch: s.sketch, id, copies, ...structuredClone(s.fields) });
+    s.made = ok && isSketch(byId(id)) ? id : null;
+    s.count = count;
+    s.skipped = s.made !== null ? copies.filter((n) => !byId(n)).length : 0;
+    s.doneAt = head;
+    session.ids = s.made !== null ? [s.made, ...copies.filter((n) => byId(n))] : [s.sketch];
+    setSelection([session.ids[0]]);
+    if (s.made !== null && byId(s.made).mode !== "offset") replaneSketch(byId(s.made));
+    if (tool !== session) return;   // closed by OK while this ran: nothing left to say
+    hintEl.textContent = `the copy follows the plane's fields · OK or Enter keeps ${s.made !== null ? "it" : "nothing"} · Esc cancels`;
+    if (!ok) hintEl.textContent = `${statusEl.textContent} · ${hintEl.textContent}`;
+}
+// A plane field of the copy changed: the session's fields, the command run again.
+function setCopyPlane(fields) {
+    const s = tool?.copy;
+    if (!s) return;
+    if ("face" in fields || "mid" in fields) delete s.fields.faceRefs;
+    Object.assign(s.fields, structuredClone(fields));
+    s.pendingMode = null;
+    return rerunSession("copy", runCopySketch);
+}
+// The copy's mode chosen: run at once where it needs no pick (or has its pick already),
+// else the pick armed and the mode held until it lands.
+function copyMode(mode) {
+    const s = tool.copy, f = s.fields;
+    const missing = { angle: f.hinge == null, path: f.path == null, face: !f.face, mid: !f.mid, points: !f.points }[mode] ?? false;
+    if (missing) { s.pendingMode = mode; setPicking(PICK_OF_MODE[mode]); syncToolbar(); return; }
+    if (picking) setPicking(null);
+    setCopyPlane({ mode });
+}
+// The dialog's readout: what is copied.
+function renderCopySketch(s) {
+    copySketchWhatEl.textContent = `${s.name} · ${s.count} curve${s.count === 1 ? "" : "s"}${s.skipped ? ` · ${s.skipped} not copied` : ""}`;
 }
 
 // ------------------------------------------------------------------ the sketch's pattern and mirror
