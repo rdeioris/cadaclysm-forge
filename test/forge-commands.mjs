@@ -1436,4 +1436,23 @@ const HOLE = Math.PI * 2 * 2 * 4;
     t.free();
 }
 
+// An instance takes its source's look when it is made (Fusion's copies keep the
+// appearance): a coloured box patterned, then mirrored, gives coloured copies; an
+// instance's own look, set later, is kept when the group is re-made.
+{
+    const t = fresh();
+    for (const c of BOX_AT(1, 4, 20, 0)) t.run(c);
+    const look = { colour: "#c8473b", material: "metal" };
+    t.run({ op: "set", id: 1, look });
+    t.run({ op: "pattern", id: 2, sources: [1], type: "circular", count: 3, instances: [3, 4] });
+    assert.deepStrictEqual([t.item(3).look, t.item(4).look], [look, look]);
+    t.run({ op: "mirror", id: 5, objects: "bodies", sources: [1], plane: "right", operation: "new", instances: [6] });
+    assert.deepStrictEqual(t.item(6).look, look);
+    const own = { colour: "#2f6fb5", material: "plastic" };
+    t.run({ op: "set", id: 3, look: own });
+    t.run({ op: "set", id: 2, count: 4, instances: [3, 4, 7] });
+    assert.deepStrictEqual([t.item(3).look, t.item(4).look, t.item(7).look], [own, look, look]);
+    t.free();
+}
+
 console.log("forge-commands: ok");

@@ -1462,6 +1462,7 @@ function writeGroup(d, n, c) {
             Object.assign(f, { parts: [], pivot: pivotOf(src), transform: still() });
             madeTail(f, true);
             Object.assign(f, { pattern: n, index, source: src.id });
+            if (src.look) f.look = clone(src.look);   // a copy keeps its source's appearance, as in Fusion
         }
         writeItem(d, m, f, pos);
         pos = d.index(headId(m)) + 1;
