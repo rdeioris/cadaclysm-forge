@@ -40,6 +40,7 @@ import { docPicks } from "./forge-picks.js";
 import { LOOP_TOLERANCE, curveBeziers, polygonPoints as kernelPolygonPoints, chainOf, closingSide, detectLoops, trimPieces } from "./forge-sketch.js";
 import * as sk from "./forge-constraints.js";
 import { V, Q, parseEdges, closureText } from "./forge-curves.js";
+import { boxCentre, composeMove, turnOf, eulerOf, rotate } from "./forge-move.js";
 import { typedBytes, createWantedSender } from "./forge-wanted.js";
 import { faceColoursOver } from "./forge-items.js";
 import { attachViewer } from "./pkg/viewer-client.js";
@@ -3738,7 +3739,7 @@ function openTool(openedAt, ids, title, glyph) {
 }
 function commitTool() {
     if (!tool) return;
-    const copies = tool.copies ?? tool.solid ?? tool.copy;
+    const copies = tool.copies ?? tool.solid ?? tool.copy ?? tool.move;
     if (tool.copy && picking) setPicking(null);
     tool = null;
     if (copies) { hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; syncToolbar(); }
@@ -3752,7 +3753,7 @@ function commitTool() {
 function cancelTool() {
     if (!tool) return;
     const { cancelAt, was } = tool;
-    const copies = tool.copies ?? tool.solid ?? tool.copy;
+    const copies = tool.copies ?? tool.solid ?? tool.copy ?? tool.move;
     if (tool.copy && picking) setPicking(null);
     if (copies) { copies.cancelled = true; hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; }   // a re-run queued behind this is dropped
     tool = null;
@@ -3811,10 +3812,10 @@ operationEl.addEventListener("change", () => act(async () => {
 // shell being picked, an extrude with an operation to choose.
 function renderDialog() {
     const c = current();
-    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid || tool?.copy);
+    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid || tool?.copy || tool?.move);
     // A pattern or a mirror in progress (a sketch's, the bodies'): the dialog is the tool's,
     // as while a pick is.
-    const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid);
+    const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid || tool?.move);
     if (!c && !tool && !modeOn) { dialogEl.hidden = true; return; }
     dialogEl.hidden = false;
     const kinds = new Set();
@@ -3850,6 +3851,13 @@ function renderDialog() {
         if (s.kind === "pattern") kinds.add(`solid-${s.type}`);
         if (s.kind === "mirror" && s.objects === "bodies") kinds.add("solid-join-op");
         renderSolid(s);
+    }
+    if (tool?.move) {
+        const s = tool.move;
+        kinds.add("move");
+        if (s.type !== "rotate" && s.type !== "points") kinds.add("move-t");
+        if (s.type !== "translate" && s.type !== "points") kinds.add("move-r");
+        renderMove(s);
     }
     // The separator before the item's own numbers, when a tool's rows come first.
     if (propsEl.children.length && !owned && [...dialogEl.querySelectorAll("[data-for]")].some((row) => row.dataset.for !== "props" && row.dataset.for.split(" ").some((k) => kinds.has(k)))) kinds.add("props");
@@ -4527,6 +4535,7 @@ function drawOverlay() {
             drawSnapMark(sx, sy, snapped.kind);
         });
         if (measure) drawMeasure(rects);
+        if (tool?.move?.picking) drawMovePick(rects);
         // A constraint tool's picked points, filled in the accent, and the point its next
         // click would take, ringed.
         if (sketchPick?.spots) {
@@ -4777,16 +4786,14 @@ function drawAxis(plane, axis, top, colour) {
     ctx.restore();
 }
 
-// A body's pivot in the world: its in-plane pivot, moved by its transform, on its
-// plane, then slid by its place (the turn is about it and moves it nowhere).
-const worldPivot = (c) => V.add(embed3(c.plane, pivotOf(c)), placeOf(c).offset);
 
 // The manipulator, one style in every view: at the pivot of what is
-// selected, an arrow along each axis that slides it, a ring about each that turns it,
+// moved, an arrow along each axis that slides it, a ring about each that turns it,
 // the centre disc that slides it in the plane facing the camera, and a square beside
 // the centre that scales it. What the axes are depends on the subject and the view:
-//  - a body, in every view: the world's X, Y, Z and the rings about them -- its place
-//    in the world (offset, turn), the one position the dialog shows; the scale its own;
+//  - the bodies of the Move session (`tool.move`), in every view: the world's X, Y, Z and
+//    the rings about them, at the session's pivot, no scale -- shown only in the session (a
+//    selected body shows none);
 //  - the selected curves of one plane (the active curve's): the plane's x and y and the
 //    ring about its normal -- the curves moved, turned and scaled as a block, their
 //    shapes rewritten (a rectangle turned becomes a polyline, an ellipse does not turn).
@@ -4794,10 +4801,17 @@ const worldPivot = (c) => V.add(embed3(c.plane, pivotOf(c)), placeOf(c).offset);
 // the layout, the drawing, the hit test and the drag's maths are manipulator.js's, shared
 // with other cadaclysm pages; what the subject is and what a drag does to it are the forge's.
 function manipulatorOf(view) {
+    if (tool?.move) {
+        // The Move session's: where its pivot went, no scale; translate keeps the arrows and
+        // the centre, rotate the rings. None while a pick is armed (the click is the pick's).
+        const s = tool.move;
+        if (s.picking) return null;
+        return { subject: "move", pivot: s.live ?? V.add(s.pivot, s.by), axes: s.type === "rotate" ? [] : AXES3, rings: s.type === "translate" ? [] : RINGS3, scale: false };
+    }
     const c = current();
     if (!c || isSketch(c) || !visible(c) || sketchTrim) return null;   // a trim's clicks are for its pieces
     if (tool?.copies || tool?.solid) return null;   // a pattern's or a mirror's preview: its copies go at every re-run
-    if (isBody(c)) return { subject: "place", body: c, pivot: worldPivot(c), axes: AXES3, rings: RINGS3, scale: !isMade(c) };
+    if (isBody(c)) return null;   // a body is moved by Solid › move (M), not on its selection
     const items = selectedCurves().filter((k) => isCurve(k) && k.plane === c.plane && visible(k) && drawn(k));
     if (!items.length) return null;
     // The block's pivot: the middle of its curves' handles' box, in the sketch plane.
@@ -4840,7 +4854,11 @@ function beginManipulator(h, p, size) {
     h.fromPx = p;
     h.at = resets;   // a commit after an undo (the document taken back meanwhile) is dropped
     h.from = h.kind === "scale" ? null : manipulatorPoint(h, p, size);
-    if (m.subject === "curves") {
+    if (m.subject === "move") {
+        // Every body the session moves, as it stands: its place and its pivot.
+        const s = tool.move;
+        h.was = (s.made.length ? s.made : s.ids).map(byId).filter((c) => c).map((c) => ({ id: c.id, place: structuredClone(placeOf(c)), pv: bodyPivot(c) }));
+    } else if (m.subject === "curves") {
         h.was = m.items.map((k) => ({ id: k.id, kind: k.kind, shape: structuredClone(k.shape) }));
     } else h.was = { ...structuredClone(placeOf(m.body)), ...m.body.transform };
 }
@@ -4852,6 +4870,23 @@ function moveManipulator(h, p, size) {
     const delta = dragDelta({ ...h, pivot: m.pivot }, manipulatorCamera(h.view), p, size);
     if (!delta) return;
     const { slide, turn, scale } = delta;
+    if (m.subject === "move") {
+        // Every body moved from where it stood, about the pivot: the preview. A rotate-only
+        // session's centre slides nothing.
+        const s = tool?.move;
+        if (!s || (s.type === "rotate" && h.kind === "move")) return;
+        const q = slide ? [0, 0, 0, 1] : Q.fromAxisAngle(h.axis, turn);
+        for (const w of h.was) {
+            const c = byId(w.id);
+            if (!c) continue;
+            c.place = composeMove(w.place, w.pv, { pivot: m.pivot, by: slide ?? [0, 0, 0], q });
+            c.dirty = true;
+        }
+        h.delta = { slide, turn };
+        s.live = slide ? V.add(m.pivot, slide) : null;
+        schedule();
+        return;
+    }
     if (m.subject === "place") {
         const c = m.body;
         c.place = placeOf(c);
@@ -4882,6 +4917,22 @@ function moveManipulator(h, p, size) {
 // The drag done: one command for what it changed.
 function endManipulator(h) {
     const { m } = h;
+    if (m.subject === "move") {
+        // The drag folded into the session's numbers -- a slide into `by`, a turn about where
+        // the pivot went composed into `turn` -- and the command run again.
+        const s = tool?.move;
+        if (!s) return;
+        s.live = null;
+        if (h.delta?.slide) s.by = V.add(s.by, h.delta.slide);
+        else if (h.delta?.turn) {
+            const world = Q.mul(Q.fromAxisAngle(h.axis, h.delta.turn), moveTurnQ(s));
+            s.turn = eulerOf(s.axes === "object" ? Q.mul(Q.mul(qInverse(s.R), world), s.R) : world);
+        }
+        if (!h.delta) return;
+        renderDialog();
+        rerunMove();
+        return;
+    }
     if (m.subject === "curves" && h.held) {
         // On a sketch: one edit of every curve the block moved (and those held to it), a
         // kind it changed, and the constraints migrated or pruned on the way.
@@ -5636,12 +5687,12 @@ function hintFor(kind) {
     if (kind === "polygon") return "left: drag the centre to move, the vertex handle to size and turn, in its view · sides in the strip" + rest;
     if (kind === "nurbs") return "left: select and drag a point in its view · close joins the ends · degree and the point's weight in the dialog" + rest;
     if (kind === "polycurve") return "one curve of its pieces, for a path or a profile · close joins its ends with a line · explode gives the pieces back to edit, merge joins them again" + rest;
-    if (kind === "surface" || kind === "extrusion" || kind === "solid" || kind === "sweep" || kind === "loft") return "left: the gizmo's arrows slide it, the rings turn it, the square scales it -- along and about the world X, Y, Z in every view; X, Y, Z in the dialog are its place" + rest;
-    if (kind === "revolution") return "left: the gizmo's arrows slide it along X, Y, Z, the rings turn it · drag the axis's ends in its sketch's view to re-aim it" + rest;
-    if (kind === "join" || kind === "cut" || kind === "intersect" || kind === "shell" || kind === "thicken" || kind === "prism" || kind === "split") return "left: the gizmo's arrows slide it along X, Y, Z and the rings turn it" + rest;
-    if (isQuickKind(kind) || kind === "pipe") return "its sizes in the dialog · left: the gizmo's arrows slide it, the rings turn it" + rest;
-    if (kind === "trim") return "left: the gizmo's arrows slide it along X, Y, Z and the rings turn it · trim picks the pieces again" + rest;
-    if (kind === "fillet") return "left: the gizmo's arrows slide it along X, Y, Z and the rings turn it · fillet picks the edges again" + rest;
+    if (kind === "surface" || kind === "extrusion" || kind === "solid" || kind === "sweep" || kind === "loft") return "move (M) slides and turns it -- with the others selected -- about a pivot; X, Y, Z in the dialog are its place, scale its size" + rest;
+    if (kind === "revolution") return "move (M) slides and turns it · drag the axis's ends in its sketch's view to re-aim it" + rest;
+    if (kind === "join" || kind === "cut" || kind === "intersect" || kind === "shell" || kind === "thicken" || kind === "prism" || kind === "split") return "move (M) slides and turns it -- with the others selected -- about a pivot" + rest;
+    if (isQuickKind(kind) || kind === "pipe") return "its sizes in the dialog · move (M) slides and turns it" + rest;
+    if (kind === "trim") return "move (M) slides and turns it · trim picks the pieces again" + rest;
+    if (kind === "fillet") return "move (M) slides and turns it · fillet picks the edges again" + rest;
     if (kind === "sketch") return "the dialog sets its plane: offset from an origin plane, at an angle to a line, across a curve, on a face, midway between two planes or through three points · look at points a view at it" + rest;
     return "pick a curve tool in the ribbon and click its points in a view" + rest;
 }
@@ -5716,15 +5767,16 @@ function handleUnderPress(i, px) {
     const picking_ = !!(sketchPick || sweepMode || sketchTrim || (picking === "points" && isSketch(c)));
     const modal = !!(shellMode || trimMode || filletMode || facePick || picking_);
     if (modal || drawing) return false;
-    if (c) {
+    if (c || tool?.move) {
         const size = sizeOf(i), p = local(px, i);
         const handle = hitManipulator(i, p, size);
         if (handle) {
             beginManipulator(handle, p, size);
             // A gizmo sits at its body's pivot, which can lie over another body (one
             // extruded off a face stands on its solid): a click there that never
-            // becomes a drag selects what is under it.
-            drag = { kind: "handle", curve: c, handle, view: i, from: px, moved: false, under: pickBody(i, px), at: resets };
+            // becomes a drag selects what is under it -- but for the Move session's, whose
+            // click is its own (Ctrl on the centre: Set pivot).
+            drag = { kind: "handle", curve: c, handle, view: i, from: px, moved: false, under: handle.m.subject === "move" ? null : pickBody(i, px), at: resets };
             pendingNotice = null;   // a notice is its own drag's: never carried onto this one's build
             schedule();
             return true;
@@ -5750,6 +5802,7 @@ function handleUnderPress(i, px) {
 // selection, a point dropped. Run from `endDrag` when the button comes up where it went
 // down.
 function pressAt(i, px, e) {
+    if (tool?.move?.picking) { pickMoveAt(i, px); return; }
     if (tool?.copies?.picking) { pickCopiesCentre(i, px); return; }
     if (tool?.solid?.picking) { pickSolidAt(i, px); return; }
     if (sketchPick?.spots) { sketchPick.shift = e.shiftKey; pickSpotAt(i, px); return; }
@@ -5874,6 +5927,11 @@ overlay.addEventListener("pointermove", (e) => {
     if (!drag && drawing) { drawHover(); return; }
     if (!drag && measure) {
         measure.hover = pointerAt;
+        if (pointerAt) askSnap(pointerAt.view, pointerAt.px, "measure", () => overlayDirty());
+        return;
+    }
+    if (!drag && tool?.move?.picking) {
+        tool.move.hover = pointerAt;
         if (pointerAt) askSnap(pointerAt.view, pointerAt.px, "measure", () => overlayDirty());
         return;
     }
@@ -6712,6 +6770,195 @@ function takeSolidRow(id) {
 }
 solidPatternEl.addEventListener("click", () => pressSolid("pattern"));
 solidMirrorEl.addEventListener("click", () => pressSolid("mirror"));
+
+// ------------------------------------------------------------------ Solid › move
+
+// Solid › move (or M): a session (`openTool`, `tool.move`) on every selected body -- a pattern
+// group's instances for the group. The command is `move` (forge-commands.js `moveBodies`):
+// the bodies turned about the pivot, then slid, their places composed (forge-move.js). The
+// pivot starts at the middle of the bodies' world box (`boxCentre`); Set pivot (or Ctrl-click
+// on the manipulator's centre) puts it on a snapped point (`measurePoint`). The manipulator is
+// the session's alone: it sits where the pivot went (pivot + by). A drag of it previews by
+// moving every body locally from where it stood when the drag began; its end folds the slide
+// into `by` and the turn into `turn`, and the command runs again from where the session
+// opened (`rerunSession`), as every typed field does. Point to point is two snapped picks,
+// from and to: `by` their difference, no turn. Copy moves `duplicate`'s copies (one per body)
+// instead of the bodies, in the same command. OK (the button again, Enter) keeps the one
+// command; Esc rolls it back (Esc while a pick is armed puts the pick down).
+const moveEl = document.getElementById("move");
+const moveByEls = ["x", "y", "z"].map((k) => document.getElementById(`move-${k}`));
+const moveTurnEls = ["rx", "ry", "rz"].map((k) => document.getElementById(`move-${k}`));
+const movePivotEl = document.getElementById("move-pivot");
+const movePivotSetEl = document.getElementById("move-pivot-set");
+const movePivotResetEl = document.getElementById("move-pivot-reset");
+const moveCopyEl = document.getElementById("move-copy");
+const moveWhatEl = document.getElementById("move-what");
+const MOVE_PICK_HINTS = {
+    pivot: "click where the pivot goes — it snaps (Alt: no snap) · Esc ends the pick",
+    from: "click the point to move from — it snaps (Alt: no snap) · Esc ends the pick",
+    to: "click where it goes — it snaps (Alt: no snap) · Esc ends the pick",
+};
+// The bodies a press of move takes: the selected bodies, each selected pattern group's instances.
+function moveTargets() {
+    const out = [];
+    for (const c of selectedCurves()) {
+        if (isPattern(c)) { for (const k of curves) if (k.kind === "instance" && k.pattern === c.id && isBody(k) && !out.includes(k.id)) out.push(k.id); }
+        else if (isBody(c) && !out.includes(c.id)) out.push(c.id);
+    }
+    return out;
+}
+// A body's world pivot without its place's offset, as its place turns about it (forge-commands.js
+// `worldPivotOf`).
+const bodyPivot = (c) => embed3(c.plane, Array.isArray(c.pivot) && c.transform ? pivotOf(c) : [0, 0]);
+// The session's turn as a quaternion in the world (`axes` "object": about the first body's own axes).
+const moveTurnQ = (s) => turnOf(s.turn, s.axes, s.R);
+const qInverse = (q) => [-q[0], -q[1], -q[2], q[3]];
+// The button (or M): the session's OK when pressed again over it, else a session on the selection.
+function pressMove() {
+    if (tool?.move) { commitTool(); return; }
+    const ids = moveTargets();
+    if (!ids.length) { say("move takes bodies -- select one or more in the views or the list", true); return; }
+    return act(async () => {
+        if (sketchPick) disarmSketchPick();
+        if (measure) setMeasure(false);
+        if (tool) commitTool();
+        await whenBuilt(ids);
+        const session = openTool(headNow(), ids, "Move", "move");
+        const home = boxCentre(ids.map((id) => byId(id)?.gpu?.box)) ?? [0, 0, 0];
+        session.move = {
+            ids: ids.slice(), home, pivot: home.slice(), by: [0, 0, 0], turn: [0, 0, 0], axes: "world", copy: false, type: "free",
+            R: Q.fromEuler(placeOf(byId(ids[0])).turn), picking: null, from: null, hover: null, live: null, made: [], hint: "", doneAt: head,
+        };
+        moveCopyEl.checked = false;
+        await runMove(session);
+        renderDialog();
+        syncToolbar();
+    });
+}
+// One run of the session's command (none while it moves nothing and copies nothing): what it
+// moved selected -- the copies, when it copies.
+async function runMove(session) {
+    const s = session.move;
+    const still = s.by.every((v) => v === 0) && s.turn.every((v) => v === 0);
+    let ok = true, copies = [];
+    if (!still || s.copy) {
+        const cmd = { op: "move", ids: s.ids.slice(), pivot: s.pivot.slice(), by: s.by.slice(), turn: s.turn.slice(), axes: s.axes };
+        if (s.copy) { copies = s.ids.map((_, k) => nextId + k); cmd.copies = copies; }
+        ok = await run(cmd);
+    }
+    s.made = ok ? copies.filter((id) => byId(id)) : [];
+    s.doneAt = head;
+    session.ids = [...s.ids, ...s.made];
+    keepView = true;
+    try { setSelection(s.made.length ? s.made : s.ids.filter((id) => byId(id))); } finally { keepView = false; }
+    if (tool !== session) return;   // closed by OK while this ran: nothing left to say
+    s.hint = `drag the manipulator or type the numbers · OK or Enter keeps ${still && !s.copy ? "nothing" : "it"} · Esc cancels`;
+    if (!ok) s.hint = `${statusEl.textContent} · ${s.hint}`;
+    hintEl.textContent = s.picking ? MOVE_PICK_HINTS[s.picking] : s.hint;
+}
+const rerunMove = () => rerunSession("move", runMove);
+// The fields shown as the session has them (the one being typed in left alone).
+function moveFieldsFrom(s) {
+    for (const [els, v] of [[moveByEls, s.by], [moveTurnEls, s.turn]]) els.forEach((el, k) => { if (el !== document.activeElement) el.value = round(v[k]); });
+}
+// The dialog's readouts and buttons.
+function renderMove(s) {
+    hintEl.textContent = s.picking ? MOVE_PICK_HINTS[s.picking] : s.hint ?? "";
+    moveFieldsFrom(s);
+    movePivotEl.textContent = s.pivot.map(round).join(", ");
+    movePivotSetEl.setAttribute("aria-pressed", String(s.picking === "pivot"));
+    moveCopyEl.checked = s.copy;
+    for (const b of document.querySelectorAll("[data-move-type]")) b.setAttribute("aria-pressed", String(b.dataset.moveType === s.type));
+    for (const b of document.querySelectorAll("[data-move-axes]")) b.setAttribute("aria-pressed", String(b.dataset.moveAxes === s.axes));
+    const n = s.ids.length;
+    moveWhatEl.textContent = `${n === 1 ? byId(s.ids[0])?.name ?? `#${s.ids[0]}` : `${n} bodies`}${s.copy ? ` · ${s.made.length} ${s.made.length === 1 ? "copy" : "copies"}` : ""}`;
+}
+// A change of the dialog's: `f` changes the session, then it runs again.
+function moveChange(f) {
+    const s = tool?.move;
+    if (!s || f(s) === false) return;
+    renderDialog();
+    rerunMove();
+}
+// The pivot put at `p` (the command's own pivot) with the bodies where they are: `by` makes up
+// for it (the move turns about the new pivot as about the old one plus a slide).
+function repivot(s, p) {
+    const d = V.sub(p, s.pivot);
+    s.by = V.add(s.by, V.sub(rotate(moveTurnQ(s), d), d));
+    s.pivot = p.slice();
+}
+// The pivot onto world point `x` as the views show it now (the bodies moved): the command's
+// pivot is where `x` was before the move, so the manipulator lands on `x`.
+const pivotOnto = (s, x) => repivot(s, V.add(s.pivot, rotate(qInverse(moveTurnQ(s)), V.sub(x, V.add(s.pivot, s.by)))));
+moveByEls.forEach((el, k) => el.addEventListener("input", () => moveChange((s) => { const v = Number(el.value); s.by[k] = Number.isFinite(v) ? v : 0; })));
+moveTurnEls.forEach((el, k) => el.addEventListener("input", () => moveChange((s) => { const v = Number(el.value); s.turn[k] = Number.isFinite(v) ? v : 0; })));
+moveCopyEl.addEventListener("change", () => moveChange((s) => { s.copy = moveCopyEl.checked; }));
+for (const b of document.querySelectorAll("[data-move-axes]")) b.addEventListener("click", () => moveChange((s) => { if (s.axes === b.dataset.moveAxes) return false; s.axes = b.dataset.moveAxes; }));
+for (const b of document.querySelectorAll("[data-move-type]")) b.addEventListener("click", () => moveChange((s) => {
+    const type = b.dataset.moveType;
+    // Point to point starts from the bodies where they stood: the move so far undone, the first pick armed.
+    if (type === "points") { s.type = type; s.by = [0, 0, 0]; s.turn = [0, 0, 0]; s.from = null; armMovePick(s, "from"); return; }
+    if (s.type === type) return false;
+    s.type = type;
+    if (s.picking === "from" || s.picking === "to") armMovePick(s, null);
+    renderDialog();
+    return false;   // translate and rotate only hide rows and handles: the command is the same
+}));
+movePivotSetEl.addEventListener("click", () => { const s = tool?.move; if (!s) return; armMovePick(s, s.picking === "pivot" ? null : "pivot"); renderDialog(); });
+movePivotResetEl.addEventListener("click", () => moveChange((s) => { armMovePick(s, null); repivot(s, s.home); }));
+moveEl.addEventListener("click", () => pressMove());
+// A pick armed (null: put down): the next click in a view is it.
+function armMovePick(s, what) {
+    s.picking = what;
+    if (what !== "to") s.from = what === "from" ? null : s.from;
+    s.hover = null;
+    overlay.style.cursor = what ? "crosshair" : "default";
+    hintEl.textContent = what ? MOVE_PICK_HINTS[what] : s.hint;
+    overlayDirty();
+}
+// A click while a pick is armed: the snapped point there (`measurePoint`).
+function pickMoveAt(i, px) {
+    const session = tool, s = session.move, what = s.picking;
+    return measurePoint(i, px).then((p) => {
+        if (tool !== session || s.picking !== what) return;
+        if (!p) { say("move: click on a body in Perspective -- or in Top, Front or Right, anywhere", true); return; }
+        const x = p.point.slice();
+        if (what === "from") { s.from = x; armMovePick(s, "to"); renderDialog(); return; }
+        armMovePick(s, null);
+        if (what === "pivot") pivotOnto(s, x);
+        else { s.by = V.sub(x, s.from); s.turn = [0, 0, 0]; s.from = null; }
+        renderDialog();
+        rerunMove();
+    });
+}
+// Where a pick's pointer is: the snap under it, else its point on an orthographic view's plane.
+function snapHover(h) {
+    if (!h) return null;
+    const a = viewSnapAt(h.view, h.px, "measure");
+    if (a) return { point: a.point, kind: a.kind };
+    const w = camOf(h.view)?.pxToWorld(local(h.px, h.view), sizeOf(h.view));
+    return w ? { point: w, kind: null } : null;
+}
+// The armed pick in every view: the snap under the pointer, and point to point's line from its
+// first pick to there.
+function drawMovePick(rects) {
+    const s = tool.move;
+    const hover = snapHover(s.hover);
+    for (let v = 0; v < 4; v++) {
+        const r = rects[v];
+        if (r[2] <= 0 || r[3] <= 0) continue;
+        const cam = camOf(v);
+        if (!cam) continue;
+        const at = (p) => { const q = cam.worldToPx(p, [r[2], r[3]]); return q ? [r[0] + q[0], r[1] + q[1]] : null; };
+        ctx.save();
+        ctx.beginPath(); ctx.rect(r[0], r[1], r[2], r[3]); ctx.clip();
+        const pa = s.from ? at(s.from) : null, pb = hover ? at(hover.point) : null;
+        if (pa && pb) { ctx.strokeStyle = ACCENT; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke(); ctx.lineWidth = 1; }
+        if (pa) drawSnapMark(pa[0], pa[1], "dot");
+        if (hover?.kind && s.hover.view === v && pb) drawSnapMark(pb[0], pb[1], hover.kind);
+        ctx.restore();
+    }
+}
 
 // The constraint tools, the ribbon's "constrain" group. A tool picks spots of ONE sketch's
 // curves -- a point (an end, a corner, a vertex, a centre) within `SNAP_PX`, else the
@@ -7893,7 +8140,11 @@ const endDrag = (e) => {
     }
     // A handle's drag is one command, of what it changed: a body's transform, a
     // revolution's axis, a curve's shape (a point added on the way down included).
-    if (drag?.kind === "handle" && drag.handle.gizmo && !drag.moved && drag.under) {
+    if (drag?.kind === "handle" && drag.handle.gizmo && drag.handle.m.subject === "move" && !drag.moved) {
+        // A click on the Move session's manipulator: Ctrl on its centre arms Set pivot.
+        const s = tool?.move;
+        if (s && e.ctrlKey && drag.handle.kind === "move" && drag.handle.axis === null) { armMovePick(s, "pivot"); renderDialog(); }
+    } else if (drag?.kind === "handle" && drag.handle.gizmo && !drag.moved && drag.under) {
         // A click on the gizmo, not a drag: whatever body lies under it is selected
         // (the gizmo's own body stays selected when it is that body, or nothing is).
         const own = drag.curve;
@@ -7961,7 +8212,7 @@ const MOVE_CODES = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "Shi
 addEventListener("keydown", (e) => { entry(() => onKeydown(e)); overlayDirty(); });
 function onKeydown(e) {
     if (e.key === "Alt") e.preventDefault();   // held for an orbit; on its own it would take the browser's menu
-    if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
+    if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool?.move?.picking) { tool.move.from = null; armMovePick(tool.move, null); renderDialog(); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
     const inDialog = e.target instanceof HTMLElement && e.target.closest("#dialog");
     if (e.key === "Enter" && drawing && !inDialog) { e.preventDefault(); finishDrawing(); return; }
     if (e.key === "Enter" && tool && (e.target === document.body || inDialog || e.target instanceof HTMLButtonElement)) { e.preventDefault(); commitTool(); return; }
@@ -7986,7 +8237,7 @@ function onKeydown(e) {
     }
     if (e.code === "KeyA" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); setSelection(curves.map((c) => c.id)); return; }
     // Letter shortcuts where they do not fly the camera (WASD, Q, E do): L line, R
-    // rectangle, C circle, P polygon, J join, T trim, H chamfer, Delete the selection
+    // rectangle, C circle, P polygon, J join, T trim, H chamfer, M move, Delete the selection
     // -- none with a modifier, and only where the button would work.
     if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat) {
         const press = (el) => { if (el && !el.disabled) { el.click(); e.preventDefault(); } };
@@ -7997,6 +8248,7 @@ function onKeydown(e) {
         if (e.code === "KeyJ") return press(joinEl);
         if (e.code === "KeyT") return press(trimEl);
         if (e.code === "KeyH") return press(chamferEl);
+        if (e.code === "KeyM" && !tool) return press(moveEl);
         if (e.key === "Delete" && selectedPoint === null && selected !== null) return press(deleteEl);
     }
     // A shortcut's letter (ctrl/cmd-S saves; ctrl/cmd-D, -W, -Q, -E are the browser's) flies
@@ -8947,6 +9199,10 @@ function syncSolidButtons() {
         el.disabled = tool?.solid?.kind !== kind && bodies < 1;
         el.setAttribute("aria-pressed", String(tool?.solid?.kind === kind));
     }
+    // Move: on one or more bodies (a pattern group: its instances), or while its session is
+    // open, so the button can be its OK.
+    moveEl.disabled = !tool?.move && !moveTargets().length;
+    moveEl.setAttribute("aria-pressed", String(!!tool?.move));
 }
 // The sketch's modify tools work on what is selected: each is enabled while the
 // selection holds something it takes (a closable curve, a polycurve, a mergeable
@@ -9385,6 +9641,10 @@ function installTestHook() {
             }
             return null;
         },
+        // The Move session's state (null when none is open): the bodies, the pivot, the numbers.
+        moveState: () => tool?.move ? structuredClone({ ids: tool.move.ids, made: tool.move.made, pivot: tool.move.pivot, by: tool.move.by, turn: tool.move.turn, axes: tool.move.axes, copy: tool.move.copy, type: tool.move.type, picking: tool.move.picking }) : null,
+        // Body `id`'s world box as the worker built it (`{ lo, hi }`), or null.
+        box: (id) => { const b = byId(id)?.gpu?.box; return b ? { lo: [...b.lo], hi: [...b.hi] } : null; },
         order: () => curves.map((c) => c.id),
         rects: () => layout(),
         snapAsks: () => snapAsks,
