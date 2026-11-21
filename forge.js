@@ -1034,7 +1034,9 @@ function applyImagesNow(cmd) {
             if (imageBitmaps.has(c.id)) setImageBitmap(copyId, imageBitmaps.get(c.id));
             curves.splice(curves.indexOf(c) + 1, 0, copy);
         });
-        return keep.some((k) => k) ? { ...cmd, ids: cmd.ids.filter((_, k) => keep[k]), copies: cmd.copies.filter((_, k) => keep[k]) } : null;
+        // A sketch's curves' ids, after one per picked item, stay as they are.
+        const tail = cmd.copies.slice(cmd.ids.length);
+        return keep.some((k) => k) ? { ...cmd, ids: cmd.ids.filter((_, k) => keep[k]), copies: [...cmd.copies.slice(0, cmd.ids.length).filter((_, k) => keep[k]), ...tail] } : null;
     }
     default: return cmd;
     }
@@ -2820,12 +2822,18 @@ const pivotOf = (c) => [c.pivot[0] + c.transform.tx, c.pivot[1] + c.transform.ty
 // on the same sketch -- exactly where its original is, to be moved from there -- and
 // the copies become the selection. A body's copy has the same source, pivot and
 // transform; a sketch's the same plane.
+// A selected sketch is copied whole: its curves (a selected one among them is not copied
+// twice) take ids after one per picked item, as forge-commands.js's `duplicate` reads
+// `copies`. The copies of the picked items are selected (a sketch's, not its curves).
 function duplicateCurve() {
-    const ids = selectedCurves().map((c) => c.id);
+    const picked = selectedCurves();
+    const sketches = new Set(picked.filter(isSketch).map((c) => c.id));
+    const ids = picked.filter((c) => !(isCurve(c) && sketches.has(c.plane))).map((c) => c.id);
     if (!ids.length) return;
-    const copies = ids.map((_, k) => nextId + k);
+    const onSketches = ids.filter((id) => sketches.has(id)).reduce((n, id) => n + curves.filter((c) => isCurve(c) && c.plane === id).length, 0);
+    const copies = Array.from({ length: ids.length + onSketches }, (_, k) => nextId + k);
     run({ op: "duplicate", ids, copies });
-    setSelection(copies);
+    setSelection(copies.slice(0, ids.length));
 }
 
 // Deleting every selected curve selects the row after the last of them, or the one

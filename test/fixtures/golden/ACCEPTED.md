@@ -48,6 +48,13 @@ replay (`test/golden.mjs`) may differ from a recording only as listed.
   step 63 (the last), where the 0.14 layer loaded a line and a box it could not build ("a
   quick solid without dims": `itemFromV1` drops a box's dims). `golden.mjs`:
   `{ step: 63, allow: "unsupported" }` (refused, that step's recording not compared).
+- **A sketch duplicated takes its curves along** (forge F1). The 0.14 layer copied a
+  sketch empty; `duplicate` now copies its curves and records too, their ids after one per
+  picked item, and a picked curve on a picked sketch is copied once, with it. `every-command.json`
+  step 58 duplicates Sketch 1 (two curves on it) with Rectangle 1 among the picks: its
+  `copies` were re-pinned from `[48, 49, 50, 51]` to `[48, 49, 50, 51, 52]` (48 and 50, the
+  body copies, as recorded; 51 and 52 the sketch copy's rectangle and circle). No body
+  changes: the recording is compared as it was.
 
 - **A sequence that starts from a file starts from it converted.** The 0.14 files the corpus
   opens (`examples/`, `test/fixtures/forge-*.json`, and the inline `startText` of

@@ -273,19 +273,29 @@ for (const [k, c] of [
     t.free();
 }
 
-// duplicate: a curve and a sketch copied after their originals; an image's copy only takes
-// its id; a held body copied gets a head of its own, as does the original.
+// duplicate: a sketch copied whole after its block (the sketch and the curves on it, as
+// `items()` lists them: each curve after its sketch), its curves on the copy with fresh
+// names; a curve copied after its original; an image's copy only takes its id; a held body
+// copied gets a head of its own, as does the original.
 {
     const t = fresh();
     t.run({ op: "image", id: 1 });
     assert.deepStrictEqual(t.meta(), { counters: {}, nextId: 2 });
-    t.run({ op: "sketch", id: 2, mode: "offset", base: "front", offset: 3, constraints: [{ kind: "fixed" }] });
+    t.run({ op: "duplicate", ids: [1], copies: [4] });
+    assert.deepStrictEqual(t.meta(), { counters: {}, nextId: 5 });
+    t.run({ op: "sketch", id: 2, mode: "offset", base: "front", offset: 3 });
     t.run({ op: "add", id: 3, kind: "circle", plane: 2, shape: { cx: 1, cy: 2, r: 3 } });
-    t.run({ op: "duplicate", ids: [1, 2, 3], copies: [4, 5, 6] });
-    assert.deepStrictEqual(t.nodes().map((n) => n.id), ["i2_frame", "i2", "i5_frame", "i5", "i3", "i6"]);
-    assert.deepStrictEqual([t.item(5).name, t.item(5).base, t.item(5).offset, t.item(5).constraints], ["Sketch 1 copy", "front", 3, []]);
-    assert.deepStrictEqual([t.item(6).name, t.item(6).plane, t.item(6).shape], ["Circle 1 copy", 2, { cx: 1, cy: 2, r: 3 }]);
+    t.run({ op: "duplicate", ids: [2], copies: [5, 6] });
+    assert.deepStrictEqual(t.nodes().map((n) => n.id), ["i2_frame", "i2", "i3", "i5_frame", "i5", "i6"]);
+    assert.deepStrictEqual(t.model.items().map((i) => i.id), [2, 3, 5, 6]);
+    assert.deepStrictEqual([t.item(5).name, t.item(5).mode, t.item(5).base, t.item(5).offset], ["Sketch 2", "offset", "front", 3]);
+    assert.deepStrictEqual(t.node("i5_frame"), { id: "i5_frame", kind: "frame.offset", base: "xz", offset: 3 });
+    assert.deepStrictEqual([t.item(6).name, t.item(6).kind, t.item(6).plane, t.item(6).shape], ["Circle 2", "circle", 5, { cx: 1, cy: 2, r: 3 }]);
+    assert.strictEqual(t.node("i6").frame, "i5");
     assert.strictEqual(t.meta().nextId, 7);
+    t.run({ op: "duplicate", ids: [3], copies: [7] });
+    assert.deepStrictEqual([t.item(7).name, t.item(7).plane, t.item(7).shape], ["Circle 1 copy", 2, { cx: 1, cy: 2, r: 3 }]);
+    assert.strictEqual(t.nodes()[t.nodes().findIndex((n) => n.id === "i3") + 1].id, "i7");
     t.raw({ op: "add", node: { id: "plate", kind: "solid.cuboid", x: 4, y: 4, z: 1, name: "Plate", meta: { show: true } } });
     const held = t.model.items().find((i) => i.node === "plate");
     t.run({ op: "duplicate", ids: [held.id], copies: [9] });
@@ -296,6 +306,83 @@ for (const [k, c] of [
     assert.ok(t.node("plate"));
     t.run({ op: "delete", ids: [9] });
     assert.strictEqual(t.node("plate"), undefined);
+    t.free();
+}
+
+// duplicate of a sketch with records: the copy's curves keep their shapes and construction
+// flags; its records are the source's, ids kept, refs remapped curve for curve; a record
+// naming a curve on another sketch is dropped. The copy solves where it stands.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 10, y1: 0 } });
+    t.run({ op: "set", id: 2, construction: true });
+    t.run({ op: "add", id: 3, kind: "circle", plane: 1, shape: { cx: 10, cy: 0, r: 4 } });
+    t.run({ op: "add", id: 4, kind: "polyline", plane: 1, shape: { points: [[0, 5], [5, 9], [10, 5]], closed: false } });
+    t.run({ op: "sketch", id: 5, mode: "offset", base: "front", offset: 0 });
+    t.run({ op: "add", id: 6, kind: "line", plane: 5, shape: { x0: 0, y0: 0, x1: 0, y1: 7 } });
+    const records = [
+        { id: 1, kind: "coincident", refs: [{ curve: 2, at: "end" }, { curve: 3, at: "centre" }], driving: true },
+        { id: 2, kind: "radius", refs: [{ curve: 3, at: "curve" }], value: 4, driving: true },
+        { id: 3, kind: "horizontal", refs: [{ curve: 2, at: "start" }, { curve: 2, at: "end" }], driving: true },
+        { id: 4, kind: "coincident", refs: [{ curve: 4, at: "start" }, { curve: 6, at: "start" }], driving: true },
+    ];
+    t.run({ op: "set", id: 1, constraints: records });
+    const source = JSON.stringify([1, 2, 3, 4].map((n) => t.item(n)));
+    t.run({ op: "duplicate", ids: [1], copies: [7, 8, 9, 10] });
+    const map = new Map([[2, 8], [3, 9], [4, 10]]);
+    for (const [from, to] of map) {
+        const [a, b] = [t.item(from), t.item(to)];
+        assert.deepStrictEqual([b.kind, b.plane, b.shape, b.construction], [a.kind, 7, a.shape, a.construction], `#${to}`);
+    }
+    assert.deepStrictEqual([8, 9, 10].map((n) => t.item(n).name), ["Line 3", "Circle 2", "Polyline 2"]);
+    assert.strictEqual(t.item(8).construction, true);
+    const remap = (k) => ({ ...k, refs: k.refs.map((r) => ({ ...r, curve: map.get(r.curve) })) });
+    assert.deepStrictEqual(t.item(7).constraints, records.slice(0, 3).map(remap));
+    assert.strictEqual(JSON.stringify([1, 2, 3, 4].map((n) => t.item(n))), source, "the source is untouched");
+    const m = buildModel(wasm, t.item(7), [8, 9, 10].map((n) => t.item(n)));
+    try {
+        assert.deepStrictEqual([m.stale, m.refused], [[], []]);
+        assert.strictEqual(solveModel(wasm, m).status, "converged");
+    } finally {
+        freeModel(wasm, m);
+    }
+    for (const [id, shape] of solvedSketch(t, 7)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    t.free();
+}
+
+// duplicate of a sketch and some of its curves in one command: each curve is copied once,
+// with the sketch. `copies` holds one id per new item: first one per picked item that is
+// not a curve on a picked sketch, in the order picked, then each copied sketch's curves in
+// document order.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 2 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 0, cy: 0, r: 1 } });
+    t.run({ op: "add", id: 3, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 4, y1: 0 } });
+    t.run({ op: "add", id: 4, kind: "line", plane: "top", shape: { x0: 0, y0: 1, x1: 4, y1: 1 } });
+    t.run({ op: "duplicate", ids: [3, 1, 4], copies: [5, 6, 7, 8] });
+    assert.deepStrictEqual([5, 6, 7, 8].map((n) => [t.item(n).kind, t.item(n).plane]), [["sketch", undefined], ["line", "top"], ["circle", 5], ["line", 5]]);
+    assert.deepStrictEqual(t.item(6).shape, t.item(4).shape);
+    assert.deepStrictEqual([t.item(7).shape, t.item(8).shape], [t.item(2).shape, t.item(3).shape]);
+    assert.strictEqual(t.model.items().filter((i) => i.kind === "line" || i.kind === "circle").length, 6);
+    assert.strictEqual(t.meta().nextId, 9);
+    t.free();
+}
+
+// duplicate of a sketch holding an item of a kind the page does not draw: that item is not
+// copied, its id taken all the same, and the command's `skipped` counts it. (No curve item
+// holds another app's node: a held profile is on no sketch.)
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 4, y1: 0 } });
+    t.raw({ op: "add", node: { id: "i3", kind: "curve.line", frame: "i1", x0: 0, y0: 1, x1: 4, y1: 1, name: "Squiggle 1", meta: { forge: { kind: "squiggle" } } } });
+    assert.strictEqual(t.model.item(3).kind, "squiggle");
+    const r = t.run({ op: "duplicate", ids: [1], copies: [4, 5, 6] });
+    assert.strictEqual(r.skipped, 1);
+    assert.deepStrictEqual([t.item(5).kind, t.item(5).plane, t.model.item(6)], ["line", 4, undefined]);
+    assert.strictEqual(t.meta().nextId, 7);
     t.free();
 }
 
@@ -1036,6 +1123,32 @@ function refused(t, cmd, words) {
     refused(t, { ...circ, angle: 0 }, /^sketch_pattern: the angle must be/);
     refused(t, { ...circ, angle: 400 }, /^sketch_pattern: the angle must be/);
     refused(t, { op: "sketch_pattern", sketch: 1, ids: [2], type: "rectangular", d1: [0, 0], count1: 3, spacing1: 5, count2: 1, copies: [10, 11] }, /^sketch_pattern: a zero direction/);
+    t.free();
+}
+
+// duplicate of a patterned sketch: the six circles and two step lines on the copy, the
+// pattern's records remapped, so the copy's source circle typed to r 4 drives its five
+// copies; the source sketch is untouched.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 10, cy: 0, r: 3 } });
+    t.run({ op: "sketch_pattern", sketch: 1, ids: [2], type: "circular", centre: null, count: 6, angle: 360, copies: [3, 4, 5, 6, 7, 8, 9] });
+    t.run({ op: "duplicate", ids: [1], copies: [10, 11, 12, 13, 14, 15, 16, 17, 18] });
+    const on = (s) => pageItems(t.model).filter((c) => c.plane === s);
+    assert.deepStrictEqual(on(10).map((c) => [c.kind, c.construction === true]), [...Array(6).fill(["circle", false]), ["line", true], ["line", true]]);
+    const src = t.item(1).constraints, copy = t.item(10).constraints;
+    const map = new Map([2, 3, 4, 5, 6, 7, 8, 9].map((n) => [n, n + 9]));
+    assert.deepStrictEqual(copy, src.map((k) => ({ ...k, refs: k.refs.map((r) => ({ ...r, curve: map.get(r.curve) })) })));
+    assert.strictEqual(copy.filter((k) => k.kind === "rotated").length, 4);
+    const grown = solvedSketch(t, 10, (m) => {
+        assert.ok(addConstraint(wasm, m, { id: 999, kind: "radius", refs: [{ curve: 11, at: "curve" }], value: 4, driving: true }).ok);
+        dragModel(wasm, m, [{ curve: 11, at: "centre", x: 10, y: 0 }]);
+        removeConstraint(wasm, m, 999);
+    });
+    for (const n of [11, 12, 13, 14, 15, 16]) assert.ok(near(grown.get(n).r, 4), `#${n} r ${grown.get(n).r}`);
+    const kept = solvedSketch(t, 1);
+    for (const n of [2, 3, 4, 5, 6, 7]) assert.ok(near(t.item(n).shape.r, 3) && near(kept.get(n).r, 3), `#${n} on the source moved`);
     t.free();
 }
 

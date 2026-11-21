@@ -232,7 +232,7 @@
 // item.
 import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, isPattern, metaOp, bumpId, heldOf } from "./forge-model.js";
 import { bodyNode, facePlaneId, docPicks } from "./forge-picks.js";
-import { buildModel, freeModel, madeByCall, curveName } from "./forge-constraints.js";
+import { buildModel, freeModel, madeByCall, curveName, pruneConstraints } from "./forge-constraints.js";
 
 /// How close the pieces of a curve must meet (the page's `LOOP_TOLERANCE`).
 const LOOP_TOLERANCE = 1e-3;
@@ -506,6 +506,7 @@ export class Draft {
         this.over = new Map();         // id -> node as the ops left it, null: removed
         this.written = new Set();      // the items whose nodes this command wrote
         this._meta = undefined;
+        this.skipped = undefined;      // a sketch copy's: the curves it did not copy
     }
 
     node(id) {
@@ -2258,6 +2259,72 @@ function copyNodes(d, n, copy, name) {
     }
 }
 
+/// A sketch's plane fields, as the `sketch` op takes them.
+const PLANE_FIELDS = ["mode", "base", "offset", "hinge", "tilt", "path", "face", "mid", "points", "faceRefs"];
+/// The plane fields each mode reads (`sketchFrame`); the others a copy to a plane drops.
+const MODE_FIELDS = { offset: ["base", "offset"], angle: ["hinge", "tilt"], path: ["path"], face: ["face", "faceRefs"], mid: ["mid", "faceRefs"], points: ["points"] };
+
+/// Sketch fields `c` given the plane fields of `p` (a command, or a sketch's fields), as the
+/// `sketch` op writes them: a reference a mode does not use is null.
+function setPlane(c, p) {
+    for (const k of PLANE_FIELDS) delete c[k];
+    for (const k of ["mode", "base", "offset"]) if (get(p, k) !== undefined) c[k] = clone(p[k]);
+    c.hinge = orElse(get(p, "hinge"), null);
+    if (get(p, "tilt") !== undefined) c.tilt = clone(p.tilt);
+    c.path = orElse(get(p, "path"), null);
+    for (const k of ["face", "mid", "points"]) c[k] = get(p, k) ? kept(p[k]) : null;
+    if (get(p, "faceRefs") !== undefined) c.faceRefs = kept(p.faceRefs);
+}
+
+/// The curve items on sketch `s`, in document order, as their fields. (No curve item holds
+/// a `node` of another app's today: a held curve is a `held_profile`, on no sketch.)
+function curvesOnSketch(d, s) {
+    return d.model.items().filter((it) => it.of === undefined && isCurve(it) && d.item(it.id)).map((it) => readItem(d, it.id)).filter((c) => c.plane === s);
+}
+
+/// Sketch `src` copied whole as sketch `id`, after the source's block (its nodes and its
+/// curves'): a fresh name, the plane fields of `frame` where given (else the source's),
+/// then each curve on it (`curvesOnSketch`, the k-th taking `ids[k]`) with a fresh name,
+/// `plane` the copy, every other field kept (shape, construction, hidden). The records are
+/// the source's, ids kept, each ref's curve remapped; one naming a curve not copied, or a
+/// spot the copy lacks, goes (`pruneConstraints`). An item of a kind the page does not
+/// draw is not copied: `skipped` counts those (its id is taken all the same). `{ map:
+/// source curve -> copy, skipped }`.
+function copySketch(d, op, src, id, ids, frame) {
+    const s = readItem(d, src);
+    const curves = curvesOnSketch(d, src);
+    if (ids.length < curves.length) fail(`${op}: fewer \`copies\` ids than curves on #${src}`);
+    const block = [src, ...curves.map((c) => c.id)].flatMap((n) => d.nodesOf(n)).map((x) => d.index(x));
+    let pos = Math.max(...block) + 1;
+    d.bump(id);
+    const c = { ...s, id, name: d.nameFor("sketch") };
+    if (frame) setPlane(c, frame);
+    const map = new Map();
+    let skipped = 0;
+    curves.forEach((cv, k) => {
+        d.bump(ids[k]);
+        if (isCurveKind(cv.kind)) map.set(cv.id, ids[k]);
+        else skipped++;
+    });
+    const copied = curves.filter((cv) => map.has(cv.id)).map((cv) => ({ ...cv, id: map.get(cv.id), name: d.nameFor(cv.kind), plane: id }));
+    if (Array.isArray(s.constraints)) {
+        const moved = [];
+        for (const k of s.constraints) {
+            const refs = isMap(k) && Array.isArray(k.refs) ? k.refs : [];
+            if (!refs.every((r) => map.has(get(r, "curve")))) continue;
+            moved.push(isMap(k) && Array.isArray(k.refs) ? { ...clone(k), refs: refs.map((r) => ({ ...clone(r), curve: map.get(r.curve) })) } : clone(k));
+        }
+        c.constraints = pruneConstraints(moved, new Map(copied.map((x) => [x.id, x]))).kept;
+    }
+    writeItem(d, id, c, pos);
+    pos = d.index(headId(id)) + 1;
+    for (const cv of copied) {
+        writeItem(d, cv.id, cv, pos);
+        pos = d.index(headId(cv.id)) + 1;
+    }
+    return { map, skipped };
+}
+
 /// Item `n` a command names, which must be there (the page read a field of it): its fields.
 function need(d, n, op) {
     if (n === undefined || !d.item(n)) fail(`${op}: item ${n === undefined ? "?" : n} is not there`);
@@ -2550,20 +2617,26 @@ function build(model, cmd, env, broken) {
             const n = cmdId(cmd, "id", op);
             d.bump(n);
             const c = { id: n, name: d.nameFor("sketch"), kind: "sketch" };
-            for (const k of ["mode", "base", "offset"]) if (get(cmd, k) !== undefined) c[k] = clone(cmd[k]);
-            c.hinge = orElse(get(cmd, "hinge"), null);
-            if (get(cmd, "tilt") !== undefined) c.tilt = clone(cmd.tilt);
-            c.path = orElse(get(cmd, "path"), null);
-            for (const k of ["face", "mid", "points"]) c[k] = get(cmd, k) ? kept(cmd[k]) : null;
-            if (get(cmd, "faceRefs") !== undefined) c.faceRefs = kept(cmd.faceRefs);
+            setPlane(c, cmd);
             c.hidden = false;
             if (get(cmd, "constraints")) c.constraints = kept(cmd.constraints);
             writeItem(d, n, c);
             break;
         }
+        // `copies`: one id per picked item, in the order picked -- a curve on a picked
+        // sketch is not one: it is copied with its sketch -- then each copied sketch's
+        // curves (`copySketch`), sketch after sketch.
         case "duplicate": {
             const copies = idsOf(get(cmd, "copies"));
-            idsOf(get(cmd, "ids")).forEach((n, k) => {
+            const picked = idsOf(get(cmd, "ids"));
+            const sketches = new Set(picked.filter((n) => isSketch(d.item(n))));
+            const own = picked.filter((n) => {
+                const it = d.item(n);
+                return !(it && it.of === undefined && isCurve(it) && sketches.has(readItem(d, n).plane));
+            });
+            let tail = own.length;
+            d.skipped = 0;
+            own.forEach((n, k) => {
                 const copy = copies[k];
                 if (copy === undefined) return;
                 d.bump(copy);   // an image's copy (the page's) takes its id all the same
@@ -2586,11 +2659,10 @@ function build(model, cmd, env, broken) {
                     for (const key of ["kind", "plane", "shape", "node"]) if (c[key] !== undefined) out[key] = clone(c[key]);
                     out.hidden = c.hidden;
                     writeItem(d, copy, out, d.index(headId(n)) + 1);
-                } else if (cls === "sketch" && d.node(headId(n)).kind !== "value.unresolved") {
-                    const c = readItem(d, n);
-                    const out = { ...c, id: copy, name };
-                    if (c.constraints) out.constraints = [];
-                    writeItem(d, copy, out, d.index(headId(n)) + 1);
+                } else if (cls === "sketch") {
+                    const count = curvesOnSketch(d, n).length;
+                    d.skipped += copySketch(d, op, n, copy, copies.slice(tail, tail + count)).skipped;
+                    tail += count;
                 } else copyNodes(d, n, copy, name);
             });
             break;
@@ -3223,7 +3295,8 @@ export function command(kernel, model, doc, cmd, env) {
             throw e;
         }
         model.refresh(changed, batch);
-        return { changed, op: batch };
+        // A sketch copy's curves of a kind not copied (`copySketch`).
+        return d.skipped === undefined ? { changed, op: batch } : { changed, op: batch, skipped: d.skipped };
     }
 }
 
