@@ -9,7 +9,8 @@
 import assert from "node:assert";
 import { loadWasm } from "./package.mjs";
 import { Model, UNITS } from "../forge-model.js";
-import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes } from "../forge-commands.js";
+import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes, pageItems } from "../forge-commands.js";
+import { buildModel, freeModel, solveModel, writeBack, addConstraint, removeConstraint, dragModel, setValue } from "../forge-constraints.js";
 import { isBody } from "../forge-model.js";
 import { readFileSync } from "node:fs";
 
@@ -902,6 +903,139 @@ if (ALONG) {
     assert.throws(() => t.run({ op: "add", id: -1 }), /add: `id` is not an id/);
     assert.throws(() => t.run({ op: "join", id: 1, parts: [7] }), /^Error: join: item 7 is not there$/);
     assert.throws(() => sketchFillet(wasm, [{ kind: "line", shape: { x0: 0, y0: 0, x1: 1, y1: 0 } }, { kind: "line", shape: { x0: 5, y0: 5, x1: 6, y1: 5 } }], 1), /do not meet/);
+    t.free();
+}
+
+// A sketch's curves solved the way the page solves them (its session, built from the curve
+// items and the stored records, then written back): each curve's shape by id.
+function solvedSketch(t, s, edit = (m) => solveModel(wasm, m)) {
+    const items = pageItems(t.model);
+    const sketch = items.find((c) => c.id === s);
+    const curves = items.filter((c) => c.plane === s && c.shape !== undefined);
+    const m = buildModel(wasm, sketch, curves);
+    assert.deepStrictEqual([m.stale, m.refused], [[], []], "every record applies");
+    edit(m);
+    const moved = new Map(writeBack(wasm, m, new Map(curves.map((c) => [c.id, c]))).map((x) => [x.id, x.shape]));
+    freeModel(wasm, m);
+    return new Map(curves.map((c) => [c.id, moved.get(c.id) ?? c.shape]));
+}
+const near = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol;
+// A refused command: its words, and the document as it was.
+function refused(t, cmd, words) {
+    const before = JSON.stringify(t.nodes()), rev = t.revision();
+    assert.throws(() => t.run(cmd), (e) => e instanceof Error && words.test(e.message), JSON.stringify(cmd));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    assert.strictEqual(t.revision(), rev);
+}
+
+// sketch_pattern, circular about the sketch origin: the copies and the two construction step
+// lines as curve items on the sketch, the session's holds as records (ROTATED, the step lines'
+// equal length, a driving angle), the first step line's start fixed as the origin. The
+// source's radius and the angle record drive every copy; undo takes it back whole.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 10, cy: 0, r: 3 } });
+    const before = JSON.stringify(t.nodes());
+    t.run({ op: "sketch_pattern", sketch: 1, ids: [2], type: "circular", centre: null, count: 6, angle: 360, copies: [3, 4, 5, 6, 7, 8, 9] });
+    const copies = [3, 4, 5, 6, 7].map((n) => t.item(n));
+    assert.deepStrictEqual(copies.map((c) => [c.kind, c.plane, c.name]), [3, 4, 5, 6, 7].map((n) => ["circle", 1, `Circle ${n - 1}`]));
+    copies.forEach((c, i) => {
+        const a = Math.PI / 3 * (i + 1);
+        assert.ok(near(c.shape.cx, 10 * Math.cos(a)) && near(c.shape.cy, 10 * Math.sin(a)) && near(c.shape.r, 3), JSON.stringify(c.shape));
+    });
+    const steps = [8, 9].map((n) => t.item(n));
+    assert.deepStrictEqual(steps.map((c) => [c.kind, c.construction]), [["line", true], ["line", true]]);
+    assert.ok(near(steps[0].shape.x0, 0) && near(steps[0].shape.y0, 0) && near(steps[0].shape.x1, 10) && near(steps[0].shape.y1, 0), JSON.stringify(steps[0].shape));
+    assert.strictEqual(t.meta().nextId, 10);
+    const records = t.item(1).constraints;
+    const kinds = records.map((k) => k.kind);
+    assert.strictEqual(kinds.filter((k) => k === "rotated").length, 4, JSON.stringify(kinds));
+    const angle = records.filter((k) => k.kind === "angle");
+    assert.strictEqual(angle.length, 1);
+    assert.ok(near(angle[0].value, Math.PI / 3) && angle[0].driving === true);
+    assert.ok(records.some((k) => k.kind === "fix" && k.refs[0].curve === 8 && k.refs[0].at === "start"), "the origin is the first step line's start, fixed");
+    assert.deepStrictEqual(records.map((k) => k.id), records.map((_, i) => i + 1));
+    // the sketch as stored solves where the pattern put it
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    // the source's radius typed as 4 drives every copy (the page's typed radius: a driving
+    // radius held while its centre is pinned where it is, as forge.js's typed shape edit does)
+    const grown = solvedSketch(t, 1, (m) => {
+        assert.ok(addConstraint(wasm, m, { id: 999, kind: "radius", refs: [{ curve: 2, at: "curve" }], value: 4, driving: true }).ok);
+        dragModel(wasm, m, [{ curve: 2, at: "centre", x: 10, y: 0 }]);
+        removeConstraint(wasm, m, 999);
+    });
+    for (const n of [2, 3, 4, 5, 6, 7]) assert.ok(near(grown.get(n).r, 4), `#${n} r ${grown.get(n).r}`);
+    // the angle record re-spaces them
+    // (the page's dimension edit: `setValue` on the session, forge.js `editDimension`)
+    const spaced = solvedSketch(t, 1, (m) => assert.ok(setValue(wasm, m, angle[0].id, Math.PI / 6).ok));
+    const polar = [2, 3, 4, 5, 6, 7].map((n) => [Math.hypot(spaced.get(n).cx, spaced.get(n).cy), Math.atan2(spaced.get(n).cy, spaced.get(n).cx)]);
+    polar.forEach(([r, a], i) => {
+        assert.ok(near(r, polar[0][0], 1e-7), `#${i + 2} at radius ${r}`);
+        if (i) assert.ok(near(Math.cos(a - polar[i - 1][1]), Math.cos(Math.PI / 6), 1e-7) && Math.sin(a - polar[i - 1][1]) > 0, `#${i + 2} turned ${(a - polar[i - 1][1]) * 180 / Math.PI}`);
+    });
+    // undo: the document as it was before the pattern, node for node
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    assert.deepStrictEqual(t.model.nodes(), t.nodes());
+    t.free();
+}
+
+// sketch_pattern, circular about a picked point (another circle's centre), part of a turn:
+// both ends occupied (step = angle / (count - 1))
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 5, cy: 5, r: 1 } });
+    t.run({ op: "add", id: 3, kind: "line", plane: 1, shape: { x0: 10, y0: 5, x1: 12, y1: 5 } });
+    t.run({ op: "sketch_pattern", sketch: 1, ids: [3], type: "circular", centre: { curve: 2, at: "centre" }, count: 3, angle: 180, copies: [4, 5, 6, 7] });
+    const [a, b] = [t.item(4).shape, t.item(5).shape];
+    assert.ok(near(a.x0, 5) && near(a.y0, 10) && near(a.x1, 5) && near(a.y1, 12), JSON.stringify(a));
+    assert.ok(near(b.x0, 0) && near(b.y0, 5) && near(b.x1, -2) && near(b.y1, 5), JSON.stringify(b));
+    assert.ok(t.item(1).constraints.some((k) => k.kind === "coincident" && k.refs.some((r) => r.curve === 2 && r.at === "centre")), "the step lines start on the picked centre");
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    t.free();
+}
+
+// sketch_pattern, rectangular: a line on a 3 x 2 grid, held by TRANSLATED records and the
+// step dimensions; a rectangle copied stays a rectangle
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 2, y1: 1 } });
+    t.run({ op: "sketch_pattern", sketch: 1, ids: [2], type: "rectangular", d1: [1, 0], count1: 3, spacing1: 5, d2: [0, 1], count2: 2, spacing2: 4, copies: [3, 4, 5, 6, 7] });
+    [[5, 0], [10, 0], [0, 4], [5, 4], [10, 4]].forEach(([dx, dy], i) => {
+        const s = t.item(3 + i).shape;
+        assert.ok(near(s.x0, dx) && near(s.y0, dy) && near(s.x1, 2 + dx) && near(s.y1, 1 + dy), `#${3 + i} ${JSON.stringify(s)}`);
+    });
+    assert.ok(t.item(1).constraints.some((k) => k.kind === "translated"));
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    t.run({ op: "add", id: 8, kind: "rect", plane: 1, shape: { x0: 20, y0: 0, x1: 24, y1: 2 } });
+    t.run({ op: "sketch_pattern", sketch: 1, ids: [8], type: "rectangular", d1: [0, 1], count1: 2, spacing1: 3, count2: 1, copies: [9] });
+    assert.deepStrictEqual([t.item(9).kind, t.item(9).shape].map((v) => JSON.stringify(v)), ['"rect"', JSON.stringify({ x0: 20, y0: 3, x1: 24, y1: 5 })]);
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    // turned, a rectangle is a closed polyline
+    t.run({ op: "sketch_pattern", sketch: 1, ids: [8], type: "circular", centre: null, count: 4, angle: 360, copies: [10, 11, 12, 13, 14] });
+    assert.strictEqual(t.item(10).kind, "polyline");
+    assert.ok(close(t.item(10).shape.points, [[0, 20], [0, 24], [-2, 24], [-2, 20]], 1e-9), JSON.stringify(t.item(10).shape));
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    t.free();
+}
+
+// sketch_pattern refusals: each in the command's words, the document untouched
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 10, cy: 0, r: 3 } });
+    t.run({ op: "sketch", id: 3, mode: "offset", base: "front", offset: 0 });
+    t.run({ op: "add", id: 4, kind: "circle", plane: 3, shape: { cx: 10, cy: 0, r: 3 } });
+    const circ = { op: "sketch_pattern", sketch: 1, ids: [2], type: "circular", centre: null, count: 6, angle: 360, copies: [10, 11, 12, 13, 14, 15, 16] };
+    refused(t, { ...circ, ids: [] }, /^sketch_pattern: nothing to pattern/);
+    refused(t, { ...circ, ids: [2, 4] }, /^sketch_pattern: #4 is not a curve on sketch #1/);
+    refused(t, { ...circ, count: 1 }, /^sketch_pattern: `count` must be/);
+    refused(t, { ...circ, angle: 0 }, /^sketch_pattern: the angle must be/);
+    refused(t, { ...circ, angle: 400 }, /^sketch_pattern: the angle must be/);
+    refused(t, { op: "sketch_pattern", sketch: 1, ids: [2], type: "rectangular", d1: [0, 0], count1: 3, spacing1: 5, count2: 1, copies: [10, 11] }, /^sketch_pattern: a zero direction/);
     t.free();
 }
 

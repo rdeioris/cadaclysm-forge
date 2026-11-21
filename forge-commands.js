@@ -201,6 +201,7 @@
 // item.
 import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, metaOp, bumpId, heldOf } from "./forge-model.js";
 import { bodyNode, facePlaneId, docPicks } from "./forge-picks.js";
+import { buildModel, freeModel, madeByCall, curveName } from "./forge-constraints.js";
 
 /// How close the pieces of a curve must meet (the page's `LOOP_TOLERANCE`).
 const LOOP_TOLERANCE = 1e-3;
@@ -1949,6 +1950,173 @@ function adoptHeld(d) {
     }
 }
 
+/// A sketch pattern or mirror (`sketch_pattern`, `sketch_mirror`): the sketch's session
+/// built from its curves and records (forge-constraints.js `buildModel`), the session's
+/// `pattern_circular` / `pattern_rectangular` / `mirror` run on every entity the picked
+/// curves own, and what it made written back: each copy (and a circular pattern's two
+/// construction step lines) a new curve item on the sketch, numbered from `copies` in the
+/// order made, and every constraint it added a record appended to the sketch's
+/// `forge_constraints` (`madeByCall`). A rectangle turned or mirrored is a closed polyline.
+/// The sketch origin as a circular pattern's centre is the first step line's start, fixed.
+function sketchCopies(d, cmd, op) {
+    const mirror = op === "sketch_mirror";
+    const ids = idsOf(get(cmd, "ids"));
+    if (!ids.length) fail(`${op}: nothing to ${mirror ? "mirror" : "pattern"}`);
+    if (new Set(ids).size !== ids.length) fail(`${op}: a curve is picked twice`);
+    const s = idOf(get(cmd, "sketch"));
+    if (s === undefined || !d.item(s) || !isSketch(d.item(s))) fail(`${op}: \`sketch\` is not a sketch`);
+    const onSketch = (n) => {
+        const c = d.item(n) ? readItem(d, n) : undefined;
+        return c !== undefined && isCurveFields(c) && c.plane === s ? c : undefined;
+    };
+    const sources = ids.map((n) => {
+        const c = onSketch(n);
+        if (!c) fail(`${op}: #${n} is not a curve on sketch #${s}`);
+        if (!COPIED_KINDS.includes(c.kind)) fail(`${op}: ${curveName(c)} is a ${c.kind}, which cannot be copied`);
+        return c;
+    });
+    let lineId;
+    let call;
+    if (mirror) {
+        lineId = idOf(get(cmd, "line"));
+        const line = lineId === undefined ? undefined : onSketch(lineId);
+        if (!line || line.kind !== "line") fail("sketch_mirror: `line` is not a line on the sketch");
+        if (ids.includes(lineId)) fail("sketch_mirror: the line is among the curves mirrored");
+        call = (m, ents) => d.kernel.cadaclysm_blacksmith_sketch_mirror(m.h, Uint32Array.from(ents), m.entity.get(`${lineId}:curve`));
+    } else {
+        const type = get(cmd, "type");
+        if (type === "circular") {
+            const count = num(get(cmd, "count")), angle = num(get(cmd, "angle"));
+            if (count === undefined || !Number.isInteger(count) || count < 2) fail("sketch_pattern: `count` must be a whole number, 2 or more");
+            if (angle === undefined || !(angle > 0) || angle > 360) fail("sketch_pattern: the angle must be more than 0 and at most 360");
+            const step = toRadians(angle === 360 ? angle / count : angle / (count - 1));
+            const centre = get(cmd, "centre");
+            call = (m, ents) => {
+                let o;
+                if (centre === null || centre === undefined) {
+                    o = d.kernel.cadaclysm_blacksmith_sketch_add_point(m.h, 0, 0);
+                    d.kernel.cadaclysm_blacksmith_sketch_constrain(m.h, SKETCH_FIX, Uint32Array.of(o), 0, true, 0, 0);
+                } else {
+                    o = m.entity.get(`${get(centre, "curve")}:${get(centre, "at")}`);
+                    if (o === undefined || d.kernel.cadaclysm_blacksmith_sketch_kind(m.h, o) !== 0) fail("sketch_pattern: the centre is not a point on the sketch");
+                }
+                return d.kernel.cadaclysm_blacksmith_sketch_pattern_circular(m.h, Uint32Array.from(ents), o, count, step);
+            };
+        } else if (type === "rectangular") {
+            const axis = (k) => {
+                const n = num(get(cmd, `count${k}`)) ?? 1;
+                if (!Number.isInteger(n) || n < 1) fail(`sketch_pattern: \`count${k}\` must be a whole number, 1 or more`);
+                const dir = get(cmd, `d${k}`), sp = num(get(cmd, `spacing${k}`)) ?? 0;
+                const [x, y] = Array.isArray(dir) ? [num(dir[0]) ?? NaN, num(dir[1]) ?? NaN] : [NaN, NaN];
+                const len = Math.hypot(x, y);
+                if (n > 1 && !(len > 0)) fail(`sketch_pattern: a zero direction (\`d${k}\`)`);
+                if (n > 1 && !(Math.abs(sp) > 0)) fail(`sketch_pattern: a zero spacing (\`spacing${k}\`)`);
+                return n > 1 ? [x * sp / len, y * sp / len, n] : [1, 0, 1];
+            };
+            const [a, b] = [axis(1), axis(2)];
+            if (a[2] * b[2] < 2) fail("sketch_pattern: `count` must be 2 or more");
+            call = (m, ents) => d.kernel.cadaclysm_blacksmith_sketch_pattern_rectangular(m.h, Uint32Array.from(ents), a[0], a[1], a[2], b[0], b[1], b[2]);
+        } else fail("sketch_pattern: `type` is not circular or rectangular");
+    }
+    const sketch = readItem(d, s);
+    const curves = d.model.items().filter((it) => it.of === undefined && isCurve(it)).map((it) => readItem(d, it.id)).filter((c) => c.plane === s && isCurveKind(c.kind));
+    const w = d.kernel;
+    let m;
+    try {
+        m = buildModel(w, sketch, curves);
+    } catch (e) {
+        fail(`${op}: ${messageOf(e)}`);
+    }
+    try {
+        for (const c of sources) if (!m.parts.has(c.id)) fail(`${op}: ${curveName(c)} is not in the sketch's session`);
+        const ents = sources.flatMap((c) => m.parts.get(c.id).ids);
+        const reserved = idsOf(get(cmd, "copies"));
+        let taken = 0;
+        const nextId = () => {
+            if (taken >= reserved.length) fail(`${op}: fewer \`copies\` ids than curves made`);
+            return reserved[taken++];
+        };
+        let made;
+        try {
+            made = madeByCall(w, m, sketch, (mm) => call(mm, ents), (list) => {
+                const [k, per, steps] = mirror ? [1, ents.length, 0] : list;
+                const copies = mirror ? list.slice(0, ents.length) : list.slice(4, 4 + k * per);
+                const turned = mirror || get(cmd, "type") === "circular";
+                const out = [];
+                for (let j = 0; j < k; j++) {
+                    let at = 0;
+                    for (const c of sources) {
+                        const own = m.parts.get(c.id).ids;
+                        const copyOf = new Map(own.map((id, i) => [id, copies[j * per + at + i]]));
+                        at += own.length;
+                        out.push(copyCurve(m, c, copyOf, nextId(), { turned, mirror }));
+                    }
+                }
+                for (const e of list.slice(4 + k * per, 4 + k * per + steps)) {
+                    const [a, b] = Array.from(w.cadaclysm_blacksmith_sketch_ends(m.h, e));
+                    out.push({ id: nextId(), kind: "line", shape: {}, spots: { start: a, end: b, curve: e }, ids: [e], extra: { construction: true } });
+                }
+                return out;
+            });
+        } catch (e) {
+            if (typeof e === "string") fail(`${op}: ${e}`);
+            if (e instanceof Error && e.message.startsWith(`${op}:`)) throw e;
+            fail(`${op}: ${messageOf(e)}`);
+        }
+        let pos = d.index(headId(ids[ids.length - 1])) + 1;
+        for (const c of made.curves) {
+            d.bump(c.id);
+            const item = { id: c.id, name: d.nameFor(c.kind), kind: c.kind, plane: s, shape: kept(c.shape) };
+            if (c.construction) item.construction = true;
+            item.hidden = false;
+            writeItem(d, c.id, item, pos);
+            pos = d.index(headId(c.id)) + 1;
+        }
+        const now = readItem(d, s);
+        writeItem(d, s, { ...now, constraints: [...(now.constraints ?? []), ...made.records] });
+    } finally {
+        freeModel(w, m);
+    }
+}
+
+/// The curve kinds a sketch pattern or mirror copies.
+const COPIED_KINDS = ["line", "arc", "circle", "rect", "polygon", "polyline", "nurbs"];
+const SKETCH_FIX = 15;
+const messageOf = (e) => (e && e.message) || String(e);
+
+/// Curve `c`'s copy `n` (`madeByCall`'s form), its kernel ids `copyOf` (source id -> copy
+/// id). A rectangle `turned` (circular, mirrored) is a closed polyline; a mirrored arc runs
+/// the other way, and a mirrored polygon's vertices go round the other way.
+function copyCurve(m, c, copyOf, n, { turned, mirror }) {
+    const part = m.parts.get(c.id);
+    const spots = {};
+    let kind = c.kind, shape = c.shape;
+    const spotOf = (at) => m.entity.get(`${c.id}:${at}`);
+    if (c.kind === "rect" && turned) {
+        kind = "polyline";
+        shape = { points: [[0, 0], [0, 0], [0, 0], [0, 0]], closed: true };
+        for (let i = 0; i < 4; i++) {
+            spots[`vertex:${i}`] = copyOf.get(spotOf(`corner:${i}`));
+            spots[`side:${i}`] = copyOf.get(spotOf(`side:${i}`));
+        }
+    } else if (c.kind === "polygon" && mirror) {
+        const n = Math.max(3, Math.round(c.shape.sides));
+        spots.centre = copyOf.get(spotOf("centre"));
+        for (let i = 0; i < n; i++) {
+            spots[`vertex:${(n - i) % n}`] = copyOf.get(spotOf(`vertex:${i}`));
+            spots[`side:${(2 * n - i - 1) % n}`] = copyOf.get(spotOf(`side:${i}`));
+        }
+    } else {
+        for (const [key, id] of m.entity) {
+            if (!key.startsWith(`${c.id}:`)) continue;
+            spots[key.slice(`${c.id}:`.length)] = copyOf.get(id);
+        }
+    }
+    const out = { id: n, kind, shape, spots, ids: [...copyOf.values()] };
+    if (part.reversed !== undefined) out.reversed = mirror ? !part.reversed : part.reversed;
+    return out;
+}
+
 /// The ops of `cmd` (see the header) on a draft.
 function build(model, cmd, env, broken) {
     const d = new Draft(model, env, broken);
@@ -2067,6 +2235,11 @@ function build(model, cmd, env, broken) {
             }
             break;
         }
+        // A sketch pattern and a sketch mirror: the session's copies (`sketchCopies`).
+        case "sketch_pattern":
+        case "sketch_mirror":
+            sketchCopies(d, cmd, op);
+            break;
         case "merge": {
             const n = cmdId(cmd, "id", op);
             d.bump(n);

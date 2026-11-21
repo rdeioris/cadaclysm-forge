@@ -699,6 +699,69 @@ export function nextConstraintId(sketch) {
     return 1 + (sketch.constraints ?? []).reduce((m, k) => Math.max(m, Number(k.id) || 0), 0);
 }
 
+// ---- what a session call made (a pattern, a mirror), as page curves and records ----
+
+// What session call `call(model)` (a pattern or a mirror on a `buildModel` session) adds,
+// as page curves and stored records. `made(list)` names the new page curves off the call's
+// list: each `{ id, kind, shape (the source's, the template), spots: { at -> kernel id },
+// ids (every kernel id it holds, its spots among them), reversed?, extra? }`. A spot whose
+// point another curve holds already (a mirror's points on its line, a step line's ends on
+// the pattern's centre and copies) is a `coincident` record; every constraint the call added
+// is a record, numbered on from `nextConstraintId(sketch)`, its refs the spots holding them.
+// A constraint on a new curve's own inner entities (a polygon's ring) is left out: the
+// curve's shape makes those again. The shapes are the solved session's (`solvedShape`).
+// Throws a message where a new entity or a ref has no curve. `{ curves: [{ id, kind,
+// shape, ...extra }], records }`; the model holds the new curves' spots from here on.
+export function madeByCall(w, model, sketch, call, made) {
+    const e0 = new Set(w.cadaclysm_blacksmith_sketch_entities(model.h));
+    const k0 = new Set(w.cadaclysm_blacksmith_sketch_constraints(model.h));
+    const list = Array.from(call(model));
+    const curves = made(list);
+    const owner = new Map(model.owner), inner = new Set(), records = [];
+    let next = nextConstraintId(sketch);
+    for (const c of curves) {
+        const part = { kind: c.kind, ids: c.ids.slice() };
+        if (c.reversed !== undefined) part.reversed = c.reversed;
+        model.parts.set(c.id, part);
+        for (const id of c.ids) { inner.add(id); if (!model.curveOf.has(id)) model.curveOf.set(id, c.id); }
+        for (const [at, id] of Object.entries(c.spots)) {
+            model.entity.set(`${c.id}:${at}`, id);
+            const was = owner.get(id);
+            if (was === undefined) owner.set(id, { curve: c.id, at });
+            else if (was.curve !== c.id && w.cadaclysm_blacksmith_sketch_kind(model.h, id) === 0) {
+                records.push({ id: next++, kind: "coincident", refs: [{ curve: c.id, at }, { ...was }], driving: true });
+            }
+        }
+    }
+    for (const e of w.cadaclysm_blacksmith_sketch_entities(model.h)) {
+        if (!e0.has(e) && !owner.has(e) && !inner.has(e)) throw `entity ${e} the call made is on no curve`;
+    }
+    for (const kid of w.cadaclysm_blacksmith_sketch_constraints(model.h)) {
+        if (k0.has(kid)) continue;
+        const kind = KINDS[w.cadaclysm_blacksmith_sketch_constraint_kind(model.h, kid)];
+        if (kind === undefined) throw `constraint ${kid} the call made is of a kind the forge does not know`;
+        const ids = Array.from(w.cadaclysm_blacksmith_sketch_constraint_refs(model.h, kid));
+        if (ids.some((id) => !owner.has(id))) {
+            if (ids.every((id) => owner.has(id) || inner.has(id))) continue;
+            throw `constraint ${kid} the call made binds an entity on no curve`;
+        }
+        const rec = { id: next++, kind, refs: ids.map((id) => ({ ...owner.get(id) })) };
+        if (DIMENSIONS.has(kind)) rec.value = w.cadaclysm_blacksmith_sketch_constraint_value(model.h, kid);
+        rec.driving = w.cadaclysm_blacksmith_sketch_constraint_driving(model.h, kid);
+        const sense = Object.keys(SENSE).find((k) => SENSE[k] === w.cadaclysm_blacksmith_sketch_constraint_sense(model.h, kid));
+        if (sense && sense !== "auto") rec.sense = sense;
+        if (kind === "tangent_at_end") {
+            const end = Object.keys(END).find((k) => END[k] === w.cadaclysm_blacksmith_sketch_constraint_end(model.h, kid));
+            if (end && end !== "start") rec.end = end;
+        }
+        records.push(rec);
+        model.kernelOf.set(rec.id, kid);
+        model.docOf.set(kid, rec.id);
+    }
+    const out = curves.map((c) => ({ id: c.id, kind: c.kind, shape: solvedShape(w, model, c), ...(c.extra ?? {}) }));
+    return { curves: out, records, list };
+}
+
 // ---- inference, migration, pruning (pure: no session) ----
 
 // Where a point spot of `curve` lies, as [x, y], or null for a spot that is not a point.
