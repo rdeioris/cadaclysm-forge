@@ -2,7 +2,8 @@
 // have installed, driven over the DevTools protocol (Node's own WebSocket: no dependency).
 // For each example asked: the page opens it, every body builds with no error, the bodies
 // draw (a pick in the views lands on one), the STEP button -- offered once a closed solid is
-// built -- downloads a STEP file with at least one solid in it, and nothing is logged as an
+// built -- downloads a STEP file with at least one solid in it (as many as the pins' `solids`
+// where they have one), and nothing is logged as an
 // error by the page or its worker. Then the snap check: in box-fillet's Top view, with real
 // pointer events, a line drawn onto two of the box's corners lands on them exactly, grid
 // snaps land on the step, Alt snaps nothing, a rectangle snaps onto another line's middle
@@ -218,6 +219,9 @@ async function checkExample(cdp, base, name, { webgl2, out, pins }) {
             step = readFileSync(join(downloads, stepName), "utf8");
             if (!step.startsWith("ISO-10303-21;")) throw new Error(`${stepName} is not a STEP file`);
             breps = (step.match(/MANIFOLD_SOLID_BREP/g) ?? []).length;
+            // The pinned count where the pins have one (`solids`), at least one otherwise.
+            const solids = pins[`examples/${name}.json`]?.solids;
+            if (solids !== undefined && breps !== solids) throw new Error(`${stepName} has ${breps} solids, the pins have ${solids}`);
             if (breps < 1) throw new Error(`${stepName} has no solid`);
         }
         await sleep(300);   // late console errors

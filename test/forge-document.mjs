@@ -218,6 +218,27 @@ const itemsOf = (doc) => pageItems(new Model(wasm, doc));
     wasm.cadaclysm_blacksmith_document_free(doc);
 }
 
+// The pattern and mirror example (scripts/pattern-example.mjs): its items and bodies as pinned,
+// each tool one commit, and it saves to its own text. Undoing the mirror takes the mirror's
+// group and its instance away together, and the pattern's undo its group and five instances.
+{
+    const file = "examples/pattern-mirror.json";
+    const text = repoFile(file);
+    const doc = openDocument(wasm, text);
+    assert.deepStrictEqual(itemsOf(doc), pins[file].items);
+    checkPinned(doc, file);
+    const log = JSON.parse(wasm.cadaclysm_blacksmith_document_log(doc, "main")).map((c) => c.message);
+    for (const op of ["sketch_pattern", "pattern", "mirror"]) assert.strictEqual(log.filter((m) => m === `forge: ${op}`).length, 1, `one ${op} commit`);
+    assert.strictEqual(wasm.cadaclysm_blacksmith_document_save(doc), text, "the file saves to itself");
+    const kinds = () => itemsOf(doc).filter((it) => it.kind === "pattern" || it.kind === "instance").length;
+    assert.strictEqual(kinds(), 2 + 5 + 1);
+    for (let k = 0; k < 3; k++) wasm.cadaclysm_blacksmith_document_undo(doc);   // the mirror, the leg's set and the leg
+    assert.strictEqual(kinds(), 1 + 5);
+    for (let k = 0; k < 3; k++) wasm.cadaclysm_blacksmith_document_undo(doc);   // the pattern, the standoff's set and the standoff
+    assert.strictEqual(kinds(), 0);
+    wasm.cadaclysm_blacksmith_document_free(doc);
+}
+
 // A version-2 fillet names its edges in the old numbering (a spline's every chord an edge):
 // converted, it is marked (`edgeNumbering: 1`) and holds the references of the edges it
 // meant, so it rounds the same edges -- the fillet's figures are the page's. (A pick made now

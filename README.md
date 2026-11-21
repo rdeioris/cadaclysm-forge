@@ -2,10 +2,13 @@
 
 A parametric CAD modeller that runs in the browser and makes exact B-rep solids. Sketch
 curves on a plane, hold them with constraints and dimensions, then extrude, revolve,
-sweep, loft, join, cut, fillet, chamfer and shell them. Every body is an exact NURBS and
-analytic boundary representation built by the [cadaclysm](https://cadaclysm.blitter.studio/)
-CAD kernel. Edits replay through the document's history, and **the result downloads as a
-STEP file**: real solids that other CAD tools open as solids, not triangle soup.
+sweep, loft, join, cut, fillet, chamfer and shell them. **Sketch › pattern** and
+**Sketch › mirror** copy curves, and **Solid › pattern** and **Solid › mirror** copy bodies
+or a feature. Each copy is history, so an edit of the original reaches every copy. Every
+body is an exact NURBS and analytic boundary representation built by the
+[cadaclysm](https://cadaclysm.blitter.studio/) CAD kernel. Edits replay through the
+document's history, and **the result downloads as a STEP file**: real solids that other CAD
+tools open as solids, not triangle soup.
 
 The forge is open source under the Apache License 2.0. It runs on the cadaclysm web
 package, the kernel and its 3D view compiled to WebAssembly. That package is the
@@ -31,6 +34,20 @@ The STEP file is written from the same solids the view draws, straight off the d
 (below) downloads it for every example and counts the `MANIFOLD_SOLID_BREP`s in it.
 **save** (or Ctrl+S) writes the document itself, asking for its name each time (it offers the
 name last opened or saved, `forge.json` at first), and **load** opens one.
+
+## Tools
+
+The pattern and mirror tools on the Sketch and Solid tabs. Each OK is one command, one
+timeline chip and one undo. `examples/pattern-mirror.json` (written by
+`scripts/pattern-example.mjs`) holds a sketch pattern cut through a plate, a body pattern
+and a body mirror.
+
+| tab | tool | what it makes | kernel call |
+|---|---|---|---|
+| Sketch | pattern | copies of the picked curves on the same sketch, circular about the origin or a picked point (count, angle) or rectangular (two directions, counts and spacings), held by constraints so the original's size and the step drive them | `cadaclysm_blacksmith_sketch_pattern_circular`, `cadaclysm_blacksmith_sketch_pattern_rectangular` on the sketch session |
+| Sketch | mirror | the picked curves reflected across a line of the sketch, held symmetric to the originals | `cadaclysm_blacksmith_sketch_mirror` on the sketch session |
+| Solid | pattern | bodies: a pattern group and one body per copy, circular about an axis, rectangular, or along a path; a feature: the cut or join placed again on its target | `placements.circular` / `placements.rectangular` / `placements.along` with `solid.pattern` and `solid.nth`; `solid.pattern_feature` |
+| Solid | mirror | bodies: a new mirrored body each, or the body joined with its mirror; a feature: the cut or join repeated across the plane | `placements.mirror` with `solid.pattern` and `solid.nth`; `solid.mirror` and `solid.join` (`solid.mirror_join` for a sheet on the plane); `solid.pattern_feature` |
 
 ## Architecture
 
@@ -280,7 +297,8 @@ node test/browser.mjs --all --out test/out  # plus a screenshot and the STEP fil
 For each example, the check serves the page with `scripts/serve.mjs` and opens the
 document. It checks that every body builds with the pinned errors (none in the examples) and
 that the bodies are drawn, by picking faces under a grid of points in the views. It clicks
-**step** and checks that the download is a STEP file with at least one solid. Any error the
+**step** and checks that the download is a STEP file with at least one solid, or exactly the
+pinned count where `forge-pins.json` has one (`solids`: 9 for pattern-mirror). Any error the
 page or its worker logs fails the check. Then, unless `--no-snap` is passed, it runs the
 snap check in box-fillet's Top view with real pointer events:
 - Measure reads one box edge as 20 mm.
@@ -305,7 +323,7 @@ snap check in box-fillet's Top view with real pointer events:
 | `forge-snap.js` | snapping onto bodies and the grid: the settings, which View answers count |
 | `projection.js`, `view-cube.js`, `manipulator.js` | the overlay's maths, the view cube, the move/turn/scale gizmo |
 | `examples/` | example documents |
-| `scripts/setup.mjs`, `scripts/serve.mjs` | fetch the package; a static server |
+| `scripts/setup.mjs`, `scripts/serve.mjs`, `scripts/pattern-example.mjs` | fetch the package; a static server; write `examples/pattern-mirror.json` |
 | `test/` | node tests, `browser.mjs` (the headless check), fixtures |
 
 ## License
