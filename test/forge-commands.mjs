@@ -1039,4 +1039,110 @@ function refused(t, cmd, words) {
     t.free();
 }
 
+// sketch_mirror: a right triangle's two free sides mirrored across its vertical side. The
+// points on the line are not copied: each copy's end there is a `coincident` record onto
+// its source's; the free corner is reflected exactly and held by a `symmetric` record.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 0, y1: 5 } });
+    t.run({ op: "add", id: 3, kind: "line", plane: 1, shape: { x0: 0, y0: 5, x1: 4, y1: 0 } });
+    t.run({ op: "add", id: 4, kind: "line", plane: 1, shape: { x0: 4, y0: 0, x1: 0, y1: 0 } });
+    const before = JSON.stringify(t.nodes());
+    t.run({ op: "sketch_mirror", sketch: 1, ids: [3, 4], line: 2, copies: [5, 6] });
+    assert.deepStrictEqual([t.item(5).kind, t.item(6).kind], ["line", "line"]);
+    assert.deepStrictEqual(t.item(5).shape, { x0: 0, y0: 5, x1: -4, y1: 0 });
+    assert.deepStrictEqual(t.item(6).shape, { x0: -4, y0: 0, x1: 0, y1: 0 });
+    assert.deepStrictEqual(t.model.items().map((i) => i.id), [1, 2, 3, 4, 5, 6]);
+    const records = t.item(1).constraints;
+    const has = (kind, a, b) => records.some((k) => k.kind === kind && k.refs.length >= 2
+        && ((k.refs[0].curve === a.curve && k.refs[0].at === a.at && k.refs[1].curve === b.curve && k.refs[1].at === b.at)
+            || (k.refs[1].curve === a.curve && k.refs[1].at === a.at && k.refs[0].curve === b.curve && k.refs[0].at === b.at)));
+    assert.ok(has("coincident", { curve: 5, at: "start" }, { curve: 3, at: "start" }), JSON.stringify(records));
+    assert.ok(has("coincident", { curve: 6, at: "end" }, { curve: 4, at: "end" }), JSON.stringify(records));
+    assert.ok(records.some((k) => k.kind === "symmetric" && k.refs[2].curve === 2 && k.refs[2].at === "curve"), JSON.stringify(records));
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    // the free corner dragged: its mirror follows
+    const dragged = solvedSketch(t, 1, (m) => dragModel(wasm, m, [{ curve: 3, at: "end", x: 6, y: 1 }]));
+    {
+        // reflected across the line where the solve left it
+        const L = dragged.get(2), [px, py] = [dragged.get(3).x1, dragged.get(3).y1];
+        const [ux, uy] = [L.x1 - L.x0, L.y1 - L.y0], u = Math.hypot(ux, uy);
+        const along = ((px - L.x0) * ux + (py - L.y0) * uy) / (u * u);
+        const [fx, fy] = [L.x0 + along * ux, L.y0 + along * uy];
+        assert.ok(near(dragged.get(5).x1, 2 * fx - px, 1e-7) && near(dragged.get(5).y1, 2 * fy - py, 1e-7), JSON.stringify([...dragged]));
+    }
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    t.free();
+}
+
+// sketch_mirror of a circle: its copy held to its radius (`equal_radius`), so a typed radius
+// on the source moves the copy too; an arc mirrored runs the other way round
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: -10, x1: 0, y1: 10 } });
+    t.run({ op: "add", id: 3, kind: "circle", plane: 1, shape: { cx: 5, cy: 2, r: 1.5 } });
+    t.run({ op: "add", id: 4, kind: "arc", plane: 1, shape: { x0: 8, y0: 0, xm: 9, ym: 1, x1: 10, y1: 0 } });
+    t.run({ op: "sketch_mirror", sketch: 1, ids: [3, 4], line: 2, copies: [5, 6] });
+    assert.ok(close(t.item(5).shape, { cx: -5, cy: 2, r: 1.5 }, 1e-12), JSON.stringify(t.item(5).shape));
+    assert.ok(close(t.item(6).shape, { x0: -8, y0: 0, xm: -9, ym: 1, x1: -10, y1: 0 }, 1e-9), JSON.stringify(t.item(6).shape));
+    assert.ok(t.item(1).constraints.some((k) => k.kind === "equal_radius" && k.refs.some((r) => r.curve === 3) && k.refs.some((r) => r.curve === 5)));
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    const grown = solvedSketch(t, 1, (m) => {
+        assert.ok(addConstraint(wasm, m, { id: 999, kind: "radius", refs: [{ curve: 3, at: "curve" }], value: 2.5, driving: true }).ok);
+        dragModel(wasm, m, [{ curve: 3, at: "centre", x: 5, y: 2 }]);
+        removeConstraint(wasm, m, 999);
+    });
+    assert.ok(near(grown.get(3).r, 2.5) && near(grown.get(5).r, 2.5), JSON.stringify([grown.get(3), grown.get(5)]));
+    t.free();
+}
+
+// sketch_mirror: an open polyline with both ends on a construction line closes onto its
+// mirror -- the session's profiles hold one loop
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: -10, x1: 0, y1: 10 } });
+    t.run({ op: "set", id: 2, construction: true });
+    t.run({ op: "add", id: 3, kind: "polyline", plane: 1, shape: { points: [[0, 5], [4, 2], [4, -2], [0, -5]], closed: false } });
+    t.run({ op: "sketch_mirror", sketch: 1, ids: [3], line: 2, copies: [4] });
+    assert.ok(close(t.item(4).shape.points, [[0, 5], [-4, 2], [-4, -2], [0, -5]], 1e-12), JSON.stringify(t.item(4).shape));
+    const items = pageItems(t.model);
+    const m = buildModel(wasm, items.find((c) => c.id === 1), items.filter((c) => c.plane === 1 && c.shape !== undefined));
+    assert.deepStrictEqual([m.stale, m.refused], [[], []]);
+    solveModel(wasm, m);
+    const loops = wasm[K + "sketch_profiles"](m.h, 0);
+    assert.strictEqual(wasm[K + "profile_list_count"](loops), 1);
+    wasm[K + "profile_list_free"](loops);
+    freeModel(wasm, m);
+    t.free();
+}
+
+// sketch_mirror refusals
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: -10, x1: 0, y1: 10 } });
+    t.run({ op: "add", id: 3, kind: "circle", plane: 1, shape: { cx: 5, cy: 2, r: 1.5 } });
+    refused(t, { op: "sketch_mirror", sketch: 1, ids: [2], line: 3, copies: [9] }, /^sketch_mirror: `line` is not a line/);
+    refused(t, { op: "sketch_mirror", sketch: 1, ids: [2, 3], line: 2, copies: [9, 10] }, /^sketch_mirror: the line is among/);
+    refused(t, { op: "sketch_mirror", sketch: 1, ids: [], line: 2, copies: [] }, /^sketch_mirror: nothing to mirror/);
+    t.free();
+}
+
+// sketch_mirror of a polygon: its vertices go round the other way, so copy vertex k is the
+// mirror of source vertex -k; the stored records re-solve to where the mirror put it
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "line", plane: 1, shape: { x0: 0, y0: -10, x1: 0, y1: 10 } });
+    t.run({ op: "add", id: 3, kind: "polygon", plane: 1, shape: { cx: 5, cy: -5, r: 2, sides: 5, angle: 10 } });
+    t.run({ op: "sketch_mirror", sketch: 1, ids: [3], line: 2, copies: [4] });
+    assert.ok(close(t.item(4).shape, { cx: -5, cy: -5, r: 2, sides: 5, angle: 170 }, 1e-9), JSON.stringify(t.item(4).shape));
+    for (const [id, shape] of solvedSketch(t, 1)) assert.ok(close(shape, t.item(id).shape, 1e-9), `#${id} moved on a re-solve`);
+    t.free();
+}
+
 console.log("forge-commands: ok");

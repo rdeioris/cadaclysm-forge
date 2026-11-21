@@ -2086,7 +2086,8 @@ const messageOf = (e) => (e && e.message) || String(e);
 
 /// Curve `c`'s copy `n` (`madeByCall`'s form), its kernel ids `copyOf` (source id -> copy
 /// id). A rectangle `turned` (circular, mirrored) is a closed polyline; a mirrored arc runs
-/// the other way, and a mirrored polygon's vertices go round the other way.
+/// the other way, and a mirrored polygon's vertices go round the other way. A construction
+/// curve's copy is one too.
 function copyCurve(m, c, copyOf, n, { turned, mirror }) {
     const part = m.parts.get(c.id);
     const spots = {};
@@ -2114,6 +2115,7 @@ function copyCurve(m, c, copyOf, n, { turned, mirror }) {
     }
     const out = { id: n, kind, shape, spots, ids: [...copyOf.values()] };
     if (part.reversed !== undefined) out.reversed = mirror ? !part.reversed : part.reversed;
+    if (c.construction === true) out.extra = { construction: true };
     return out;
 }
 

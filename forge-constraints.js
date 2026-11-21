@@ -708,8 +708,8 @@ export function nextConstraintId(sketch) {
 // point another curve holds already (a mirror's points on its line, a step line's ends on
 // the pattern's centre and copies) is a `coincident` record; every constraint the call added
 // is a record, numbered on from `nextConstraintId(sketch)`, its refs the spots holding them.
-// A constraint on a new curve's own inner entities (a polygon's ring) is left out: the
-// curve's shape makes those again. The shapes are the solved session's (`solvedShape`).
+// A constraint on a curve's own inner entities (a polygon's ring, the source's or the
+// copy's) is left out: the curve's shape makes those again. The shapes are the solved session's (`solvedShape`).
 // Throws a message where a new entity or a ref has no curve. `{ curves: [{ id, kind,
 // shape, ...extra }], records }`; the model holds the new curves' spots from here on.
 export function madeByCall(w, model, sketch, call, made) {
@@ -742,7 +742,7 @@ export function madeByCall(w, model, sketch, call, made) {
         if (kind === undefined) throw `constraint ${kid} the call made is of a kind the forge does not know`;
         const ids = Array.from(w.cadaclysm_blacksmith_sketch_constraint_refs(model.h, kid));
         if (ids.some((id) => !owner.has(id))) {
-            if (ids.every((id) => owner.has(id) || inner.has(id))) continue;
+            if (ids.every((id) => owner.has(id) || inner.has(id) || model.curveOf.has(id))) continue;
             throw `constraint ${kid} the call made binds an entity on no curve`;
         }
         const rec = { id: next++, kind, refs: ids.map((id) => ({ ...owner.get(id) })) };
