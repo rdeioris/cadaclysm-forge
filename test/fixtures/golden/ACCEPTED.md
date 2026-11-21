@@ -121,15 +121,12 @@ the 0.15 package over the same sequences, gives these very answers, so they are 
 
 ## Kernel follow-ups
 
-- **A trim's split direction is a literal.** `sheet.split_by_curve`'s `direction` is the
-  normal of the trim curve's frame (an origin plane's, else the sketch's or face plane's
-  frame node as the document would evaluate it after the command's own ops so far, written as
-  three numbers when the trim is written). Nothing in the document carries a frame's normal
-  to a vector field (a frame is no number list to an expression, and no kind reads a frame's
-  axis), so forge-commands.js writes the trim again whenever a command writes anything it
-  reads (a sketch tilted under its curve, the curve moved to another plane: "copies follow
-  their source"), in the same batch. A raw op on the sketch's frame, not through a forge
-  command, still leaves the direction stale. The 0.14 `forge.curve_tool` read the frame
-  when it evaluated. A kernel follow-up: `sheet.split_by_curve` defaulting `direction` to
-  the curve's own frame normal (or a `frame.normal` kind). No recorded step tilts a sketch
-  under a trim.
+- **A trim's split direction.** On a kernel whose `sheet.split_by_curve` takes `along`
+  (0.15.1 on), a trim's split names its curve's own frame (`along`: the origin plane's key,
+  the sketch, the face plane's frame node) and the kernel reads that frame's normal when the
+  split evaluates: nothing is copied, and even a raw op on the sketch's frame turns the cut.
+  On 0.15.0 the direction is still three numbers, the normal of the trim curve's frame as the
+  document would evaluate it after the command's own ops so far, and forge-commands.js writes
+  the trim again whenever a command writes anything it reads ("copies follow their source");
+  a raw op on the frame, not through a forge command, leaves those numbers stale.
+  No recorded step tilts a sketch under a trim.

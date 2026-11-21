@@ -9,12 +9,15 @@
 import assert from "node:assert";
 import { loadWasm } from "./package.mjs";
 import { Model, UNITS } from "../forge-model.js";
-import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves } from "../forge-commands.js";
+import { command, commandOps, readItem, Draft, sketchFillet, trimmedCurves, kernelTakes } from "../forge-commands.js";
 import { isBody } from "../forge-model.js";
 import { readFileSync } from "node:fs";
 
 const wasm = await loadWasm();
 const K = "cadaclysm_blacksmith_";
+// A kernel whose curve split takes `along` (0.15.1 on): a trim runs along its curve's frame,
+// no direction copied; before it, the direction as numbers, kept by the copies.
+const ALONG = kernelTakes(wasm, "sheet.split_by_curve", "along");
 // What the 0.14 layer answered for the same commands, recorded before it went.
 const answers = JSON.parse(readFileSync(new URL("./fixtures/layer-0.14-answers.json", import.meta.url), "utf8")).commands;
 
@@ -641,7 +644,8 @@ for (const [k, c] of [
     // by reference; the dropped indices are the page's (meta).
     const [tool, split, trim] = ["i26_tool", "i26_split", "i26"].map(t.node);
     assert.deepStrictEqual([tool.kind, tool.curve, split.kind, split.sheet, split.curve, trim.kind, trim.solid], ["curve.as_nurbs", "i25", "sheet.split_by_curve", "i24", "i26_tool", "solid.drop_faces", "i26_split"]);
-    assert.ok(close(split.direction, [0, -0.5, Math.sqrt(3) / 2], 1e-12), JSON.stringify(split.direction));
+    if (ALONG) assert.deepStrictEqual([split.along, split.direction], [t.node("i25").frame, undefined]);
+    else assert.ok(close(split.direction, [0, -0.5, Math.sqrt(3) / 2], 1e-12), JSON.stringify(split.direction));
     assert.deepStrictEqual([trim.meta.forge.drop, trim.faces.length], [[1], 1]);
     // A fillet's edges: indices in the meta, references in the node.
     assert.deepStrictEqual([t.node("i33").meta.forge.edges, t.node("i33").edges.length, t.node("i33").edges[0].curve], [[1, 2], 2, 0]);
@@ -831,6 +835,24 @@ for (const [k, c] of [
 // again by the command that writes that item, in the same batch. A sketch tilted under a
 // trimmed curve turns the trim's split direction with it (the trim reads the sketch's frame
 // through its curve); a split's curve moved to another plane takes the split's frame along.
+// On a kernel with `along` the trim copies nothing: it names its curve's frame, the tilt is
+// one write, and even a raw op on the frame turns the split (no copy goes stale).
+if (ALONG) {
+    const t = fresh();
+    t.run({ op: "add", id: 1, kind: "line", plane: "top", shape: { x0: 0, y0: 50, x1: 10, y1: 50 } });
+    t.run({ op: "sketch", id: 2, mode: "angle", hinge: 1, tilt: 30 });
+    t.run({ op: "add", id: 3, kind: "rect", plane: 2, shape: { x0: -20, y0: -20, x1: 20, y1: 20 } });
+    t.run({ op: "surface", id: 4, loops: [[3]], plane: 2 });
+    t.run({ op: "add", id: 5, kind: "circle", plane: 2, shape: { cx: 3, cy: -2, r: 8 } });
+    t.run({ op: "trim", id: 6, sheet: 4, tool: 5 });
+    assert.deepStrictEqual([t.node("i6_split").along, t.node("i6_split").direction], [t.node("i5").frame, undefined]);
+    const { op } = t.run({ op: "set", id: 2, tilt: 60 });
+    assert.deepStrictEqual(op.ops.map((o) => [o.op, o.id]), [["set", "i2_frame"]]);
+    assert.strictEqual(t.statusOf("i6").state, "ok");
+    t.raw({ op: "set", id: "i2_frame", fields: { tilt: 45 } });
+    assert.strictEqual(t.statusOf("i6").state, "ok");
+    t.free();
+}
 {
     const t = fresh();
     t.run({ op: "add", id: 1, kind: "line", plane: "top", shape: { x0: 0, y0: 50, x1: 10, y1: 50 } });
@@ -839,6 +861,7 @@ for (const [k, c] of [
     t.run({ op: "surface", id: 4, loops: [[3]], plane: 2 });
     t.run({ op: "add", id: 5, kind: "circle", plane: 2, shape: { cx: 3, cy: -2, r: 8 } });
     t.run({ op: "trim", id: 6, sheet: 4, tool: 5 });
+    if (!ALONG) {
     assert.ok(close(t.node("i6_split").direction, [0, -0.5, Math.sqrt(3) / 2], 1e-12), JSON.stringify(t.node("i6_split").direction));
     const { op } = t.run({ op: "set", id: 2, tilt: 60 });
     assert.deepStrictEqual(op.ops.map((o) => [o.op, o.id]), [["set", "i2_frame"], ["set", "i6_split"]]);
@@ -850,6 +873,7 @@ for (const [k, c] of [
     t.model.refresh(wasm[K + "document_undo"](t.doc));
     t.model.refresh(wasm[K + "document_undo"](t.doc));
     assert.ok(close(t.node("i6_split").direction, [0, -0.5, Math.sqrt(3) / 2], 1e-12));
+    }
 
     t.run({ op: "primitive", id: 7, kind: "box", plane: "top", dims: [10, 10, 10] });
     t.run({ op: "set", id: 7, place: { offset: [200, 0, 0], turn: [0, 0, 0] } });

@@ -168,15 +168,18 @@
 // not on the solid", the 0.14 layer's words); a source with no result ("`#1` has not been
 // built") makes the item a stand-in, written again by a later command that picks. A write
 // that leaves the pick alone keeps the references, even where the source has moved since.
-// A trim's split direction is written as numbers: an origin plane's normal, else the frame
-// node's -- as last evaluated, or, where this command's ops so far touch the frame or what it
-// reads, as those ops leave it (a probe of them, `Draft.frameValue`). ACCEPTED.md, kernel
-// follow-ups.
+// A trim's split runs along its curve's frame: `along`, the curve node's own `frame` (an
+// origin plane's key, a sketch, a face plane's frame node), read by the kernel when the split
+// evaluates, so it turns with the sketch whatever moves it. A kernel without `along` (before
+// 0.15.1; `kernelTakes`) gets the direction as numbers instead: an origin plane's normal, else
+// the frame node's -- as last evaluated, or, where this command's ops so far touch the frame or
+// what it reads, as those ops leave it (a probe of them, `Draft.frameValue`) -- kept by the
+// Copies below. ACCEPTED.md, kernel follow-ups.
 //
 // # Copies
 //
 // A verb's node may hold a copy of a value of another item that no node input carries: a
-// trim's split direction (its curve's frame normal), a split's frame (its curve cutter's
+// trim's split direction (its curve's frame normal, on a kernel without `along`), a split's frame (its curve cutter's
 // plane), a press's, refillet's, rechamfer's or remove's face (its face item's body and
 // reference). After every command (`rewriteCopies`), each such item that reads an item the
 // command wrote -- through `document_readers`, transitive (a trim reads its curve's sketch's
@@ -1096,6 +1099,17 @@ function faceOfPart(d, src, k, page) {
     return d.faceRef(src, at);
 }
 
+/// Whether the kernel's `kind` takes a parameter `name` (`document_kinds`, read once per kernel).
+const kindParams = new WeakMap();
+export function kernelTakes(kernel, kind, name) {
+    let byKind = kindParams.get(kernel);
+    if (!byKind) {
+        byKind = new Map(JSON.parse(kernel.cadaclysm_blacksmith_document_kinds()).map((k) => [k.name, new Set(k.params.map((p) => p.name))]));
+        kindParams.set(kernel, byKind);
+    }
+    return byKind.get(kind)?.has(name) ?? false;
+}
+
 /// A frame field's normal: an origin plane's, else its frame node's as the document last
 /// evaluated it (a sketch `i<s>`: its `i<s>_frame`). A literal: see the header's Picks.
 function frameNormal(d, base, frame) {
@@ -1162,7 +1176,9 @@ function verbSteps(d, n, c, pending, pre, numOr) {
             if (curveItem(it) && classOf(it.kind) === "curve") {
                 const tool = helperId(n, "tool");
                 pre.push({ id: tool, kind: "curve.as_nurbs", curve: headId(t) });
-                pre.push({ id: split, kind: "sheet.split_by_curve", sheet, curve: tool, direction: frameNormal(d, base, d.node(headId(t))?.frame) });
+                const frame = d.node(headId(t))?.frame;
+                const run = kernelTakes(d.kernel, "sheet.split_by_curve", "along") ? { along: frame ?? "xy" } : { direction: frameNormal(d, base, frame) };
+                pre.push({ id: split, kind: "sheet.split_by_curve", sheet, curve: tool, ...run });
             } else pre.push({ id: split, kind: "sheet.split_sheet", sheet, tool: part(1) });
             const faces = picked(d, n, c, get(c, "drop"), "faceRefs", ["parts", "drop"], (k) => d.nodeFaceRef(split, k));
             return [{ kind: "solid.drop_faces", solid: split, faces }];
