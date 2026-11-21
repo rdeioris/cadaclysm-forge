@@ -270,6 +270,8 @@
     <symbol id="i-coil" viewBox="0 0 24 24"><path d="M7 4 C21 5 21 8 12 8 C3 8 3 11 12 11 C21 11 21 14 12 14 C3 14 3 17 12 17 C21 17 21 20 7 20"/></symbol>
     <symbol id="i-pipe" viewBox="0 0 24 24"><path d="M3 20 H10 A9 9 0 0 0 19 11 V3 H13 V11 A3 3 0 0 1 10 14 H3 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-split" viewBox="0 0 24 24"><path d="M4 6 H11 L9 18 H4 Z M13 6 H20 V18 H11 Z" fill="currentColor" fill-opacity=".25"/><path d="M13 2 L10 22" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-pattern" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.5" fill="currentColor"/><path d="M12 12 V7.5 M12 12 L16.3 14.5" stroke-dasharray="1.5 1.5"/><circle cx="12" cy="4.5" r="2.5" fill="currentColor" fill-opacity=".25"/><circle cx="18.5" cy="16" r="2.5"/><circle cx="5.5" cy="16" r="2.5"/></symbol>
+    <symbol id="i-mirror" viewBox="0 0 24 24"><path d="M12 2 V22" stroke-dasharray="2 2"/><path d="M9.5 6 L3 18 H9.5 Z" fill="currentColor" fill-opacity=".25"/><path d="M14.5 6 L21 18 H14.5 Z"/></symbol>
 </svg>
 <header>
     <h1><img src="mark-dark.svg" alt="" width="30" height="30">cadaclysm <span>forge</span></h1>
@@ -334,6 +336,8 @@
                 <button id="merge" aria-pressed="false" disabled title="join the selected curves end to end into one polycurve -- click more, then OK"><svg class="g"><use href="#i-merge"/></svg>merge</button>
                 <button id="explode" aria-pressed="false" disabled title="break the selected polycurve into its pieces"><svg class="g"><use href="#i-explode"/></svg>explode</button>
                 <button id="sketch-trim" aria-pressed="false" disabled title="then click a piece of a selected curve, between where other curves cross it, to remove it"><svg class="g"><use href="#i-snip"/></svg>trim</button>
+                <button id="sketch-pattern" aria-pressed="false" disabled title="copy the selected curves round a centre or along a grid, held to the first: the count and the spacing in the dialog"><svg class="g"><use href="#i-pattern"/></svg>pattern</button>
+                <button id="sketch-mirror" aria-pressed="false" disabled title="mirror the selected curves across a line: click the curves, then the line last -- OK or Enter"><svg class="g"><use href="#i-mirror"/></svg>mirror</button>
                 <button id="surface" aria-pressed="false" disabled title="a surface over the selected closed curve, or the curves that close a loop together"><svg class="g"><use href="#i-surface"/></svg>surface</button>
             </div>
             <span>modify</span>
@@ -481,6 +485,21 @@
                     <button data-split-plane="front">Front</button>
                     <button data-split-plane="right">Right</button>
                 </div>
+                <div class="row buttons" data-for="sketch-pattern">
+                    <button id="pattern-circular" aria-pressed="true" title="copies round a centre">circular</button>
+                    <button id="pattern-rectangular" aria-pressed="false" title="copies along one or two directions">rectangular</button>
+                </div>
+                <label class="row" data-for="pattern-circular">count <input type="number" id="pattern-count" value="6" min="2" max="500" step="1"></label>
+                <label class="row" data-for="pattern-circular">angle° <input type="number" id="pattern-angle" value="360" min="1" max="360" step="1"></label>
+                <div class="row" data-for="pattern-circular">centre <span style="display:flex;gap:6px;align-items:center"><span id="pattern-centre">origin</span><button id="pattern-centre-origin" title="the sketch's origin">origin</button><button id="pattern-centre-pick" aria-pressed="false" title="then click a point of the sketch: an end, a corner, a vertex or a centre">pick</button></span></div>
+                <div class="row" data-for="pattern-rectangular">direction 1 <span style="display:flex;gap:6px;align-items:center"><button data-pattern-dir="1" data-axis="x" aria-pressed="true">x</button><button data-pattern-dir="1" data-axis="y" aria-pressed="false">y</button></span></div>
+                <label class="row" data-for="pattern-rectangular">count 1 <input type="number" id="pattern-count1" value="3" min="1" max="500" step="1"></label>
+                <label class="row" data-for="pattern-rectangular">spacing 1 <input type="number" id="pattern-spacing1" value="10" min="-500" max="500" step="1"></label>
+                <div class="row" data-for="pattern-rectangular">direction 2 <span style="display:flex;gap:6px;align-items:center"><button data-pattern-dir="2" data-axis="x" aria-pressed="false">x</button><button data-pattern-dir="2" data-axis="y" aria-pressed="true">y</button></span></div>
+                <label class="row" data-for="pattern-rectangular">count 2 <input type="number" id="pattern-count2" value="1" min="1" max="500" step="1"></label>
+                <label class="row" data-for="pattern-rectangular">spacing 2 <input type="number" id="pattern-spacing2" value="10" min="-500" max="500" step="1"></label>
+                <div class="row" data-for="sketch-pattern sketch-mirror"><span id="copies-label">copying</span><span id="copies-picks"></span></div>
+                <div class="row" data-for="sketch-mirror">across <span id="mirror-line"></span></div>
                 <label class="row" data-for="operation">operation <select id="operation"><option value="new">new body</option><option value="join">join</option><option value="cut">cut</option><option value="intersect">intersect</option></select></label>
                 <span id="sketch-tools" data-for="sketch" style="display: contents">
                     <label class="row">plane <select id="mode"><option value="offset">offset</option><option value="angle">at angle</option><option value="path">along path</option><option value="face">on face</option><option value="mid">midplane</option><option value="points">3 points</option></select></label>

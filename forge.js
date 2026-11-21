@@ -140,6 +140,21 @@ const deleteEl = document.getElementById("delete");
 const mergeEl = document.getElementById("merge");
 const explodeEl = document.getElementById("explode");
 const sketchTrimEl = document.getElementById("sketch-trim");
+const sketchPatternEl = document.getElementById("sketch-pattern");
+const sketchMirrorEl = document.getElementById("sketch-mirror");
+const patternCircularEl = document.getElementById("pattern-circular");
+const patternRectangularEl = document.getElementById("pattern-rectangular");
+const patternCountEl = document.getElementById("pattern-count");
+const patternAngleEl = document.getElementById("pattern-angle");
+const patternCentreEl = document.getElementById("pattern-centre");
+const patternCentreOriginEl = document.getElementById("pattern-centre-origin");
+const patternCentrePickEl = document.getElementById("pattern-centre-pick");
+const patternCount1El = document.getElementById("pattern-count1");
+const patternSpacing1El = document.getElementById("pattern-spacing1");
+const patternCount2El = document.getElementById("pattern-count2");
+const patternSpacing2El = document.getElementById("pattern-spacing2");
+const copiesPicksEl = document.getElementById("copies-picks");
+const mirrorLineEl = document.getElementById("mirror-line");
 
 function say(text, isError = false) {
     statusEl.textContent = text;
@@ -1293,7 +1308,7 @@ const LABELS = { held: "Body", held_profile: "Profile", image: "Image", line: "L
                  box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split" };
 const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽" };
 // A kind's icon (the sprite in forge.html), or its glyph as text where there is none.
-const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split"]);
+const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror"]);
 function iconOf(kind, glyph = GLYPHS[kind] ?? "•") {
     if (!ICONS.has(kind)) { const span = document.createElement("span"); span.textContent = glyph; return span; }
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -3127,6 +3142,8 @@ for (const button of document.querySelectorAll("#ribbon-sketch button[data-kind]
 duplicateEl.addEventListener("click", duplicateCurve);
 mergeEl.addEventListener("click", () => armSketchPick("merge"));
 explodeEl.addEventListener("click", () => armSketchPick("explode"));
+sketchPatternEl.addEventListener("click", () => pressCopies("pattern"));
+sketchMirrorEl.addEventListener("click", () => pressCopies("mirror"));
 surfaceEl.addEventListener("click", () => armSketchPick("surface"));
 closedEl.addEventListener("click", () => armSketchPick("close"));
 extrudeEl.addEventListener("click", () => armSketchPick("extrusion"));
@@ -3306,6 +3323,8 @@ function syncToolbar() {
     surfaceEl.setAttribute("aria-pressed", String(sketchPick?.kind === "surface"));
     mergeEl.setAttribute("aria-pressed", String(sketchPick?.kind === "merge"));
     explodeEl.setAttribute("aria-pressed", String(sketchPick?.kind === "explode"));
+    sketchPatternEl.setAttribute("aria-pressed", String(sketchPick?.kind === "pattern" || tool?.copies?.kind === "pattern"));
+    sketchMirrorEl.setAttribute("aria-pressed", String(sketchPick?.kind === "mirror" || tool?.copies?.kind === "mirror"));
     for (const b of constrainEls) b.setAttribute("aria-pressed", String(sketchPick?.kind === b.dataset.constrain));
     syncModifyButtons();
     extrudeEl.setAttribute("aria-pressed", String(sketchPick?.kind === "extrusion"));
@@ -3635,13 +3654,15 @@ function openTool(openedAt, ids, title, glyph) {
     // A body is looked at in Perspective: a sketch view filling the area gives way
     // (a surface stays in its sketch's view, being flat there; a revolve too, its axis
     // being placed in that view).
-    if (maximized !== null && maximized !== 1 && title !== "Surface" && title !== "Revolve" && !(title === "Sweep" && sweepMode)) { setMaximized(1); rebuild(); frameAll(); }
+    if (maximized !== null && maximized !== 1 && title !== "Surface" && title !== "Revolve" && title !== "Pattern" && title !== "Mirror" && !(title === "Sweep" && sweepMode)) { setMaximized(1); rebuild(); frameAll(); }
     renderDialog();
     return tool;
 }
 function commitTool() {
     if (!tool) return;
+    const copies = tool.copies;
     tool = null;
+    if (copies) { hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; syncToolbar(); }
     if (shellMode) newShell();
     else if (axisMode) newBody("revolution");
     if (sweepMode) setSweepMode(null);
@@ -3652,6 +3673,8 @@ function commitTool() {
 function cancelTool() {
     if (!tool) return;
     const { cancelAt, was } = tool;
+    const copies = tool.copies;
+    if (copies) { copies.cancelled = true; hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; }   // a re-run queued behind this is dropped
     tool = null;
     if (axisMode) setAxisMode(null);
     if (shellMode) setShellMode(null);
@@ -3708,13 +3731,15 @@ operationEl.addEventListener("change", () => act(async () => {
 // shell being picked, an extrude with an operation to choose.
 function renderDialog() {
     const c = current();
-    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick);
+    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies);
+    // A sketch pattern or mirror in progress: the dialog is the tool's, as while a pick is.
+    const owned = !!(sketchPick || sketchTrim || tool?.copies);
     if (!c && !tool && !modeOn) { dialogEl.hidden = true; return; }
     dialogEl.hidden = false;
     const kinds = new Set();
     // While a sketch tool picks its curves the dialog is the tool's alone: the picked
     // curves' own numbers and handles come back when it is done.
-    if (c && !sketchPick && !sketchTrim) kinds.add(c.kind);
+    if (c && !owned) kinds.add(c.kind);
     if (c && isBody(c) && !sketchPick) {
         kinds.add("body");
         const look = lookOf(c);
@@ -3731,9 +3756,15 @@ function renderDialog() {
     if (sketchPick?.kind === "fillet") kinds.add("fillet");
     if (sketchPick?.kind === "split") kinds.add("split-pick");
     if (tool?.rerun) kinds.add("operation");
+    if (tool?.copies) {
+        const s = tool.copies;
+        kinds.add(`sketch-${s.kind}`);
+        if (s.kind === "pattern") kinds.add(`pattern-${s.type}`);
+        renderCopies(s);
+    }
     // The separator before the item's own numbers, when a tool's rows come first.
-    if (propsEl.children.length && !sketchPick && !sketchTrim && [...dialogEl.querySelectorAll("[data-for]")].some((row) => row.dataset.for !== "props" && row.dataset.for.split(" ").some((k) => kinds.has(k)))) kinds.add("props");
-    propsEl.style.display = sketchPick || sketchTrim ? "none" : "contents";
+    if (propsEl.children.length && !owned && [...dialogEl.querySelectorAll("[data-for]")].some((row) => row.dataset.for !== "props" && row.dataset.for.split(" ").some((k) => kinds.has(k)))) kinds.add("props");
+    propsEl.style.display = owned ? "none" : "contents";
     for (const row of dialogEl.querySelectorAll("[data-for]")) {
         const wanted = row.dataset.for.split(" ").some((k) => kinds.has(k));
         if (row.id === "sketch-tools") row.style.display = wanted ? "contents" : "none";
@@ -3839,7 +3870,7 @@ function timelineChips() {
             else { chip = { at: i, ids: added.slice(), glyph: GLYPHS.sketch, kind: "sketch", plane }; if (plane !== undefined) bySketch.set(plane, chip); }
             break;
         }
-        case "round": case "explode": case "snip": {
+        case "round": case "explode": case "snip": case "sketch_pattern": case "sketch_mirror": {
             const ch = chipOf([...touched, ...removed]);
             if (ch) { ch.end = i; ch.ids.push(...added); }
             break;
@@ -5615,6 +5646,7 @@ function handleUnderPress(i, px) {
 // selection, a point dropped. Run from `endDrag` when the button comes up where it went
 // down.
 function pressAt(i, px, e) {
+    if (tool?.copies?.picking) { pickCopiesCentre(i, px); return; }
     if (sketchPick?.spots) { sketchPick.shift = e.shiftKey; pickSpotAt(i, px); return; }
     if (sketchPick?.kind === "split") {
         const hitCurve = pickCurve(i, px);
@@ -5879,6 +5911,10 @@ const SKETCH_PICKS = {
     trim: { title: "Trim", glyph: "trim", hint: (f) => isSheet(f) ? `click what trims ${f.name}: a solid or a curve · Esc cancels` : `click the sheet ${f?.name ?? "the tool"} trims · Esc cancels`, noun: "sheet or tool", many: false, bodies: true },
     thicken: { title: "Thicken", glyph: "thicken", hint: "click the sheet to thicken -- a surface, a curve's extrusion, a face or a trim · its thickness in the dialog (negative for the other side) · Esc cancels", noun: "sheet", many: false, bodies: true },
     loft: { title: "Loft", glyph: "loft", hint: "click the profiles to loft through, in order -- surfaces (a solid) or curves (a sheet), each on its own plane; two rule straight, more run smooth through them all · OK or Enter lofts · Esc cancels", noun: "profile", many: true, bodies: true },
+    // The sketch's pattern and mirror: the curves to copy, on one sketch -- for mirror the
+    // line to mirror them across clicked last (`newCopies`).
+    pattern: { title: "Pattern", glyph: "pattern", hint: "click the curves to pattern, on one sketch · OK or Enter · Esc cancels", noun: "curve", many: true },
+    mirror: { title: "Mirror", glyph: "mirror", hint: "click the curves to mirror, on one sketch, then the line to mirror them across · OK or Enter · Esc cancels", noun: "curve", many: true },
     split: { title: "Split", glyph: "split", hint: "click a face to split along its whole plane (a curved face: its body), a closed curve to split by it pushed straight through, or a body or a sketch in the list -- or Top, Front, Right below · Esc cancels", noun: "tool", many: false, faces: true },
 };
 // Whether `k` can join the pick `ids` of the tool `kind`.
@@ -5896,6 +5932,7 @@ function pickAccepts(kind, ids, k) {
         case "revolution": return (isCurve(k) && k.sketch.length > 0) || k.kind === "surface";
         case "sweep": return sweepProfile(k);
         case "pipe": return drawn(k);
+        case "pattern": case "mirror": return copyable(k) && picked.every((c) => c.plane === k.plane);
         case "join": return isSolid(k);
         case "thicken": return isSheet(k);
         case "cut": case "intersect": return (isSolid(k) || k.kind === "surface") && k.id !== sketchPick?.fixed;
@@ -5925,6 +5962,7 @@ function pickComplete(kind, ids, arming = false) {
     if (arming && kind === "surface") return loopsOfSelection().length > 0;
     if (arming && kind === "merge") return picked.filter((c) => pickAccepts(kind, [], c)).length >= 2;
     if (arming && kind === "join") return picked.filter(isSolid).length >= 2;
+    if (arming && (kind === "pattern" || kind === "mirror")) return copiesPicked(kind) !== null;
 
     return kind === "close" || kind === "explode" || kind === "extrusion" || kind === "revolution" || kind === "sweep" || kind === "pipe" ? picked.length >= 1 : kind === "fillet" ? filletable(picked) : false;
 }
@@ -5954,6 +5992,7 @@ function armSketchPick(kind, fixed = null) {
 function pickReady(kind) {
     const picked = selectedCurves().filter((c) => pickAccepts(kind, [], c));
     if (kind === "join" || kind === "loft" || kind === "merge") return picked.length >= 2;
+    if (kind === "pattern" || kind === "mirror") return copiesPicked(kind) !== null;
     if (kind === "surface") return loopsOfSelection().length > 0;
     return false;
 }
@@ -6068,6 +6107,13 @@ function runSketchPick() {
         case "revolution": if (!revolvable()) { say("revolve takes a curve or a surface -- click one in the views or the list", true); return; } sketchPick = null; armRevolve(); break;
         case "sweep": if (!selectedCurves().some(sweepProfile)) { say("sweep takes a curve or a surface -- click one in the views or the list", true); return; } sketchPick = null; newSweep(); break;
         case "pipe": if (picked.length !== 1) { say("pipe takes a curve to run along -- click one in the views or the list", true); return; } sketchPick = null; newPipe(picked[0]); break;
+        case "pattern": case "mirror": {
+            const got = copiesPicked(kind);
+            if (!got) { say(kind === "pattern" ? "pattern takes the curves to copy -- click them in the views or the list" : "mirror takes the curves to mirror, then the line to mirror them across -- click the line last", true); return; }
+            sketchPick = null;
+            newCopies(kind, got.ids, got.line);
+            break;
+        }
         case "split": say("split takes a tool: click a face, or a body or a sketch in the list, or Top, Front or Right in the dialog", true); return;
         case "thicken": if (picked.length !== 1) { say("thicken takes a sheet -- click one in the views or the list", true); return; } sketchPick = null; newThicken(picked[0]); break;
         case "join": if (picked.length < 2) { say("join takes two or more solids -- click them in the views or the list", true); return; } sketchPick = null; newJoin(); break;
@@ -6107,6 +6153,148 @@ function runSketchPick() {
     syncToolbar();
     renderDialog();
     schedule();
+}
+
+// ------------------------------------------------------------------ the sketch's pattern and mirror
+
+// Sketch › pattern and Sketch › mirror (`sketch_pattern`, `sketch_mirror`, forge-commands.js
+// `sketchCopies`). The button picks the curves (what is selected counts, as for the other
+// modify tools); then the tool is a session (`openTool`, `tool.copies`): the command is run
+// at once, and each change in the dialog -- the type, a count, the angle, a spacing, a
+// direction, the centre -- rolls the session back and runs it again, so the copies preview
+// as the numbers change. OK keeps the one command it stands on, Esc rolls it back. A mirror
+// has no numbers: its preview is what OK keeps. The ellipse and the polycurve are not copied
+// (the session refuses them), so neither is offered.
+const COPYABLE = new Set(["line", "arc", "circle", "rect", "polygon", "polyline", "nurbs"]);
+const copyable = (c) => isCurve(c) && COPYABLE.has(c.kind) && drawn(c) && sketchOf(c) !== null;
+// The pick of `kind` as a tool takes it -- `{ ids, line }`, the curves in the order clicked
+// and for mirror the line clicked last -- or null while it is not enough.
+function copiesPicked(kind) {
+    const ordered = selection.map(byId).filter((c) => c && pickAccepts(kind, [], c));
+    if (kind === "pattern") return ordered.length ? { ids: ordered.map((c) => c.id), line: null } : null;
+    const line = ordered[ordered.length - 1];
+    return ordered.length >= 2 && line.kind === "line" ? { ids: ordered.slice(0, -1).map((c) => c.id), line: line.id } : null;
+}
+// The button: the session's OK when pressed again over it, else the pick armed.
+function pressCopies(kind) {
+    if (tool?.copies?.kind === kind) { commitTool(); return; }
+    armSketchPick(kind);
+}
+// The session opened over the curves `ids` (and a mirror's `line`), its first run made.
+function newCopies(kind, ids, line = null) {
+    return act(async () => {
+        if (tool) commitTool();
+        const at = headNow();
+        const session = openTool(at, ids, kind === "pattern" ? "Pattern" : "Mirror", kind);
+        session.copies = { kind, sketch: byId(ids[0]).plane, ids: ids.slice(), line, type: patternRectangularEl.getAttribute("aria-pressed") === "true" ? "rectangular" : "circular", centre: null, picking: false, made: [] };
+        await runCopies(session);
+        renderDialog();
+    });
+}
+// The command the session's dialog stands for, its copies' ids taken from `nextId`: one per
+// copy of each curve and, circular, the two step lines.
+function copiesCommand(s) {
+    const n = s.ids.length;
+    const ids = (k) => Array.from({ length: Number.isInteger(k) && k > 0 ? k : 0 }, (_, i) => nextId + i);
+    if (s.kind === "mirror") return { op: "sketch_mirror", sketch: s.sketch, ids: s.ids.slice(), line: s.line, copies: ids(n) };
+    if (s.type === "circular") {
+        const count = Number(patternCountEl.value), angle = Number(patternAngleEl.value);
+        return { op: "sketch_pattern", sketch: s.sketch, ids: s.ids.slice(), type: "circular", centre: s.centre === null ? null : { curve: s.centre.curve, at: s.centre.at }, count, angle, copies: ids((count - 1) * n + 2) };
+    }
+    const dir = (k) => document.querySelector(`[data-pattern-dir="${k}"][aria-pressed="true"]`)?.dataset.axis === "y" ? [0, 1] : [1, 0];
+    const count1 = Number(patternCount1El.value), count2 = Number(patternCount2El.value);
+    return { op: "sketch_pattern", sketch: s.sketch, ids: s.ids.slice(), type: "rectangular", d1: dir(1), count1, spacing1: Number(patternSpacing1El.value),
+             d2: dir(2), count2, spacing2: Number(patternSpacing2El.value), copies: ids(count1 * count2 - 1 > 0 ? (count1 * count2 - 1) * n : 0) };
+}
+// One run of the session's command: what it made selected beside the sources. A refusal (a
+// count of 1, an angle of 0) says why and leaves the sources as they were.
+async function runCopies(session) {
+    const s = session.copies;
+    const cmd = copiesCommand(s);
+    const ok = await run(cmd);
+    s.made = ok ? cmd.copies.filter((id) => byId(id)) : [];
+    s.doneAt = head;
+    session.ids = [...s.made, ...(s.line !== null ? [s.line] : []), ...s.ids];   // a source the active one
+    keepView = true;
+    try { setSelection(session.ids); } finally { keepView = false; }
+    if (tool !== session) return;   // closed by OK while this ran: nothing left to say
+    hintEl.textContent = s.picking ? "click a point of the sketch for the centre: an end, a corner, a vertex or a centre · Esc cancels"
+        : `${s.kind === "pattern" ? "the copies follow the numbers" : "the copies across the line"} · OK or Enter keeps ${s.made.length ? "them" : "nothing"} · Esc cancels`;
+    if (!ok) hintEl.textContent = `${statusEl.textContent} · ${hintEl.textContent}`;
+}
+// The session run again from where it opened: a field of the dialog changed. Changes made
+// while one is out fold into it. OK pressed before it ran (Enter in the field just typed)
+// keeps what the numbers say now: it still runs, the session closed, while the history
+// stands where the session left it; Esc before it ran drops it.
+let copiesQueued = false;
+function rerunCopies() {
+    const session = tool;
+    if (!session?.copies || copiesQueued) return;
+    copiesQueued = true;
+    return act(async () => {
+        copiesQueued = false;
+        const open = tool === session;
+        if (session.copies.cancelled || (!open && !(tool === null && head === session.copies.doneAt))) return;
+        tool = null;                       // the rollback's replay must not commit the session
+        await rollbackTo(session.openedAt);
+        if (open) tool = session;
+        await runCopies(session);
+        renderDialog();
+        syncToolbar();
+    });
+}
+// The dialog's readouts.
+function renderCopies(s) {
+    const names = s.ids.map((id) => byId(id)?.name ?? `#${id}`);
+    const copies = s.made.filter((id) => byId(id)?.construction !== true).length;
+    copiesPicksEl.textContent = `${names.join(", ")}${copies ? ` · ${copies} cop${copies === 1 ? "y" : "ies"}` : ""}`;
+    mirrorLineEl.textContent = s.line !== null ? byId(s.line)?.name ?? "" : "";
+    patternCircularEl.setAttribute("aria-pressed", String(s.type === "circular"));
+    patternRectangularEl.setAttribute("aria-pressed", String(s.type === "rectangular"));
+    patternCentreEl.textContent = s.centre === null ? "origin" : s.centre.label;
+    patternCentrePickEl.setAttribute("aria-pressed", String(s.picking));
+}
+for (const [el, type] of [[patternCircularEl, "circular"], [patternRectangularEl, "rectangular"]]) {
+    el.addEventListener("click", () => {
+        if (!tool?.copies || tool.copies.type === type) return;
+        tool.copies.type = type;
+        renderDialog();
+        rerunCopies();
+    });
+}
+for (const el of [patternCountEl, patternAngleEl, patternCount1El, patternSpacing1El, patternCount2El, patternSpacing2El]) el.addEventListener("input", () => rerunCopies());
+for (const b of document.querySelectorAll("[data-pattern-dir]")) {
+    b.addEventListener("click", () => {
+        for (const o of document.querySelectorAll(`[data-pattern-dir="${b.dataset.patternDir}"]`)) o.setAttribute("aria-pressed", String(o === b));
+        rerunCopies();
+    });
+}
+patternCentreOriginEl.addEventListener("click", () => {
+    const s = tool?.copies;
+    if (!s) return;
+    s.picking = false;
+    if (s.centre === null) { renderDialog(); return; }
+    s.centre = null;
+    rerunCopies();
+});
+patternCentrePickEl.addEventListener("click", () => {
+    const s = tool?.copies;
+    if (!s) return;
+    s.picking = !s.picking;
+    overlay.style.cursor = s.picking ? "crosshair" : "default";
+    hintEl.textContent = s.picking ? "click a point of the sketch for the centre: an end, a corner, a vertex or a centre · Esc cancels" : hintEl.textContent;
+    renderDialog();
+});
+// A click while the centre is picked: the point of the sketch under it, one that stood
+// before the session (a copy goes at every re-run).
+function pickCopiesCentre(i, px) {
+    const s = tool.copies;
+    const hit = spotAt(i, px, ["point"], s.sketch);
+    if (!hit || hit.type !== "point" || s.made.includes(hit.c.id)) { say("pattern: click a point of the sketch for the centre -- an end, a corner, a vertex or a centre", true); return; }
+    s.picking = false;
+    overlay.style.cursor = "default";
+    s.centre = { curve: hit.c.id, at: hit.at, label: spotLabel(hit.c, hit.at) };
+    rerunCopies();
 }
 
 // The constraint tools, the ribbon's "constrain" group. A tool picks spots of ONE sketch's
@@ -6712,6 +6900,8 @@ function glyphPlaces(k) {
         return refs.map(spotAnchor);
     }
     case "symmetric": return refs.slice(0, 2).map(spotAnchor);
+    // A pattern's hold: one mark, by the copy it holds (the source is the first ref).
+    case "rotated": case "translated": return [spotAnchor(refs[1])];
     default: return refs.map(spotAnchor);
     }
 }
@@ -6738,6 +6928,8 @@ function drawGlyph(kind, x, y, colour) {
     case "fix": dot(0, -2.5, 2.5); line(0, -1, 0, 5.5); break;
     case "point_on_line": case "point_on_circle": ctx.lineWidth = 1.2; ring(4); dot(0, -4, 1.8); break;
     case "collinear": ctx.lineWidth = 1; line(-5.5, 0, 5.5, 0); dot(-3, 0, 1.4); dot(3, 0, 1.4); break;
+    case "rotated": ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(x, y, 4.5, -Math.PI * 0.9, Math.PI * 0.4); ctx.stroke(); line(4.5 * Math.cos(Math.PI * 0.4), 4.5 * Math.sin(Math.PI * 0.4), 4.5 * Math.cos(Math.PI * 0.4) + 3, 4.5 * Math.sin(Math.PI * 0.4) - 1); break;
+    case "translated": line(-5, 0, 5, 0); line(5, 0, 2, -3); line(5, 0, 2, 3); break;
     default: dot(0, 0, 1.5); break;
     }
 }
@@ -8143,6 +8335,8 @@ const CURVE = linear(OUTLINE_COLOUR), CLOSED_CURVE = linear(HANDLE_COLOUR), SELE
 // A curve of a constrained sketch still free to move: a grey blue, apart from the
 // selection's accent and the hover's light blue.
 const FREE_CURVE = linear("#8AA4C8");
+// A construction curve (a pattern's step lines): an amber, apart from what is drawn.
+const CONSTRUCTION_CURVE = linear("#C8964E");
 const ISO_CURVE = linear("#5F5E5A");
 const TRIM_PIECE = linear("#ff5a5a");   // the piece a sketch trim would remove, red     // a face's isoparametric lines: a grey lighter than the edges' black
 
@@ -8271,7 +8465,7 @@ function show() {
         // its point under the pointer would be the nearest thing a snap could land on.
         if (c === inHand()) continue;
         const free = diagnoses.get(c.plane)?.freeCurves.has(c.id);
-        const colour = encoded((c === hoverCurve || lit.has(c.id)) && !isSelected(c) ? HOVER_CURVE : isSelected(c) ? SELECTED_CURVE : free ? FREE_CURVE : isClosed(c) ? CLOSED_CURVE : CURVE);
+        const colour = encoded((c === hoverCurve || lit.has(c.id)) && !isSelected(c) ? HOVER_CURVE : isSelected(c) ? SELECTED_CURVE : c.construction === true ? CONSTRUCTION_CURVE : free ? FREE_CURVE : isClosed(c) ? CLOSED_CURVE : CURVE);
         out.push({ key: `curve:${c.id}`, deps: [c.rev], kind: "curves", colour, ref: c });
     }
     const piece = sketchTrim?.hover && sketchTrim.pieces.get(sketchTrim.hover.id)?.[sketchTrim.hover.k];
@@ -8334,6 +8528,8 @@ function syncModifyButtons() {
     mergeEl.disabled = !modifies("merge");
     surfaceEl.disabled = !modifies("surface");
     sketchFilletEl.disabled = !modifies("fillet");
+    sketchPatternEl.disabled = !modifies("pattern") && tool?.copies?.kind !== "pattern";
+    sketchMirrorEl.disabled = !modifies("mirror") && tool?.copies?.kind !== "mirror";
 }
 
 // ------------------------------------------------------------------ the file

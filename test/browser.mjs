@@ -16,6 +16,7 @@
 //     node test/browser.mjs --chrome <path to chrome or msedge>   (or the CHROME variable)
 //     node test/browser.mjs --headed                # watch it
 //     node test/browser.mjs --no-snap               # the examples alone, no snap check
+//     node test/browser.mjs --no-sketch-tools       # no sketch pattern / mirror check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
 import { spawn } from "node:child_process";
@@ -392,6 +393,109 @@ async function checkSnap(cdp, base, { webgl2, out }) {
     }
 }
 
+// ---- the sketch tab's pattern and mirror, through the page's own buttons ----------------
+// On a sketch of its own: a circle selected and Pattern pressed previews 6 copies about the
+// origin at once; the dialog's count re-runs it (4, then 6); Esc rolls it all back (1 circle,
+// the history as it was). Pressed again, OK keeps 6 circles as one commit. Mirror over the
+// circle and a vertical line, the line clicked last: one circle more, across the line, one
+// commit. `--out`: a picture of the pattern's dialog over the six-circle preview.
+async function checkSketchCopies(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    const settled = () => evaluate("window.__forgeTest.settled()");
+    const key = async (k, code, vk) => {
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk });
+    };
+    const press = async (id) => { await evaluate(`document.getElementById(${JSON.stringify(id)}).click()`); await sleep(100); await settled(); };
+    const field = async (id, v) => {
+        await evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); el.value = ${JSON.stringify(String(v))}; el.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+        await sleep(100);
+        await settled();
+    };
+    try {
+        const S = await evaluate("window.__forgeTest.nextId()"), C = S + 1, L = S + 2;
+        await evaluate(`window.__forgeTest.run({ op: "sketch", id: ${S}, mode: "offset", base: "top", offset: 30 })`);
+        await evaluate(`window.__forgeTest.run({ op: "add", id: ${C}, kind: "circle", plane: ${S}, shape: { cx: 10, cy: 0, r: 3 } })`);
+        await settled();
+        const circles = async () => (await evaluate("window.__forgeTest.items()")).filter((c) => c.kind === "circle" && c.plane === S);
+        const head0 = await evaluate("window.__forgeTest.headCount()");
+        // Top filling the area: where the sketch is seen.
+        await evaluate(`document.querySelector('#viewbar [data-view="0"]').click()`);
+        await frame();
+
+        // Pattern, then Esc: the preview, re-run by the count, rolled back whole.
+        await evaluate(`window.__forgeTest.select([${C}])`);
+        if (await evaluate(`document.getElementById("sketch-pattern").disabled`)) throw new Error("pattern is off with a circle selected");
+        await press("sketch-pattern");
+        if ((await circles()).length !== 6) throw new Error(`pattern previews ${(await circles()).length} circles, not 6`);
+        await field("pattern-count", 4);
+        if ((await circles()).length !== 4) throw new Error(`count 4 previews ${(await circles()).length} circles`);
+        await field("pattern-count", 6);
+        const six = await circles();
+        if (six.length !== 6) throw new Error(`count 6 previews ${six.length} circles`);
+        const radii = six.map((c) => Math.hypot(c.shape.cx, c.shape.cy));
+        if (radii.some((r) => Math.abs(r - 10) > 1e-6)) throw new Error(`the copies are not 10 from the origin: ${radii.join(", ")}`);
+        if (await evaluate(`document.getElementById("dialog").hidden`)) throw new Error("no dialog while the pattern previews");
+        await key("Escape", "Escape", 27);
+        await sleep(100); await settled();
+        if ((await circles()).length !== 1) throw new Error(`Esc leaves ${(await circles()).length} circles, not 1`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0) throw new Error("Esc left a commit behind");
+
+        // Pattern, then OK: one commit, six circles; the step lines construction lines.
+        await evaluate(`window.__forgeTest.select([${C}])`);
+        await press("sketch-pattern");
+        if ((await circles()).length !== 6) throw new Error(`pattern previews ${(await circles()).length} circles, not 6`);
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            await key("f", "KeyF", 70);
+            await frame(); await sleep(500); await frame();
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `sketch-pattern${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        }
+        await press("dialog-ok");
+        if ((await circles()).length !== 6) throw new Error(`OK keeps ${(await circles()).length} circles, not 6`);
+        const head1 = await evaluate("window.__forgeTest.headCount()");
+        if (head1 !== head0 + 1) throw new Error(`the pattern is ${head1 - head0} commits, not 1`);
+        const steps = (await evaluate("window.__forgeTest.items()")).filter((c) => c.kind === "line" && c.plane === S && c.construction === true);
+        if (steps.length !== 2) throw new Error(`${steps.length} construction step lines, not 2`);
+        const log = await evaluate("window.__forgeTest.history()");
+        if (!JSON.stringify(log[0]).includes("sketch_pattern")) throw new Error(`the last commit is not the pattern: ${JSON.stringify(log[0]).slice(0, 200)}`);
+
+        // Mirror: the circle and a vertical line, the line last; OK keeps one more circle.
+        await evaluate(`window.__forgeTest.run({ op: "add", id: ${L}, kind: "line", plane: ${S}, shape: { x0: -20, y0: -20, x1: -20, y1: 20 } })`);
+        await settled();
+        const head2 = await evaluate("window.__forgeTest.headCount()");
+        await evaluate(`window.__forgeTest.select([${C}, ${L}])`);
+        await press("sketch-mirror");
+        const mirrored = (await circles()).filter((c) => Math.abs(c.shape.cx + 50) < 1e-6 && Math.abs(c.shape.cy) < 1e-6);
+        if ((await circles()).length !== 7 || mirrored.length !== 1) throw new Error(`mirror gives ${(await circles()).length} circles, ${mirrored.length} at (-50, 0)`);
+        await press("dialog-ok");
+        if ((await circles()).length !== 7) throw new Error(`OK keeps ${(await circles()).length} circles after the mirror, not 7`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head2 + 1) throw new Error("the mirror is not one commit");
+        // Mirror and Esc: as it was.
+        await evaluate(`window.__forgeTest.select([${C}, ${L}])`);
+        await press("sketch-mirror");
+        if ((await circles()).length !== 8) throw new Error(`a second mirror previews ${(await circles()).length} circles, not 8`);
+        await key("Escape", "Escape", 27);
+        await sleep(100); await settled();
+        if ((await circles()).length !== 7) throw new Error(`Esc after a mirror leaves ${(await circles()).length} circles, not 7`);
+
+        await sleep(300);
+        if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
+        console.log("ok - sketch tools: pattern previews 6 / 4 / 6, Esc rolls back to 1, OK keeps 6 in one commit; mirror keeps one across the line, Esc rolls back");
+    } catch (e) {
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+            if (shot) writeFileSync(join(out, `sketch-tools${webgl2 ? "-webgl2" : ""}-failed.png`), Buffer.from(shot.data, "base64"));
+        }
+        throw e;
+    } finally {
+        await close();
+    }
+}
+
 async function main() {
     if (!existsSync(join(root, "pkg", "cadaclysm_bg.wasm"))) throw new Error("no pkg/: run `npm run setup` first");
     const all = readdirSync(join(root, "examples")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
@@ -425,6 +529,14 @@ async function main() {
             } catch (e) {
                 failed++;
                 console.error(`not ok - snap: ${e.message}`);
+            }
+        }
+        if (!failed && !flag("--no-sketch-tools")) {
+            try {
+                await checkSketchCopies(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - sketch tools: ${e.message}`);
             }
         }
     } finally {
