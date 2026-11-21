@@ -20,6 +20,7 @@
 //     node test/browser.mjs --no-sketch-tools       # no sketch pattern / mirror check
 //     node test/browser.mjs --no-sketch-copy        # no sketch copy to plane / duplicate check
 //     node test/browser.mjs --no-solid-tools        # no solid pattern / mirror check
+//     node test/browser.mjs --no-sketch-move        # no Sketch › move check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
 import { spawn } from "node:child_process";
@@ -750,6 +751,97 @@ async function checkSolidCopies(cdp, base, { webgl2, out }) {
     }
 }
 
+// ---- Sketch › move, through the page's key ------------------------------------------------
+// A circle on a sketch selected: no manipulator; M opens Sketch › move with one; X 10 and OK:
+// the circle's centre 10 over, one commit, and no chip of its own (its sketch's chip covers
+// it). Esc in a fresh session changes nothing. On a constrained sketch -- a line coincident
+// with the end of a fixed line -- a move keeps the coincidence or says why not and keeps
+// nothing, as a drag of the block does.
+async function checkSketchMove(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    const settled = () => evaluate("window.__forgeTest.settled()");
+    const T = (expr) => evaluate(`window.__forgeTest.${expr}`);
+    const key = async (k, code, vk) => {
+        await evaluate("document.activeElement?.blur?.()");
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk });
+        await sleep(100); await settled();
+    };
+    const press = async (id) => { await evaluate(`document.getElementById(${JSON.stringify(id)}).click()`); await sleep(100); await settled(); };
+    const field = async (id, v) => {
+        await evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); el.value = ${JSON.stringify(String(v))}; el.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+        await sleep(100); await settled();
+    };
+    const item = async (id) => (await T("items()")).find((c) => c.id === id);
+    const chips = () => evaluate(`document.querySelectorAll('#timeline-chips .chip').length`);
+    const near = (a, b, tol = 1e-9) => Math.abs(a - b) <= tol;
+    try {
+        await settled();
+        const S = await T("nextId()");
+        for (const c of [{ op: "sketch", id: S, mode: "offset", base: "top", offset: 0 },
+            { op: "add", id: S + 1, kind: "circle", plane: S, shape: { cx: 0, cy: 0, r: 5 } }]) await T(`run(${JSON.stringify(c)})`);
+        await settled();
+        await T(`select([${S + 1}])`);
+        if (await T("gizmo()")) throw new Error("a selected circle shows a manipulator outside Sketch › move");
+        if (await evaluate(`document.getElementById("sketch-move").disabled`)) throw new Error("Sketch › move is off with a circle selected");
+        const head0 = await T("headCount()"), chips0 = await chips();
+        await key("m", "KeyM", 77);
+        let st = await T("sketchMoveState()");
+        // The pivot: the middle of the circle's handles' box -- its centre and its rim handle (5, 0).
+        if (!st || st.ids.length !== 1 || st.pivot2[0] !== 2.5 || st.pivot2[1] !== 0) throw new Error(`M opens ${JSON.stringify(st)}, not Sketch › move on the circle about (2.5, 0)`);
+        if (!(await T("gizmo()"))) throw new Error("Sketch › move shows no manipulator");
+        await field("sketch-move-x", 10);
+        await press("dialog-ok");
+        if (await T("sketchMoveState()")) throw new Error("OK leaves Sketch › move open");
+        const circle = await item(S + 1);
+        if (!near(circle.shape.cx, 10) || !near(circle.shape.cy, 0) || !near(circle.shape.r, 5)) throw new Error(`the circle moved is ${JSON.stringify(circle.shape)}, not centred at (10, 0)`);
+        if (await T("headCount()") !== head0 + 1) throw new Error(`Sketch › move is ${await T("headCount()") - head0} commits, not one`);
+        if (await chips() !== chips0) throw new Error(`Sketch › move adds ${await chips() - chips0} chips: its sketch's chip covers it`);
+        const log = await T("history()");
+        if (!/^forge: sketch_move/.test(log[0].message)) throw new Error(`the commit is ${log[0].message}, not a sketch_move`);
+
+        // Esc: nothing changed.
+        await T(`select([${S + 1}])`);
+        await key("m", "KeyM", 77);
+        await field("sketch-move-y", 7);
+        if (!near((await item(S + 1)).shape.cy, 7)) throw new Error("Y 7 does not preview the circle 7 up");
+        await key("Escape", "Escape", 27);
+        if (await T("headCount()") !== head0 + 1 || !near((await item(S + 1)).shape.cy, 0)) throw new Error("Esc did not roll Sketch › move back");
+
+        // A line held at its start to the end of a fixed line, moved 10 along x.
+        const L1 = S + 2, L2 = S + 3;
+        for (const c of [{ op: "add", id: L1, kind: "line", plane: S, shape: { x0: 0, y0: 20, x1: 10, y1: 20 } },
+            { op: "add", id: L2, kind: "line", plane: S, shape: { x0: 10, y0: 20, x1: 20, y1: 30 } },
+            { op: "edit", items: [{ id: S, constraints: [{ id: 1, kind: "fix", refs: [{ curve: L1, at: "start" }] }, { id: 2, kind: "fix", refs: [{ curve: L1, at: "end" }] },
+                { id: 3, kind: "coincident", refs: [{ curve: L1, at: "end" }, { curve: L2, at: "start" }] }] }] }]) await T(`run(${JSON.stringify(c)})`);
+        await settled();
+        const head1 = await T("headCount()");
+        await T(`select([${L2}])`);
+        await key("m", "KeyM", 77);
+        await field("sketch-move-x", 10);
+        await press("dialog-ok");
+        const l1 = (await item(L1)).shape, l2 = (await item(L2)).shape;
+        if (!near(l1.x0, 0) || !near(l1.y0, 20) || !near(l1.x1, 10) || !near(l1.y1, 20)) throw new Error(`the fixed line moved: ${JSON.stringify(l1)}`);
+        const status = await T("status()");
+        const kept = near(l2.x0, 10, 1e-6) && near(l2.y0, 20, 1e-6);
+        const said = status.error && (await T("headCount()")) === head1;
+        if (!kept && !said) throw new Error(`the held line is ${JSON.stringify(l2)}, off the fixed line's end, and nothing was said (${status.text})`);
+        const how = kept ? `keeps its start on the fixed line's end (its end at (${+l2.x1.toFixed(3)}, ${+l2.y1.toFixed(3)}))` : `is refused: ${status.text}`;
+        await sleep(300);
+        if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
+        console.log(`ok - sketch move: no manipulator on a selection; M, X 10, OK moves the circle to (10, 0) in one sketch_move commit, no chip of its own; Esc restores; a line held to a fixed line ${how}`);
+    } catch (e) {
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+            if (shot) writeFileSync(join(out, `sketch-move${webgl2 ? "-webgl2" : ""}-failed.png`), Buffer.from(shot.data, "base64"));
+        }
+        throw e;
+    } finally {
+        await close();
+    }
+}
+
 async function main() {
     if (!existsSync(join(root, "pkg", "cadaclysm_bg.wasm"))) throw new Error("no pkg/: run `npm run setup` first");
     const all = readdirSync(join(root, "examples")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
@@ -807,6 +899,14 @@ async function main() {
             } catch (e) {
                 failed++;
                 console.error(`not ok - solid tools: ${e.message}`);
+            }
+        }
+        if (!failed && !flag("--no-sketch-move")) {
+            try {
+                await checkSketchMove(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - sketch move: ${e.message}`);
             }
         }
     } finally {

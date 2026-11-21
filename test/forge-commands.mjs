@@ -1798,6 +1798,11 @@ const centreOf = (b) => [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2
     assert.deepStrictEqual([t.item(2).shape, t.item(3).shape], [{ cx: 10, cy: 0, r: 3 }, { x0: 10, y0: 0, x1: 15, y1: 0 }]);
     assert.strictEqual(JSON.parse(wasm[K + "document_log"](t.doc, "main"))[0].message, "forge: sketch_move");
     refused(t, { op: "sketch_move", sketch: 2, items: [] }, /^sketch_move: #2 is not a sketch/);
+    // curves on an origin plane (no sketch): the plane's name
+    t.run({ op: "add", id: 4, kind: "rect", plane: "front", shape: { x0: 0, y0: 0, x1: 4, y1: 2 } });
+    t.run({ op: "sketch_move", sketch: "front", items: [{ id: 4, kind: "polyline", shape: { points: [[0, 0], [0, 4], [-2, 4], [-2, 0]], closed: true } }] });
+    assert.deepStrictEqual([t.item(4).kind, t.item(4).plane, t.item(4).shape.points], ["polyline", "front", [[0, 0], [0, 4], [-2, 4], [-2, 0]]]);
+    refused(t, { op: "sketch_move", sketch: "side", items: [] }, /^sketch_move: #\? is not a sketch/);
     t.free();
 }
 

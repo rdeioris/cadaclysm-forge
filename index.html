@@ -339,6 +339,7 @@
                 <button id="merge" aria-pressed="false" disabled title="join the selected curves end to end into one polycurve -- click more, then OK"><svg class="g"><use href="#i-merge"/></svg>merge</button>
                 <button id="explode" aria-pressed="false" disabled title="break the selected polycurve into its pieces"><svg class="g"><use href="#i-explode"/></svg>explode</button>
                 <button id="sketch-trim" aria-pressed="false" disabled title="then click a piece of a selected curve, between where other curves cross it, to remove it"><svg class="g"><use href="#i-snip"/></svg>trim</button>
+                <button id="sketch-move" aria-pressed="false" disabled title="move or turn the selected curves as a block in their plane, or copy them: drag the manipulator or type the numbers, OK keeps it as one step (M)"><svg class="g"><use href="#i-move"/></svg>move</button>
                 <button id="sketch-pattern" aria-pressed="false" disabled title="copy the selected curves round a centre or along a grid, held to the first: the count and the spacing in the dialog"><svg class="g"><use href="#i-pattern"/></svg>pattern</button>
                 <button id="sketch-mirror" aria-pressed="false" disabled title="mirror the selected curves across a line: click the curves, then the line last -- OK or Enter"><svg class="g"><use href="#i-mirror"/></svg>mirror</button>
                 <button id="surface" aria-pressed="false" disabled title="a surface over the selected closed curve, or the curves that close a loop together"><svg class="g"><use href="#i-surface"/></svg>surface</button>
@@ -505,6 +506,12 @@
                 <div class="row" data-for="pattern-rectangular">direction 2 <span style="display:flex;gap:6px;align-items:center"><button data-pattern-dir="2" data-axis="x" aria-pressed="false">x</button><button data-pattern-dir="2" data-axis="y" aria-pressed="true">y</button></span></div>
                 <label class="row" data-for="pattern-rectangular">count 2 <input type="number" id="pattern-count2" value="1" min="1" max="500" step="1"></label>
                 <label class="row" data-for="pattern-rectangular">spacing 2 <input type="number" id="pattern-spacing2" value="10" min="-500" max="500" step="1"></label>
+                <label class="row" data-for="sketch-move">x <input type="number" id="sketch-move-x" value="0" min="-5000" max="5000" step="1"></label>
+                <label class="row" data-for="sketch-move">y <input type="number" id="sketch-move-y" value="0" min="-5000" max="5000" step="1"></label>
+                <label class="row" data-for="sketch-move">angle° <input type="number" id="sketch-move-angle" value="0" min="-360" max="360" step="15"></label>
+                <div class="row" data-for="sketch-move">pivot <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span id="sketch-move-pivot"></span><button id="sketch-move-pivot-set" aria-pressed="false" title="then click where the pivot goes: it snaps (Alt: no snap) -- or Ctrl-click the manipulator's centre">set</button><button id="sketch-move-pivot-reset" title="the middle of the curves' box">reset</button></span></div>
+                <label class="row" data-for="sketch-move">copy <input type="checkbox" id="sketch-move-copy" title="move copies of the curves, the curves left where they are"></label>
+                <div class="row" data-for="sketch-move">moving <span id="sketch-move-what"></span></div>
                 <div class="row" data-for="sketch-pattern sketch-mirror"><span id="copies-label">copying</span><span id="copies-picks"></span></div>
                 <div class="row" data-for="sketch-mirror">across <span id="mirror-line"></span></div>
                 <div class="row buttons" data-for="solid-pattern solid-mirror">

@@ -3733,13 +3733,13 @@ function openTool(openedAt, ids, title, glyph) {
     // A body is looked at in Perspective: a sketch view filling the area gives way
     // (a surface stays in its sketch's view, being flat there; a revolve too, its axis
     // being placed in that view).
-    if (maximized !== null && maximized !== 1 && title !== "Surface" && title !== "Revolve" && title !== "Pattern" && title !== "Mirror" && !(title === "Sweep" && sweepMode)) { setMaximized(1); rebuild(); frameAll(); }
+    if (maximized !== null && maximized !== 1 && title !== "Surface" && title !== "Revolve" && title !== "Pattern" && title !== "Mirror" && glyph !== "sketch-move" && !(title === "Sweep" && sweepMode)) { setMaximized(1); rebuild(); frameAll(); }
     renderDialog();
     return tool;
 }
 function commitTool() {
     if (!tool) return;
-    const copies = tool.copies ?? tool.solid ?? tool.copy ?? tool.move;
+    const copies = tool.copies ?? tool.solid ?? tool.copy ?? tool.move ?? tool.sketchMove;
     if (tool.copy && picking) setPicking(null);
     tool = null;
     if (copies) { hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; syncToolbar(); }
@@ -3753,7 +3753,7 @@ function commitTool() {
 function cancelTool() {
     if (!tool) return;
     const { cancelAt, was } = tool;
-    const copies = tool.copies ?? tool.solid ?? tool.copy ?? tool.move;
+    const copies = tool.copies ?? tool.solid ?? tool.copy ?? tool.move ?? tool.sketchMove;
     if (tool.copy && picking) setPicking(null);
     if (copies) { copies.cancelled = true; hintEl.textContent = hintFor(current()?.kind); overlay.style.cursor = "default"; }   // a re-run queued behind this is dropped
     tool = null;
@@ -3812,10 +3812,10 @@ operationEl.addEventListener("change", () => act(async () => {
 // shell being picked, an extrude with an operation to choose.
 function renderDialog() {
     const c = current();
-    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid || tool?.copy || tool?.move);
+    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid || tool?.copy || tool?.move || tool?.sketchMove);
     // A pattern or a mirror in progress (a sketch's, the bodies'): the dialog is the tool's,
     // as while a pick is.
-    const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid || tool?.move);
+    const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid || tool?.move || tool?.sketchMove);
     if (!c && !tool && !modeOn) { dialogEl.hidden = true; return; }
     dialogEl.hidden = false;
     const kinds = new Set();
@@ -3859,6 +3859,7 @@ function renderDialog() {
         if (s.type !== "translate" && s.type !== "points") kinds.add("move-r");
         renderMove(s);
     }
+    if (tool?.sketchMove) { kinds.add("sketch-move"); renderSketchMove(tool.sketchMove); }
     // The separator before the item's own numbers, when a tool's rows come first.
     if (propsEl.children.length && !owned && [...dialogEl.querySelectorAll("[data-for]")].some((row) => row.dataset.for !== "props" && row.dataset.for.split(" ").some((k) => kinds.has(k)))) kinds.add("props");
     propsEl.style.display = owned ? "none" : "contents";
@@ -4535,7 +4536,7 @@ function drawOverlay() {
             drawSnapMark(sx, sy, snapped.kind);
         });
         if (measure) drawMeasure(rects);
-        if (tool?.move?.picking) drawMovePick(rects);
+        if (tool?.move?.picking || tool?.sketchMove?.picking) drawMovePick(rects);
         // A constraint tool's picked points, filled in the accent, and the point its next
         // click would take, ringed.
         if (sketchPick?.spots) {
@@ -4794,8 +4795,8 @@ function drawAxis(plane, axis, top, colour) {
 //  - the bodies of the Move session (`tool.move`), in every view: the world's X, Y, Z and
 //    the rings about them, at the session's pivot, no scale -- shown only in the session (a
 //    selected body shows none);
-//  - the selected curves of one plane (the active curve's): the plane's x and y and the
-//    ring about its normal -- the curves moved, turned and scaled as a block, their
+//  - the curves of Sketch › move's session (`tool.sketchMove`): the plane's x and y and the
+//    ring about its normal, no scale -- the curves moved and turned as a block, their
 //    shapes rewritten (a rectangle turned becomes a polyline, an ellipse does not turn).
 // Sized on screen at any distance, an arrow or a ring seen edge-on in a view left out of it:
 // the layout, the drawing, the hit test and the drag's maths are manipulator.js's, shared
@@ -4808,19 +4809,21 @@ function manipulatorOf(view) {
         if (s.picking) return null;
         return { subject: "move", pivot: s.live ?? V.add(s.pivot, s.by), axes: s.type === "rotate" ? [] : AXES3, rings: s.type === "translate" ? [] : RINGS3, scale: false };
     }
+    if (tool?.sketchMove) return sketchManipulator();
     const c = current();
     if (!c || isSketch(c) || !visible(c) || sketchTrim) return null;   // a trim's clicks are for its pieces
     if (tool?.copies || tool?.solid) return null;   // a pattern's or a mirror's preview: its copies go at every re-run
-    if (isBody(c)) return null;   // a body is moved by Solid › move (M), not on its selection
-    const items = selectedCurves().filter((k) => isCurve(k) && k.plane === c.plane && visible(k) && drawn(k));
+    return null;   // a body is moved by Solid › move (M), curves by Sketch › move: not on their selection
+}
+// Sketch › move's manipulator: at where the session's pivot went, in the curves' plane, no scale.
+function sketchManipulator() {
+    const s = tool.sketchMove;
+    if (s.picking) return null;
+    const items = (s.made.length ? s.made : s.ids).map(byId).filter((k) => k && visible(k) && drawn(k));
     if (!items.length) return null;
-    // The block's pivot: the middle of its curves' handles' box, in the sketch plane.
-    let lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
-    for (const k of items) for (const q of curvePoints(k)) { lo = [Math.min(lo[0], q[0]), Math.min(lo[1], q[1])]; hi = [Math.max(hi[0], q[0]), Math.max(hi[1], q[1])]; }
-    if (!Number.isFinite(lo[0])) return null;
-    const pivot2 = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2];
-    const F = planeInfo(c.plane).frame;
-    return { subject: "curves", items, plane: c.plane, pivot2, pivot: embed3(c.plane, pivot2), axes: [{ a: F.x, name: "X" }, { a: F.y, name: "Y" }], rings: [{ n: F.z, name: "Z" }], scale: true };
+    const pivot2 = s.live ?? [s.pivot2[0] + s.by2[0], s.pivot2[1] + s.by2[1]];
+    const F = planeInfo(s.plane).frame;
+    return { subject: "curves", session: true, items, plane: s.plane, pivot2, pivot: embed3(s.plane, pivot2), axes: [{ a: F.x, name: "X" }, { a: F.y, name: "Y" }], rings: [{ n: F.z, name: "Z" }], scale: false };
 }
 // A curve's points in its plane, for a box round it: its handles, or a polycurve's
 // Bézier control points.
@@ -4901,6 +4904,7 @@ function moveManipulator(h, p, size) {
         const d = slide ? [V.dot(slide, F.x), V.dot(slide, F.y)] : [0, 0];
         const cos = Math.cos(turn) * scale, sin = Math.sin(turn) * scale, [px, py] = m.pivot2;
         const map = ([x, y]) => [px + d[0] + cos * (x - px) - sin * (y - py), py + d[1] + sin * (x - px) + cos * (y - py)];
+        if (m.session && tool?.sketchMove) { h.delta = { d, turn }; tool.sketchMove.live = [px + d[0], py + d[1]]; }
         // On a sketch: what the block starts from, its constraints migrated (first move only,
         // so a click that never drags changes nothing).
         if (h.held === undefined) { const sketch = byId(m.plane); h.held = isSketch(sketch) ? constrainedStart(sketch) : null; }
@@ -4931,6 +4935,20 @@ function endManipulator(h) {
         if (!h.delta) return;
         renderDialog();
         rerunMove();
+        return;
+    }
+    if (m.subject === "curves" && m.session) {
+        // Sketch › move's: the drag folded into the session's numbers and the commands run
+        // again from where it opened (the block's warm solve dropped: it is the drag's).
+        const s = tool?.sketchMove;
+        if (!s) return;
+        s.live = null;
+        if (!h.delta) return;
+        s.by2 = [s.by2[0] + h.delta.d[0], s.by2[1] + h.delta.d[1]];
+        s.turn += h.delta.turn * 180 / Math.PI;
+        if (h.held) dropModel(h.held.sketch.id);
+        renderDialog();
+        rerunSketchMove();
         return;
     }
     if (m.subject === "curves" && h.held) {
@@ -5678,9 +5696,9 @@ let drag = null;   // { kind: "handle", handle, ... } | { kind: "cube", last: [x
 
 function hintFor(kind) {
     const rest = " · left-drag: turn · shift-drag or right-drag: pan · alt-drag: orbit the selection · wheel: zoom · WASD: fly in Perspective · ctrl / shift-click the list to select several";
-    if (kind === "line") return "left: drag an end in its view · ends snap onto other ends · the gizmo moves, turns and scales the selected curves as a block" + rest;
+    if (kind === "line") return "left: drag an end in its view · ends snap onto other ends · move (M) slides and turns the selected curves as a block" + rest;
     if (kind === "polyline") return "left: select and drag a point in its view · close joins the ends" + rest;
-    if (kind === "rect") return "left: drag a corner to resize in its view · the gizmo moves and scales it (turned, it becomes a polyline)" + rest;
+    if (kind === "rect") return "left: drag a corner to resize in its view · move (M) slides and turns it (turned, it becomes a polyline)" + rest;
     if (kind === "circle") return "left: drag the centre to move, the rim handle to size, in its view" + rest;
     if (kind === "arc") return "left: drag an end or the through-point in its view · ends snap onto other ends" + rest;
     if (kind === "ellipse") return "left: drag the centre to move, an axis handle to size that axis, in its view" + rest;
@@ -5767,7 +5785,7 @@ function handleUnderPress(i, px) {
     const picking_ = !!(sketchPick || sweepMode || sketchTrim || (picking === "points" && isSketch(c)));
     const modal = !!(shellMode || trimMode || filletMode || facePick || picking_);
     if (modal || drawing) return false;
-    if (c || tool?.move) {
+    if (c || tool?.move || tool?.sketchMove) {
         const size = sizeOf(i), p = local(px, i);
         const handle = hitManipulator(i, p, size);
         if (handle) {
@@ -5776,7 +5794,7 @@ function handleUnderPress(i, px) {
             // extruded off a face stands on its solid): a click there that never
             // becomes a drag selects what is under it -- but for the Move session's, whose
             // click is its own (Ctrl on the centre: Set pivot).
-            drag = { kind: "handle", curve: c, handle, view: i, from: px, moved: false, under: handle.m.subject === "move" ? null : pickBody(i, px), at: resets };
+            drag = { kind: "handle", curve: c, handle, view: i, from: px, moved: false, under: handle.m.subject === "move" || handle.m.session ? null : pickBody(i, px), at: resets };
             pendingNotice = null;   // a notice is its own drag's: never carried onto this one's build
             schedule();
             return true;
@@ -5803,6 +5821,7 @@ function handleUnderPress(i, px) {
 // down.
 function pressAt(i, px, e) {
     if (tool?.move?.picking) { pickMoveAt(i, px); return; }
+    if (tool?.sketchMove?.picking) { pickSketchMoveAt(i, px); return; }
     if (tool?.copies?.picking) { pickCopiesCentre(i, px); return; }
     if (tool?.solid?.picking) { pickSolidAt(i, px); return; }
     if (sketchPick?.spots) { sketchPick.shift = e.shiftKey; pickSpotAt(i, px); return; }
@@ -5930,8 +5949,8 @@ overlay.addEventListener("pointermove", (e) => {
         if (pointerAt) askSnap(pointerAt.view, pointerAt.px, "measure", () => overlayDirty());
         return;
     }
-    if (!drag && tool?.move?.picking) {
-        tool.move.hover = pointerAt;
+    if (!drag && (tool?.move?.picking || tool?.sketchMove?.picking)) {
+        (tool.move ?? tool.sketchMove).hover = pointerAt;
         if (pointerAt) askSnap(pointerAt.view, pointerAt.px, "measure", () => overlayDirty());
         return;
     }
@@ -6942,7 +6961,7 @@ function snapHover(h) {
 // The armed pick in every view: the snap under the pointer, and point to point's line from its
 // first pick to there.
 function drawMovePick(rects) {
-    const s = tool.move;
+    const s = tool.move ?? tool.sketchMove;
     const hover = snapHover(s.hover);
     for (let v = 0; v < 4; v++) {
         const r = rects[v];
@@ -6958,6 +6977,153 @@ function drawMovePick(rects) {
         if (hover?.kind && s.hover.view === v && pb) drawSnapMark(pb[0], pb[1], hover.kind);
         ctx.restore();
     }
+}
+
+// ------------------------------------------------------------------ Sketch › move
+
+// Sketch › move (or M on curves): the selected curves of one sketch (or origin plane) moved
+// as a block in its plane, a session (`openTool`, `tool.sketchMove`) as Solid › move is. The
+// pivot starts at the middle of the curves' handles' box; Set pivot puts it on a snapped point
+// of the plane. The command is `sketch_move` (forge-commands.js: `edit`'s items under its
+// own name): every curve mapped from where it stood when the session opened -- turned about
+// the pivot, then slid -- through `mappedShape`, or on a constrained sketch through the
+// block's solve (`blockHeld`), what it holds following; a move the solve refuses says why, as
+// a drag does, and keeps nothing. A drag of the manipulator previews through the same block
+// path and folds into the fields at its end. Copy duplicates the curves first, then moves the
+// copies: two commands, one session.
+const sketchMoveEl = document.getElementById("sketch-move");
+const sketchMoveByEls = ["x", "y"].map((k) => document.getElementById(`sketch-move-${k}`));
+const sketchMoveAngleEl = document.getElementById("sketch-move-angle");
+const sketchMovePivotEl = document.getElementById("sketch-move-pivot");
+const sketchMovePivotSetEl = document.getElementById("sketch-move-pivot-set");
+const sketchMovePivotResetEl = document.getElementById("sketch-move-pivot-reset");
+const sketchMoveCopyEl = document.getElementById("sketch-move-copy");
+const sketchMoveWhatEl = document.getElementById("sketch-move-what");
+// The curves a press of Sketch › move takes: the selected curves on the active curve's plane.
+function sketchMoveTargets() {
+    const c = current();
+    if (!c || !isCurve(c)) return null;
+    const items = selectedCurves().filter((k) => isCurve(k) && k.plane === c.plane && visible(k) && drawn(k));
+    return items.length ? { plane: c.plane, ids: items.map((k) => k.id) } : null;
+}
+// The middle of curves' handles' box, in their plane (null for none).
+function curvesCentre(list) {
+    let lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
+    for (const k of list) for (const q of curvePoints(k)) { lo = [Math.min(lo[0], q[0]), Math.min(lo[1], q[1])]; hi = [Math.max(hi[0], q[0]), Math.max(hi[1], q[1])]; }
+    return Number.isFinite(lo[0]) ? [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2] : null;
+}
+// A point of the plane turned by `deg` degrees about the origin.
+const turn2 = ([x, y], deg) => { const t = deg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t); return [c * x - s * y, s * x + c * y]; };
+// The session's map of its plane: turned about the pivot, then slid.
+function sketchMoveMap(s) {
+    const [px, py] = s.pivot2, [dx, dy] = s.by2;
+    return ([x, y]) => { const [u, v] = turn2([x - px, y - py], s.turn); return [px + dx + u, py + dy + v]; };
+}
+function pressSketchMove() {
+    if (tool?.sketchMove) { commitTool(); return; }
+    const t = sketchMoveTargets();
+    if (!t) { say("move takes curves of one sketch -- select them in the views or the list", true); return; }
+    return act(async () => {
+        if (sketchPick) disarmSketchPick();
+        if (measure) setMeasure(false);
+        if (tool) commitTool();
+        const session = openTool(headNow(), t.ids, "Move", "sketch-move");
+        const home = curvesCentre(t.ids.map(byId).filter((k) => k)) ?? [0, 0];
+        session.sketchMove = { ids: t.ids.slice(), plane: t.plane, home, pivot2: home.slice(), by2: [0, 0], turn: 0, copy: false, picking: null, hover: null, from: null, live: null, made: [], hint: "", doneAt: head };
+        await runSketchMove(session);
+        renderDialog();
+        syncToolbar();
+    });
+}
+// The `sketch_move` items that put curves `ids` where the session's map takes them, from where
+// they stand; null where a constrained sketch's solve refuses (it says why).
+function sketchMoveItems(s, ids) {
+    const map = sketchMoveMap(s), turn = s.turn * Math.PI / 180;
+    const list = ids.map(byId).filter((k) => k);
+    const sketch = typeof s.plane === "number" ? byIdAs(s.plane, isSketch) : null;
+    if (sketch && constrained(sketch)) {
+        const held = constrainedStart(sketch);
+        const h = { was: list.map((k) => ({ id: k.id, kind: k.kind, shape: structuredClone(k.shape) })), held };
+        say("");
+        blockHeld(h, map, turn, 1);
+        if (statusEl.classList.contains("error")) return null;   // refused: put back, and said
+        if (h.stale) dropKeepingRed(sketch);
+        settleRefused(sketch);
+        return changedSince(held);
+    }
+    return list.map((k) => { const out = mappedShape(k.kind, k.shape, map, turn, 1); return { id: k.id, kind: out.kind, shape: out.shape }; });
+}
+// One run of the session's commands: the copies first (Copy), then the move; what it moved
+// selected.
+async function runSketchMove(session) {
+    const s = session.sketchMove;
+    const still = s.by2[0] === 0 && s.by2[1] === 0 && s.turn === 0;
+    let ok = true, targets = s.ids;
+    s.made = [];
+    if (s.copy) {
+        const copies = s.ids.map((_, k) => nextId + k);
+        ok = await run({ op: "duplicate", ids: s.ids.slice(), copies });
+        s.made = ok ? copies.filter((id) => byId(id)) : [];
+        targets = s.made;
+    }
+    if (ok && !still && targets.length) {
+        const items = sketchMoveItems(s, targets);
+        if (items === null) ok = false;
+        else if (items.length) ok = await run({ op: "sketch_move", sketch: s.plane, items });
+    }
+    s.doneAt = head;
+    session.ids = [...s.ids, ...s.made];
+    keepView = true;
+    try { setSelection(s.made.length ? s.made : s.ids.filter((id) => byId(id))); } finally { keepView = false; }
+    if (tool !== session) return;   // closed by OK while this ran: nothing left to say
+    s.hint = `drag the manipulator or type the numbers · OK or Enter keeps ${still && !s.copy ? "nothing" : "it"} · Esc cancels`;
+    if (!ok) s.hint = `${statusEl.textContent} · ${s.hint}`;
+    hintEl.textContent = s.picking ? MOVE_PICK_HINTS.pivot : s.hint;
+}
+const rerunSketchMove = () => rerunSession("sketchMove", runSketchMove);
+function renderSketchMove(s) {
+    hintEl.textContent = s.picking ? MOVE_PICK_HINTS.pivot : s.hint ?? "";
+    sketchMoveByEls.forEach((el, k) => { if (el !== document.activeElement) el.value = round(s.by2[k]); });
+    if (sketchMoveAngleEl !== document.activeElement) sketchMoveAngleEl.value = round(s.turn);
+    sketchMovePivotEl.textContent = s.pivot2.map(round).join(", ");
+    sketchMovePivotSetEl.setAttribute("aria-pressed", String(s.picking === "pivot"));
+    sketchMoveCopyEl.checked = s.copy;
+    const n = s.ids.length;
+    sketchMoveWhatEl.textContent = `${n === 1 ? byId(s.ids[0])?.name ?? `#${s.ids[0]}` : `${n} curves`}${s.copy ? ` · ${s.made.length} ${s.made.length === 1 ? "copy" : "copies"}` : ""}`;
+}
+function sketchMoveChange(f) {
+    const s = tool?.sketchMove;
+    if (!s || f(s) === false) return;
+    renderDialog();
+    rerunSketchMove();
+}
+// The pivot put at `p` with the curves where they are (`by2` makes up for it), as `repivot`.
+function repivot2(s, p) {
+    const d = [p[0] - s.pivot2[0], p[1] - s.pivot2[1]], r = turn2(d, s.turn);
+    s.by2 = [s.by2[0] + r[0] - d[0], s.by2[1] + r[1] - d[1]];
+    s.pivot2 = p.slice();
+}
+sketchMoveByEls.forEach((el, k) => el.addEventListener("input", () => sketchMoveChange((s) => { const v = Number(el.value); s.by2[k] = Number.isFinite(v) ? v : 0; })));
+sketchMoveAngleEl.addEventListener("input", () => sketchMoveChange((s) => { const v = Number(sketchMoveAngleEl.value); s.turn = Number.isFinite(v) ? v : 0; }));
+sketchMoveCopyEl.addEventListener("change", () => sketchMoveChange((s) => { s.copy = sketchMoveCopyEl.checked; }));
+sketchMovePivotSetEl.addEventListener("click", () => { const s = tool?.sketchMove; if (!s) return; armMovePick(s, s.picking === "pivot" ? null : "pivot"); renderDialog(); });
+sketchMovePivotResetEl.addEventListener("click", () => sketchMoveChange((s) => { armMovePick(s, null); repivot2(s, s.home); }));
+sketchMoveEl.addEventListener("click", () => pressSketchMove());
+// A click while the pivot's pick is armed: the snapped point, on the curves' plane.
+function pickSketchMoveAt(i, px) {
+    const session = tool, s = session.sketchMove;
+    return measurePoint(i, px).then((p) => {
+        if (tool !== session || s.picking !== "pivot") return;
+        if (!p) { say("move: click on the sketch's plane -- in its view, or on a body in Perspective", true); return; }
+        const F = planeInfo(s.plane).frame, w = V.sub(p.point, F.origin);
+        const x = [V.dot(w, F.x), V.dot(w, F.y)];
+        armMovePick(s, null);
+        // The pivot's point before the move, so the manipulator lands on `x`.
+        const back = turn2([x[0] - s.pivot2[0] - s.by2[0], x[1] - s.pivot2[1] - s.by2[1]], -s.turn);
+        repivot2(s, [s.pivot2[0] + back[0], s.pivot2[1] + back[1]]);
+        renderDialog();
+        rerunSketchMove();
+    });
 }
 
 // The constraint tools, the ribbon's "constrain" group. A tool picks spots of ONE sketch's
@@ -8140,9 +8306,9 @@ const endDrag = (e) => {
     }
     // A handle's drag is one command, of what it changed: a body's transform, a
     // revolution's axis, a curve's shape (a point added on the way down included).
-    if (drag?.kind === "handle" && drag.handle.gizmo && drag.handle.m.subject === "move" && !drag.moved) {
-        // A click on the Move session's manipulator: Ctrl on its centre arms Set pivot.
-        const s = tool?.move;
+    if (drag?.kind === "handle" && drag.handle.gizmo && (drag.handle.m.subject === "move" || drag.handle.m.session) && !drag.moved) {
+        // A click on a Move session's manipulator: Ctrl on its centre arms Set pivot.
+        const s = tool?.move ?? tool?.sketchMove;
         if (s && e.ctrlKey && drag.handle.kind === "move" && drag.handle.axis === null) { armMovePick(s, "pivot"); renderDialog(); }
     } else if (drag?.kind === "handle" && drag.handle.gizmo && !drag.moved && drag.under) {
         // A click on the gizmo, not a drag: whatever body lies under it is selected
@@ -8212,7 +8378,7 @@ const MOVE_CODES = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "Shi
 addEventListener("keydown", (e) => { entry(() => onKeydown(e)); overlayDirty(); });
 function onKeydown(e) {
     if (e.key === "Alt") e.preventDefault();   // held for an orbit; on its own it would take the browser's menu
-    if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool?.move?.picking) { tool.move.from = null; armMovePick(tool.move, null); renderDialog(); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
+    if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool?.move?.picking || tool?.sketchMove?.picking) { const s = tool.move ?? tool.sketchMove; s.from = null; armMovePick(s, null); renderDialog(); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
     const inDialog = e.target instanceof HTMLElement && e.target.closest("#dialog");
     if (e.key === "Enter" && drawing && !inDialog) { e.preventDefault(); finishDrawing(); return; }
     if (e.key === "Enter" && tool && (e.target === document.body || inDialog || e.target instanceof HTMLButtonElement)) { e.preventDefault(); commitTool(); return; }
@@ -8248,7 +8414,7 @@ function onKeydown(e) {
         if (e.code === "KeyJ") return press(joinEl);
         if (e.code === "KeyT") return press(trimEl);
         if (e.code === "KeyH") return press(chamferEl);
-        if (e.code === "KeyM" && !tool) return press(moveEl);
+        if (e.code === "KeyM" && !tool) return press(isCurve(current()) ? sketchMoveEl : moveEl);
         if (e.key === "Delete" && selectedPoint === null && selected !== null) return press(deleteEl);
     }
     // A shortcut's letter (ctrl/cmd-S saves; ctrl/cmd-D, -W, -Q, -E are the browser's) flies
@@ -9221,6 +9387,8 @@ function syncModifyButtons() {
     sketchFilletEl.disabled = !modifies("fillet");
     sketchPatternEl.disabled = !modifies("pattern") && tool?.copies?.kind !== "pattern";
     sketchMirrorEl.disabled = !modifies("mirror") && tool?.copies?.kind !== "mirror";
+    sketchMoveEl.disabled = !tool?.sketchMove && !sketchMoveTargets();
+    sketchMoveEl.setAttribute("aria-pressed", String(!!tool?.sketchMove));
 }
 
 // ------------------------------------------------------------------ the file
@@ -9642,6 +9810,7 @@ function installTestHook() {
             return null;
         },
         // The Move session's state (null when none is open): the bodies, the pivot, the numbers.
+        sketchMoveState: () => tool?.sketchMove ? structuredClone({ ids: tool.sketchMove.ids, made: tool.sketchMove.made, plane: tool.sketchMove.plane, pivot2: tool.sketchMove.pivot2, by2: tool.sketchMove.by2, turn: tool.sketchMove.turn, copy: tool.sketchMove.copy, picking: tool.sketchMove.picking }) : null,
         moveState: () => tool?.move ? structuredClone({ ids: tool.move.ids, made: tool.move.made, pivot: tool.move.pivot, by: tool.move.by, turn: tool.move.turn, axes: tool.move.axes, copy: tool.move.copy, type: tool.move.type, picking: tool.move.picking }) : null,
         // Body `id`'s world box as the worker built it (`{ lo, hi }`), or null.
         box: (id) => { const b = byId(id)?.gpu?.box; return b ? { lo: [...b.lo], hi: [...b.hi] } : null; },

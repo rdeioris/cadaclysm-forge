@@ -2768,10 +2768,12 @@ function build(model, cmd, env, broken) {
         case "move":
             moveBodies(d, cmd);
             break;
-        // A sketch's curves moved as a block: `edit`'s items, under a name of its own.
+        // A sketch's curves moved as a block: `edit`'s items, under a name of its own. `sketch`
+        // is the sketch, or the origin plane ("top", "front", "right") of curves on none.
         case "sketch_move": {
-            const s = idOf(get(cmd, "sketch"));
-            if (s === undefined || !isSketch(d.item(s))) fail(`sketch_move: #${s ?? "?"} is not a sketch`);
+            const plane = get(cmd, "sketch");
+            const s = idOf(plane);
+            if (!(typeof plane === "string" && Object.hasOwn(ORIGIN_FRAMES, plane)) && (s === undefined || !isSketch(d.item(s)))) fail(`sketch_move: #${s ?? "?"} is not a sketch`);
             editItems(d, get(cmd, "items"));
             break;
         }
