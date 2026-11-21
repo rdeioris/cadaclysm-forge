@@ -197,10 +197,12 @@
 //   "new" | "join", instances, touch? }`, `plane` "top" / "front" / "right", a sketch id or
 //   `face:<body>:<k>`. Bodies, new: a group as a pattern's, over `placements.mirror`, each
 //   instance "<source> mirror". Bodies, join: one body item (kind `mirror`, one source, which
-//   it consumes): `solid.mirror_join { snap: 0.01 }` when the source touches the plane, else
-//   `i<id>_copy` `solid.mirror` and `solid.join` of the two. `touch` is the command's when it
-//   is a boolean (the page's, off the body's bounds: `touchesPlane`), else read off the
-//   evaluated document; the item keeps it, so a write again makes the same nodes. A feature:
+//   it consumes): `solid.mirror_join { snap: 0.01 }` when the source is a SHEET touching the
+//   plane, else -- a solid always, touching or not (the kernel's mirror_join refuses a closed
+//   solid on the plane) -- `i<id>_copy` `solid.mirror` and `solid.join` of the two. `touch`
+//   is false for a solid; for a sheet the command's when it is a boolean (the page's, off the
+//   body's bounds: `touchesPlane`), else read off the evaluated document; the item keeps it,
+//   so a write again makes the same nodes. A feature:
 //   a `pattern_feature` item over `placements.mirror`.
 // - On the items the mirror plane is `across` (a body's `plane` is its own plane).
 // - `madeTail`'s `axis` and `angle` (a revolution's) are a feature pattern's own fields.
@@ -672,6 +674,11 @@ export class Draft {
     /// Body item `n`'s bounds (`bounds64`: six numbers) off the evaluated document.
     bounds(n) {
         return this._picks(`the bounds of #${n}`).bounds(n);
+    }
+
+    /// Body item `n`'s result kind ("solid", "sheet", "none", ...) off the evaluated document.
+    resultKind(n) {
+        return this._picks(`the result of #${n}`).resultKind(n);
     }
 
     /// Whether this command's ops so far add, set or remove node `id` or a node it reads.
@@ -1582,8 +1589,9 @@ function verbSteps(d, n, c, pending, pre, numOr) {
             return [{ kind: "solid.pattern_feature", solid, tool, op: fc.kind, placements: helperId(n, "at") }];
         }
         case "mirror": {
-            // Joined to its mirror: in one when it touches the plane (`touch`, decided when the
-            // command was made), else a mirrored copy `i<n>_copy` and a join.
+            // Joined to its mirror: in one when it is a sheet touching the plane (`touch`,
+            // decided when the command was made), else -- every solid -- a mirrored copy
+            // `i<n>_copy` and a join.
             const solid = part(0);
             const plane = planeFrame(d, get(c, "across"), pending) ?? refuse(`${base}: the plane is gone`);
             if (get(c, "touch") === true) return [{ kind: "solid.mirror_join", solid, plane, snap: MIRROR_SNAP }];
@@ -3033,12 +3041,18 @@ function build(model, cmd, env, broken) {
             if (operation !== "join") fail("mirror: `operation` is not new or join");
             if (sources.length !== 1) fail("mirror: a join mirrors one body");
             const src = need(d, sources[0], op);
-            // Touching the plane or not: the command's own word (the page's, off the body's
-            // bounds), else the bounds off the evaluated document.
-            let touch = get(cmd, "touch");
-            if (typeof touch !== "boolean") {
-                const { origin, normal } = planeAt(d, "mirror", plane);
-                touch = touchesPlane(d.bounds(src.id), origin, normal);
+            // Joined in one (`solid.mirror_join`) only for a SHEET touching the plane: the
+            // kernel's mirror_join is a sheet's (it refuses a closed solid touching the plane:
+            // "edge_continuity: edge 0 bounds 4 face(s)"), so a solid is always a mirrored copy
+            // and a join, touching or not. Touching: the command's own word (the page's, off
+            // the body's bounds), else the bounds off the evaluated document.
+            let touch = false;
+            if (d.resultKind(src.id) === "sheet") {
+                touch = get(cmd, "touch");
+                if (typeof touch !== "boolean") {
+                    const { origin, normal } = planeAt(d, "mirror", plane);
+                    touch = touchesPlane(d.bounds(src.id), origin, normal);
+                }
             }
             d.bump(n);
             const c = { id: n, name: name(), kind: "mirror" };

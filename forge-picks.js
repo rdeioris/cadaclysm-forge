@@ -21,8 +21,10 @@
 //                                           item's own node); undefined for no body item
 //   docPicks(kernel, doc, model?)           the geometry a command may ask of a document:
 //                                           `{ kernel, edgeRef(n, k), faceRef(n, k),
-//                                           faceFrame(n, k), bounds(n) }` (faceFrame needs the
-//                                           model; bounds the six `bounds64` numbers),
+//                                           faceFrame(n, k), bounds(n), resultKind(n) }`
+//                                           (faceFrame needs the model; bounds the six
+//                                           `bounds64` numbers; resultKind "solid", "sheet",
+//                                           ... as last evaluated),
 //                                           and off any node's result: `nodeFaceRef(id, k)`,
 //                                           `findFace(id, ref8, hint)` (the face the page's
 //                                           own eight-number reference finds, -1 none),
@@ -174,6 +176,11 @@ export function docPicks(kernel, doc, model) {
         edgeRef: (n, index) => body(n, (s) => edgeRefOf(kernel, s, index)),
         faceRef: (n, index) => body(n, (s) => faceRefOf(kernel, s, index)),
         bounds: (n) => body(n, (s) => Array.from(call(kernel, "cadaclysm_blacksmith_bounds64", s, BOUNDS_TOLERANCE))),
+        resultKind: (n) => {
+            const id = bodyNode(model, n);
+            if (id === undefined) fail(`#${n} is not an item`);
+            return call(kernel, "cadaclysm_blacksmith_document_result_kind", doc, id);
+        },
         nodeFaceRef: (id, index) => onNode(id, (s) => faceRefOf(kernel, s, index)),
         findFace: (id, ref, hint) => onNode(id, (s) => call(kernel, "cadaclysm_blacksmith_find_face", s, Float64Array.from(ref), hint, PAGE_REF_TOLERANCE)),
         frameValue: (id) => {

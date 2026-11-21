@@ -1347,22 +1347,24 @@ const HOLE = Math.PI * 2 * 2 * 4;
     t.free();
 }
 
-// mirror of bodies, joined: a half touching the plane is `solid.mirror_join` (one body, twice
-// the volume, no face on the plane -- as one box of twice the length); the same half off the
-// plane is a mirrored copy and a join (two lumps in one item). The source is consumed.
+// mirror of bodies, joined: a SOLID is always a mirrored copy and a join, touching the plane
+// or not (the kernel's `solid.mirror_join` is a sheet's: it refuses a closed solid on the
+// plane). Touching: one solid of twice the volume; off the plane: two lumps in one item. The
+// source is consumed. A sheet touching the plane is `solid.mirror_join` (below).
 {
     const t = fresh();
     for (const c of BOX_AT(1, 6, 3, 0)) t.run(c);   // x 0..6: touching YZ
     t.run({ op: "set", id: 1, dims: [6, 6, 4] });
     t.run({ op: "mirror", id: 2, objects: "bodies", sources: [1], plane: "right", operation: "join" });
-    assert.deepStrictEqual([t.node("i2").kind, t.node("i2").solid, t.node("i2").plane, t.node("i2").snap], ["solid.mirror_join", "i1", "yz", 0.01]);
-    assert.deepStrictEqual([t.item(2).kind, t.item(2).name, t.item(2).parts, t.item(2).across, t.item(2).touch], ["mirror", "Mirror 1", [1], "right", true]);
+    assert.deepStrictEqual(t.node("i2_copy"), { id: "i2_copy", kind: "solid.mirror", solid: "i1", plane: "yz" });
+    assert.deepStrictEqual([t.node("i2").kind, t.node("i2").solids], ["solid.join", ["i1", "i2_copy"]]);
+    assert.deepStrictEqual([t.item(2).kind, t.item(2).name, t.item(2).parts, t.item(2).across, t.item(2).touch], ["mirror", "Mirror 1", [1], "right", false]);
     assert.ok(t.item(1).hidden);
-    // KERNEL GAP (this web package): `solid.mirror_join` refuses every flat-sided half touching
-    // the plane (a box, a cylinder, an L of two boxes) in these words. Pinned so it flips when
-    // the kernel takes it; then: one solid, volume 288, 6 faces, bounds [-6, -3, 0, 6, 3, 4].
-    wasm[K + "document_evaluate"](t.doc, false);
-    assert.deepStrictEqual([t.statusOf("i2").state, t.statusOf("i2").error], ["error", "mirror_join: edge_continuity: edge 0 bounds 4 face(s), not two"]);
+    const one = solidNow(t, "i2");
+    assert.deepStrictEqual(t.statusOf("i2").state, "ok");
+    assert.ok(close(one.volume, 288, 1e-6) && close(one.bounds, [-6, -3, 0, 6, 3, 4], 1e-6), JSON.stringify(one));
+    // join does not merge the faces coplanar across the plane: 10, not a long box's 6
+    assert.strictEqual(one.faces, 10, JSON.stringify(one));
     // off the plane: a copy and a join, two lumps in one item
     for (const c of BOX_AT(3, 6, 8, 0)) t.run(c);   // x 5..11
     t.run({ op: "mirror", id: 4, objects: "bodies", sources: [3], plane: "right", operation: "join" });
@@ -1374,9 +1376,34 @@ const HOLE = Math.PI * 2 * 2 * 4;
     // the page's own word wins: the touch it gives is kept and written
     t.run({ op: "mirror", id: 5, objects: "bodies", sources: [4], plane: "front", operation: "join", touch: false });
     assert.deepStrictEqual([t.item(5).touch, t.node("i5").kind], [false, "solid.join"]);
+    // and a touch: true is no word for a solid: still a copy and a join
+    for (const c of BOX_AT(6, 6, 3, 20)) t.run(c);
+    t.run({ op: "mirror", id: 7, objects: "bodies", sources: [6], plane: "right", operation: "join", touch: true });
+    assert.deepStrictEqual([t.item(7).touch, t.node("i7").kind], [false, "solid.join"]);
     assert.ok(touchesPlane([0, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]) && !touchesPlane([0.02, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]) && !touchesPlane([-1, -3, 0, 6, 3, 4], [0, 0, 0], [1, 0, 0]));
     // a corner on a slanted plane, the box on both sides of it: no touch
     assert.ok(!touchesPlane([0, -2, 0, 2, 0, 1], [0, 0, 0], [1, 1, 0]) && touchesPlane([0, 0, 0, 2, 2, 1], [0, 0, 0], [1, 1, 0]));
+    t.free();
+}
+
+// mirror of a SHEET, joined, touching the plane: `solid.mirror_join` (snap 0.01) -- one sheet
+// of twice the area. A sheet off the plane is a copy and a join, as a solid -- which the
+// kernel's join refuses for sheets.
+{
+    const t = fresh();
+    t.run({ op: "add", id: 1, kind: "rect", plane: "top", shape: { x0: 0, y0: -3, x1: 6, y1: 3 } });   // x 0..6: touching YZ
+    t.run({ op: "surface", id: 2, loops: [[1]], plane: "top" });
+    t.run({ op: "mirror", id: 3, objects: "bodies", sources: [2], plane: "right", operation: "join" });
+    assert.deepStrictEqual([t.node("i3").kind, t.node("i3").solid, t.node("i3").plane, t.node("i3").snap], ["solid.mirror_join", "i2", "yz", 0.01]);
+    assert.deepStrictEqual([t.item(3).kind, t.item(3).parts, t.item(3).across, t.item(3).touch], ["mirror", [2], "right", true]);
+    const got = solidNow(t, "i3");
+    assert.deepStrictEqual([t.statusOf("i3").state, got.kind], ["ok", "sheet"], JSON.stringify(t.statusOf("i3")));
+    assert.ok(close(got.area, 72, 1e-6) && close(got.bounds, [-6, -3, 0, 6, 3, 0], 1e-6), JSON.stringify(got));
+    t.run({ op: "add", id: 4, kind: "rect", plane: "top", shape: { x0: 2, y0: -3, x1: 6, y1: 3 } });
+    t.run({ op: "surface", id: 5, loops: [[4]], plane: "top" });
+    t.run({ op: "mirror", id: 6, objects: "bodies", sources: [5], plane: "right", operation: "join" });
+    // `solid.join` takes solids: the sheets apart stand in, in the kernel's words
+    assert.deepStrictEqual([t.item(6).touch, t.node("i6").kind, t.node("i6").why], [false, "value.unresolved", "i6: `solids` wants a solid, `i5` is a sheet"]);
     t.free();
 }
 
