@@ -7,7 +7,7 @@
 // Run: node test/manipulator.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { AXES3, RINGS3, COLOURS, AXIS_COLOURS, GIZMO3_PX, MIN_SCALE, ARCS3, PLANES3, PLANES2, ARROW_PX, HEAD_PX, HEAD_W, PLANE_AT, PLANE_PX, ARC_AT, GRIP_PX, layoutManipulator, hitManipulator, manipulatorPoint, beginDrag, dragDelta, deltaMatrix, drawManipulator, segmentDistance } from "../manipulator.js";
+import { AXES3, RINGS3, COLOURS, AXIS_COLOURS, GIZMO3_PX, MIN_SCALE, ARCS3, PLANES3, PLANES2, ARROW_PX, HEAD_PX, HEAD_W, PLANE_AT, PLANE_PX, ARC_AT, GRIP_PX, layoutManipulator, hitManipulator, manipulatorPoint, beginDrag, dragDelta, stepDelta, deltaMatrix, drawManipulator, segmentDistance } from "../manipulator.js";
 
 const near = (a, b, tol, what) => { assert.equal(a.length, b.length, what); for (let k = 0; k < a.length; k++) assert.ok(Math.abs(a[k] - b[k]) <= tol, `${what}: ${a} vs ${b}`); };
 const apply = (m, p) => [0, 1, 2].map((r) => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]);
@@ -261,6 +261,61 @@ check("f3_a_rings_only_manipulator_lays_out_as_before", () => {
     assert.deepStrictEqual(layoutManipulator(full([1, 2, 3]), top, SIZE), OLD.layouts.topFull);
     assert.deepStrictEqual(layoutManipulator(full([0, 0, 0]), tilted, SIZE), OLD.layouts.tiltedFull);
     assert.deepStrictEqual(layoutManipulator({ pivot: [0, 0, 0], axes: AXES3, rings: [], scale: false }, tilted, SIZE), OLD.layouts.tiltedBare);
+});
+
+check("f3_a_plane_drag_reads_the_ray_met_with_the_plane", () => {
+    // The tilted camera is orthographic along LOOK: the ray through a point's pixel is that
+    // point plus t LOOK, so it meets the plane z = 0 at the point itself.
+    const pivot = [1, 2, 0];
+    const h = { kind: "plane", name: "Z", axis: [0, 0, 1], pivot };
+    near(manipulatorPoint(h, tilted, tilted.worldToPx([1.3, 2.5, 0]), SIZE), [1.3, 2.5, 0], 1e-9, "on the plane z = 0");
+    // A pixel of a point off the plane: the ray from (0.5, 0.5, 1) along LOOK meets z = 0 at
+    // t = 1 / -LOOK.z further on -- worked out from LOOK's components.
+    const t = 1 / -LOOK[2], want = [0.5 + t * LOOK[0], 0.5 + t * LOOK[1], 0];
+    near(manipulatorPoint(h, tilted, tilted.worldToPx([0.5, 0.5, 1]), SIZE), want, 1e-9, "a pixel of a point above it");
+    // The plane about X through the pivot (x = 1).
+    near(manipulatorPoint({ kind: "plane", name: "X", axis: [1, 0, 0], pivot }, tilted, tilted.worldToPx([1, 3, 4]), SIZE), [1, 3, 4], 1e-9, "on x = 1");
+    // Edge-on to the eye: nothing.
+    assert.equal(manipulatorPoint({ kind: "plane", axis: [1, 0, 0], pivot }, top, [400, 300], SIZE), null);
+    const d = beginDrag(h, tilted, tilted.worldToPx([1.3, 2.5, 0]), SIZE);
+    near(d.from, [1.3, 2.5, 0], 1e-9, "where it began");
+    for (const q of [[1.8, 2.2, 0], [0.5, 0.5, 1], [-3, 7, 2]]) {
+        const p = tilted.worldToPx(q, SIZE), delta = dragDelta(d, tilted, p, SIZE);
+        assert.ok(Math.abs(delta.slide[2]) < 1e-12, `in the plane: ${delta.slide}`);
+        near(delta.slide, manipulatorPoint(h, tilted, p, SIZE).map((v, i) => v - d.from[i]), 1e-12, "q - from");
+        assert.deepEqual([delta.turn, delta.scale], [0, 1]);
+    }
+    near(dragDelta(d, tilted, tilted.worldToPx([1.8, 2.2, 0]), SIZE).slide, [0.5, -0.3, 0], 1e-9, "0.5 along X, -0.3 along Y");
+});
+
+check("f3_steps_on_the_grid_and_at_15_degrees", () => {
+    const X = { kind: "move", name: "X", axis: [1, 0, 0] };
+    near(stepDelta({ slide: [12.7, 0, 0], turn: 0, scale: 1 }, X, { step: 10, angle: 15 }).slide, [10, 0, 0], 1e-12, "12.7 by tens: 10");
+    near(stepDelta({ slide: [12.7, 0, 0], turn: 0, scale: 1 }, X, { step: 5, angle: 15 }).slide, [15, 0, 0], 1e-12, "by fives: 15");
+    near(stepDelta({ slide: [-12.7, 0, 0], turn: 0, scale: 1 }, X, { step: 5 }).slide, [-15, 0, 0], 1e-12, "backwards too");
+    // Along an axis that is not the world's: the distance along it, stepped.
+    const s = Math.SQRT1_2, D = { kind: "move", name: "X", axis: [s, s, 0] };
+    near(stepDelta({ slide: [12.7 * s, 12.7 * s, 0], turn: 0, scale: 1 }, D, { step: 5 }).slide, [15 * s, 15 * s, 0], 1e-12, "along a slanted axis");
+    // A square: each in-plane part, along its a and b.
+    const Z = { kind: "plane", name: "Z", axis: [0, 0, 1], a: [1, 0, 0], b: [0, 1, 0] };
+    near(stepDelta({ slide: [12.7, -3.2, 0], turn: 0, scale: 1 }, Z, { step: 5 }).slide, [15, -5, 0], 1e-12, "X and Y by fives");
+    const Y = { kind: "plane", name: "Y", axis: [0, 1, 0], a: [0, 0, 1], b: [1, 0, 0] };
+    near(stepDelta({ slide: [7.4, 0, 2.6], turn: 0, scale: 1 }, Y, { step: 5 }).slide, [5, 0, 5], 1e-12, "Z and X by fives");
+    // A turn by 15 degrees.
+    const R = { kind: "rotate", name: "Z", axis: [0, 0, 1] };
+    assert.ok(Math.abs(stepDelta({ slide: null, turn: 0.30, scale: 1 }, R, { step: 10, angle: 15 }).turn - 0.2618) < 1e-4, "0.30 rad: 15 degrees");
+    assert.ok(Math.abs(stepDelta({ slide: null, turn: 0.40, scale: 1 }, R, { step: 10, angle: 15 }).turn - Math.PI / 6) < 1e-12, "0.40 rad: 30 degrees");
+    assert.ok(Math.abs(stepDelta({ slide: null, turn: -0.40, scale: 1 }, R, { angle: 15 }).turn + Math.PI / 6) < 1e-12, "-0.40 rad: -30 degrees");
+    // Free: as it came.
+    const raw = { slide: [12.7, 0, 0], turn: 0, scale: 1 };
+    assert.deepEqual(stepDelta(raw, X, { step: 10, angle: 15, free: true }), raw, "Shift: free");
+    assert.deepEqual(stepDelta({ slide: null, turn: 0.3, scale: 1 }, R, { step: 10, angle: 15, free: true }).turn, 0.3);
+    // The centre's free move follows the pointer: its snaps are the page's.
+    const free = { slide: [12.7, 3.3, 1.1], turn: 0, scale: 1 };
+    assert.deepEqual(stepDelta(free, { kind: "move", name: null, axis: null }, { step: 10, angle: 15 }), free, "the centre: not stepped");
+    // No step given: nothing stepped; a delta of nothing is nothing.
+    assert.deepEqual(stepDelta(raw, X, { angle: 15 }), raw);
+    assert.equal(stepDelta(null, X, { step: 10 }), null);
 });
 
 console.log(`ok manipulator: ${checks} checks`);

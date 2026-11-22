@@ -245,8 +245,9 @@ export function hitManipulator(g, p) {
 
 /** The world point a drag on handle `h` (`hitManipulator`'s, with the drag's `pivot`) reads at
  *  pixel `p`: along an axis, the axis line's point nearest the pointer's ray; a turn, the ray
- *  met with the plane square to the axis through the pivot; the free move, the ray met with
- *  the plane facing the camera. Null where there is none. */
+ *  met with the plane square to the axis through the pivot; a plane square's ("plane", its
+ *  normal the axis), the ray met with that plane through the pivot; the free move, the ray
+ *  met with the plane facing the camera. Null where there is none. */
 export function manipulatorPoint(h, cam, p, size) {
     const { origin, dir } = cam.ray(p, size);
     const pivot = h.pivot;
@@ -256,7 +257,7 @@ export function manipulatorPoint(h, cam, p, size) {
         if (Math.abs(denom) < 1e-9) return null;
         return add(pivot, mul(a, (e - b * d) / denom));
     }
-    const n = h.kind === "rotate" ? h.axis : cam.look;
+    const n = h.kind === "rotate" || h.kind === "plane" ? h.axis : cam.look;
     const denom = dot(dir, n);
     if (Math.abs(denom) < 1e-9) return null;
     const t = dot(sub(pivot, origin), n) / denom;
@@ -283,9 +284,24 @@ export function dragDelta(d, cam, p, size) {
     }
     const q = manipulatorPoint(d, cam, p, size);
     if (!q || !d.from) return null;
-    if (d.kind === "move") return { slide: sub(q, d.from), turn: 0, scale: 1 };
+    if (d.kind === "move" || d.kind === "plane") return { slide: sub(q, d.from), turn: 0, scale: 1 };
     const r0 = sub(d.from, d.pivot), r1 = sub(q, d.pivot);
     return { slide: null, turn: Math.atan2(dot(cross(r0, r1), d.axis), dot(r0, r1)), scale: 1 };
+}
+
+/** `delta` (`dragDelta`'s) of a drag on handle `h` (`{ kind, axis }`, and a square's `a` and
+ *  `b`) put on the steps: an arrow's slide to a whole number of `step`s along its axis, a
+ *  square's to whole steps along its `a` and `b`, a turn to whole `angle`s (degrees). `free`
+ *  (Shift, or no snapping) leaves it as it is, as does a missing step or angle; the centre's
+ *  free move is never stepped (it follows the pointer: its snaps are the page's). */
+export function stepDelta(delta, h, { step = 0, angle = 0, free = false } = {}) {
+    if (!delta || free) return delta;
+    const on = (v, k) => Math.round(v / k) * k;
+    if (h.kind === "rotate" && angle > 0) return { ...delta, turn: on(delta.turn, angle * Math.PI / 180) };
+    if (!delta.slide || !(step > 0)) return delta;
+    if (h.kind === "move" && h.axis) return { ...delta, slide: mul(h.axis, on(dot(delta.slide, h.axis), step)) };
+    if (h.kind === "plane" && h.a && h.b) return { ...delta, slide: add(mul(h.a, on(dot(delta.slide, h.a), step)), mul(h.b, on(dot(delta.slide, h.b), step))) };
+    return delta;
 }
 
 /** A delta as a 4 x 4 matrix about `pivot`, column-major (entry 4 * col + row): slid, or
