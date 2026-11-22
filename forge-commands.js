@@ -2230,6 +2230,12 @@ function writeAny(d, n, c) {
     else writeItem(d, n, c);
 }
 
+/// An airfoil whose shape is set by hand (a drag, a solve, a typed point) is a plain spline
+/// from then on: its `airfoil` meta goes, unless the same fields give it.
+function dropAirfoil(c, fields) {
+    if (isMap(c.airfoil) && Object.hasOwn(fields, "shape") && !Object.hasOwn(fields, "airfoil")) delete c.airfoil;
+}
+
 /// Each `{ id, ...fields }` set on its item (forge.js `editItems`).
 function editItems(d, list) {
     if (!Array.isArray(list)) return;
@@ -2238,6 +2244,7 @@ function editItems(d, list) {
         if (n === undefined || !d.item(n) || !isMap(it)) continue;
         const c = readItem(d, n);
         for (const [k, v] of Object.entries(it)) if (k !== "id" && !RUNTIME_KEYS.includes(k)) c[k] = kept(v);
+        dropAirfoil(c, it);
         writeAny(d, n, c);
     }
 }
@@ -2723,6 +2730,109 @@ function copyCurve(m, c, copyOf, n, { turned, mirror }) {
     return out;
 }
 
+/// An airfoil's controls (the kernel's `naca_spline`: an open clamped cubic on uniform knots,
+/// from the upper trailing edge round the leading edge to the lower), turned by `angle`
+/// degrees and moved to `at`, and the fit's error. A closed trailing edge's last point is its
+/// first, bit for bit: the loop finder takes the ends as they are. Refused in the kernel's
+/// words, as `<op>: ...`.
+function airfoilShape(kernel, a, op) {
+    let out;
+    try {
+        out = Array.from(call(kernel, "cadaclysm_blacksmith_naca_spline", Float64Array.from(a.naca.map(Number)), a.chord, a.controls, a.closedTe));
+    } catch (e) {
+        fail(`${op}: ${messageOf(e)}`);
+    }
+    const t = a.angle * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+    const points = [];
+    for (let i = 1; i + 1 < out.length; i += 2) points.push([a.at[0] + c * out[i] - s * out[i + 1], a.at[1] + s * out[i] + c * out[i + 1]]);
+    if (a.closedTe && points.length) points[points.length - 1] = points[0].slice();
+    return { points, error: out[0] };
+}
+
+/// The airfoil fields a command gives (`airfoil`'s own, a `set`'s merged over the meta), each
+/// checked: what the meta keeps.
+function airfoilFields(src, op) {
+    const naca = get(src, "naca");
+    if (!Array.isArray(naca)) fail(`${op}: \`naca\` is not the airfoil's 5 numbers`);
+    const at = get(src, "at");
+    if (!Array.isArray(at) || at.length !== 2 || at.some((v) => num(v) === undefined)) fail(`${op}: \`at\` is not two numbers`);
+    const angle = orElse(get(src, "angle"), 0);
+    if (num(angle) === undefined) fail(`${op}: \`angle\` is not a number`);
+    const chord = get(src, "chord"), controls = orElse(get(src, "controls"), 32);
+    if (typeof chord !== "number") fail(`${op}: \`chord\` is not a number`);
+    if (typeof controls !== "number") fail(`${op}: \`controls\` is not a number`);
+    const a = { naca: clone(naca), chord, controls, closedTe: get(src, "closedTe") !== false, at: at.slice(), angle };
+    const code = get(src, "code");
+    if (typeof code === "string") a.code = code;
+    return a;
+}
+
+/// The id of the next record on sketch fields `s`.
+const nextRecordId = (s) => 1 + (s.constraints ?? []).reduce((m, k) => Math.max(m, Number(k.id) || 0), 0);
+
+/// An airfoil written on item `n` (new when `fresh`) from fields `a`: its curve with the meta,
+/// and an open trailing edge's line (`a.line`, made at `lineId` when it has none) held to both
+/// ends by two `coincident` records on a sketch. A closed edge takes an old line out, with
+/// its records.
+function writeAirfoil(d, op, n, a, plane, { fresh, base, lineId }) {
+    const { points, error } = airfoilShape(d.kernel, a, op);
+    const meta = { ...a, error };
+    delete meta.line;
+    let line = a.line;
+    if (!a.closedTe && (line === undefined || !d.item(line))) {
+        if (lineId === undefined) fail(`${op}: an open trailing edge needs an id for its line`);
+        line = lineId;
+    }
+    if (!a.closedTe) meta.line = line;
+    const shape = { points, degree: 3, closed: false };
+    if (fresh) {
+        d.bump(n);
+        writeItem(d, n, { id: n, name: d.nameFor("nurbs"), kind: "nurbs", ...(plane !== undefined ? { plane: clone(plane) } : {}), shape, airfoil: meta, hidden: false });
+    } else writeItem(d, n, { ...base, shape, airfoil: meta });
+    const sketch = typeof plane === "number" ? plane : undefined;
+    const end = points[points.length - 1], start = points[0];
+    if (!a.closedTe) {
+        const lineShape = { x0: end[0], y0: end[1], x1: start[0], y1: start[1] };
+        if (d.item(line)) {
+            writeItem(d, line, { ...readItem(d, line), shape: lineShape });
+            return;
+        }
+        d.bump(line);
+        writeItem(d, line, { id: line, name: d.nameFor("line"), kind: "line", ...(plane !== undefined ? { plane: clone(plane) } : {}), shape: lineShape, hidden: false }, d.index(headId(n)) + 1);
+        if (sketch !== undefined) {
+            const s = readItem(d, sketch);
+            const k = nextRecordId(s);
+            writeItem(d, sketch, { ...s, constraints: [...(s.constraints ?? []),
+                { id: k, kind: "coincident", refs: [{ curve: line, at: "start" }, { curve: n, at: "end" }], driving: true },
+                { id: k + 1, kind: "coincident", refs: [{ curve: line, at: "end" }, { curve: n, at: "start" }], driving: true }] });
+        }
+    } else if (line !== undefined && d.item(line)) {
+        // Closed: the old line goes, and every record naming it.
+        if (sketch !== undefined) {
+            const s = readItem(d, sketch);
+            if (s.constraints) writeItem(d, sketch, { ...s, constraints: s.constraints.filter((k) => !(k.refs ?? []).some((r) => r.curve === line)) });
+        }
+        const { ids } = takeOut(d, [line]);
+        orphanReaders(d, ids);
+    }
+}
+
+/// A `set` of an airfoil's fields (`airfoil`, merged over its meta): its controls written
+/// again, its line moved, made (`ids`' first) or taken out.
+function airfoilEdit(d, n, cmd) {
+    const c = readItem(d, n);
+    if (c.kind !== "nurbs" || !isMap(c.airfoil)) fail(`set: #${n} is not an airfoil`);
+    const given = get(cmd, "airfoil");
+    if (!isMap(given)) fail("set: `airfoil` is not the airfoil's fields");
+    const merged = { ...c.airfoil, ...kept(given) };
+    if (Object.hasOwn(given, "naca") && !Object.hasOwn(given, "code")) delete merged.code;
+    const a = airfoilFields(merged, "airfoil");
+    if (merged.line !== undefined) a.line = merged.line;
+    const { airfoil: _, ...base } = c;
+    for (const [k, v] of Object.entries(cmd)) if (!["op", "id", "airfoil", "ids", "shape", "sketchConstraints", "sketchEdits", ...RUNTIME_KEYS].includes(k)) base[k] = kept(v);
+    writeAirfoil(d, "airfoil", n, a, c.plane, { fresh: false, base, lineId: idsOf(get(cmd, "ids"))[0] });
+}
+
 /// The ops of `cmd` (see the header) on a draft.
 function build(model, cmd, env, broken) {
     const d = new Draft(model, env, broken);
@@ -2733,6 +2843,14 @@ function build(model, cmd, env, broken) {
             const n = cmdId(cmd, "id", op);
             newCurve(d, n, cmd, get(cmd, "plane"));
             editItems(d, get(cmd, "items"));
+            break;
+        }
+        // A NACA section (`writeAirfoil`): one `nurbs` item, and an open trailing edge's line.
+        case "airfoil": {
+            const n = cmdId(cmd, "id", op);
+            const plane = get(cmd, "plane");
+            if (typeof plane === "number" ? !isSketch(d.item(plane)) : !(typeof plane === "string" && (Object.hasOwn(ORIGIN_FRAMES, plane) || isFacePlaneId(plane)))) fail(`airfoil: #${plane ?? "?"} is not a sketch`);
+            writeAirfoil(d, op, n, airfoilFields(cmd, op), plane, { fresh: true, lineId: idsOf(get(cmd, "ids"))[0] });
             break;
         }
         // A reference image is the session's: only its id is taken.
@@ -2891,11 +3009,13 @@ function build(model, cmd, env, broken) {
         case "set": {
             const n = idOf(get(cmd, "id"));
             if (n === undefined || !d.item(n) || !isMap(cmd)) break;
+            if (get(cmd, "airfoil") !== undefined && get(cmd, "airfoil") !== null) { airfoilEdit(d, n, cmd); break; }
             const c = readItem(d, n);
             for (const [k, v] of Object.entries(cmd)) {
                 if (k === "op" || k === "id" || k === "sketchConstraints" || k === "sketchEdits" || RUNTIME_KEYS.includes(k)) continue;
                 c[k] = kept(v);
             }
+            dropAirfoil(c, cmd);
             writeAny(d, n, c);
             break;
         }

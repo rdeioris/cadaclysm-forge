@@ -1806,4 +1806,163 @@ const centreOf = (b) => [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2
     t.free();
 }
 
+// airfoil: a NACA section (the kernel's `naca_spline`) as one `nurbs` item, open, its ends
+// meeting at a closed trailing edge; the airfoil's numbers in its meta. A surface over it is
+// the section's area (the polygon of 20 001 exact points, to 1e-3); a loft goes through two;
+// an open trailing edge adds a line held to both ends by two `coincident` records.
+const NACA = (code) => Array.from(wasm[K + "naca_parse"](code));
+function nacaArea(code, chord, closedTe) {
+    const p = Array.from(wasm[K + "naca_points"](Float64Array.from(NACA(code)), chord, 20001, closedTe));
+    let a = 0;
+    const n = p.length / 2;
+    for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        a += p[2 * i] * p[2 * j + 1] - p[2 * j] * p[2 * i + 1];
+    }
+    return Math.abs(a) / 2;
+}
+const airfoil = (fields) => ({ op: "airfoil", code: "2412", naca: NACA("2412"), chord: 50, angle: 0, at: [0, 0], controls: 32, closedTe: true, ids: [], ...fields });
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    const before = JSON.stringify(t.nodes());
+    const r = t.run(airfoil({ id: 2, plane: 1, at: [10, 5] }));
+    assert.strictEqual(r.op.message, "forge: airfoil");
+    const c = t.item(2);
+    assert.deepStrictEqual([c.kind, c.plane, c.name, c.shape.closed, c.shape.degree, c.shape.points.length], ["nurbs", 1, "NURBS 1", false, 3, 32]);
+    const pts = c.shape.points;
+    assert.deepStrictEqual(pts[0], pts[pts.length - 1], "a closed trailing edge: the ends meet");
+    assert.ok(close(pts[0], [60, 5], 1e-9), `the trailing edge at ${pts[0]}`);
+    const a = c.airfoil;
+    assert.deepStrictEqual([a.code, a.naca, a.chord, a.controls, a.closedTe, a.at, a.angle], ["2412", NACA("2412"), 50, 32, true, [10, 5], 0]);
+    assert.ok(a.error > 0 && a.error < 1e-3 * 50, `fit ${a.error}`);
+    assert.strictEqual(a.line, undefined);
+    // a surface over it: the section's area
+    t.run({ op: "surface", id: 3, loops: [[2]], plane: 1 });
+    const sheet = solidNow(t, "i3");
+    const want = nacaArea("2412", 50, true);
+    assert.ok(Math.abs(sheet.area - want) <= 1e-3 * want, `surface ${sheet.area}, the section ${want}`);
+    // undo: as it was, node for node
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    assert.deepStrictEqual(t.model.nodes(), t.nodes());
+    t.free();
+}
+// turned: the chord along the angle; on an origin plane, no records anywhere
+{
+    const t = fresh();
+    t.run(airfoil({ id: 1, plane: "top", at: [1, 2], angle: 90, code: "0012", naca: NACA("0012"), chord: 40 }));
+    const pts = t.item(1).shape.points;
+    assert.ok(close(pts[0], [1, 42], 1e-9), `the trailing edge at ${pts[0]}`);
+    assert.deepStrictEqual(pts[0], pts[pts.length - 1]);
+    t.free();
+}
+// a loft through two airfoils, each surfaced: one solid
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "sketch", id: 2, mode: "offset", base: "top", offset: 30 });
+    t.run(airfoil({ id: 3, plane: 1 }));
+    t.run(airfoil({ id: 4, plane: 2, code: "0012", naca: NACA("0012"), chord: 30, at: [5, 0] }));
+    t.run({ op: "surface", id: 5, loops: [[3]], plane: 1 });
+    t.run({ op: "surface", id: 6, loops: [[4]], plane: 2 });
+    t.run({ op: "lofted", id: 7, from: 5, to: 6 });
+    assert.strictEqual(t.node("i7").kind, "solid.loft");
+    wasm[K + "document_evaluate"](t.doc, false);
+    assert.strictEqual(t.statusOf("i7").state, "ok", JSON.stringify(t.statusOf("i7")));
+    assert.strictEqual(wasm[K + "document_result_kind"](t.doc, "i7"), "solid");
+    t.free();
+}
+// an open trailing edge: the line from the curve's end to its start, two coincident records
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: -40, cy: 0, r: 3 } });
+    t.run({ op: "set", id: 1, constraints: [{ id: 4, kind: "radius", refs: [{ curve: 2, at: "curve" }], value: 3, driving: true }] });
+    t.run(airfoil({ id: 3, plane: 1, closedTe: false, ids: [4] }));
+    const c = t.item(3), line = t.item(4);
+    const pts = c.shape.points, end = pts[pts.length - 1];
+    assert.ok(Math.hypot(pts[0][0] - end[0], pts[0][1] - end[1]) > 0.01, "an open edge's ends do not meet");
+    assert.deepStrictEqual([line.kind, line.plane, line.name], ["line", 1, "Line 1"]);
+    assert.deepStrictEqual(line.shape, { x0: end[0], y0: end[1], x1: pts[0][0], y1: pts[0][1] });
+    assert.strictEqual(c.airfoil.line, 4);
+    const records = t.item(1).constraints;
+    assert.deepStrictEqual(records.slice(1), [
+        { id: 5, kind: "coincident", refs: [{ curve: 4, at: "start" }, { curve: 3, at: "end" }], driving: true },
+        { id: 6, kind: "coincident", refs: [{ curve: 4, at: "end" }, { curve: 3, at: "start" }], driving: true },
+    ]);
+    t.run({ op: "surface", id: 5, loops: [[3, 4]], plane: 1 });
+    const want = nacaArea("2412", 50, false);
+    assert.ok(Math.abs(solidNow(t, "i5").area - want) <= 1e-3 * want, `surface ${solidNow(t, "i5").area}, the section ${want}`);
+    t.free();
+}
+// refusals: each names the call, the document as it was
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 0, cy: 0, r: 3 } });
+    refused(t, airfoil({ id: 3, plane: 1, naca: [4, 0.02, 0.4, 0.12] }), /^airfoil: .*5 numbers/);
+    refused(t, airfoil({ id: 3, plane: 1, chord: 0 }), /^airfoil: .*chord/);
+    refused(t, airfoil({ id: 3, plane: 1, controls: 7 }), /^airfoil: .*control count 7/);
+    refused(t, airfoil({ id: 3, plane: 1, closedTe: false }), /^airfoil: an open trailing edge needs an id for its line/);
+    refused(t, airfoil({ id: 3, plane: 2 }), /^airfoil: #2 is not a sketch/);
+    refused(t, airfoil({ id: 3, plane: 1, at: [0] }), /^airfoil: `at` is not two numbers/);
+    refused(t, airfoil({ id: 3, plane: 1, angle: "x" }), /^airfoil: `angle` is not a number/);
+    t.free();
+}
+
+// the airfoil re-edited: a `set` of `airfoil` writes the controls again from the meta merged
+// with it (a code, a chord, the trailing edge opened and closed again); a shape set by hand
+// (a drag's edit, a typed point) drops the meta, a name does not. Undo restores.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run(airfoil({ id: 2, plane: 1, at: [3, 4], angle: 30 }));
+    t.run(airfoil({ id: 9, plane: 1, at: [3, 4], angle: 30, code: "4412", naca: NACA("4412") }));
+    const fresh4412 = t.item(9).shape.points;
+    const before = JSON.stringify(t.nodes());
+    const r = t.run({ op: "set", id: 2, airfoil: { code: "4412", naca: NACA("4412") } });
+    assert.strictEqual(r.op.message, "forge: set");
+    assert.deepStrictEqual(t.item(2).shape.points, fresh4412);
+    assert.deepStrictEqual([t.item(2).airfoil.code, t.item(2).name], ["4412", "NURBS 1"]);
+    t.model.refresh(wasm[K + "document_undo"](t.doc));
+    assert.strictEqual(JSON.stringify(t.nodes()), before);
+    // a chord: the trailing edge moves out along the angle
+    t.run({ op: "set", id: 2, airfoil: { chord: 80 } });
+    const te = t.item(2).shape.points[0], th = 30 * Math.PI / 180;
+    assert.ok(close(te, [3 + 80 * Math.cos(th), 4 + 80 * Math.sin(th)], 1e-9), `the trailing edge at ${te}`);
+    // numbers with no code: the code goes
+    t.run({ op: "set", id: 2, airfoil: { naca: [4, 0.03, 0.4, 0.1, 0] } });
+    assert.strictEqual(t.item(2).airfoil.code, undefined);
+    // opened: the line and its records; closed again: both gone
+    t.run({ op: "set", id: 2, airfoil: { closedTe: false }, ids: [10] });
+    assert.strictEqual(t.item(10).kind, "line");
+    assert.strictEqual(t.item(2).airfoil.line, 10);
+    assert.strictEqual(t.item(1).constraints.filter((k) => k.refs.some((q) => q.curve === 10)).length, 2);
+    assert.strictEqual(t.item(2).ids, undefined, "`ids` is no field of the item");
+    // a chord again: the line follows the ends
+    t.run({ op: "set", id: 2, airfoil: { chord: 60 } });
+    const pts = t.item(2).shape.points, end = pts[pts.length - 1];
+    assert.deepStrictEqual(t.item(10).shape, { x0: end[0], y0: end[1], x1: pts[0][0], y1: pts[0][1] });
+    t.run({ op: "set", id: 2, airfoil: { closedTe: true } });
+    assert.strictEqual(t.model.items().some((it) => it.id === 10), false);
+    assert.strictEqual(t.item(1).constraints.some((k) => k.refs.some((q) => q.curve === 10)), false);
+    assert.strictEqual(t.item(2).airfoil.line, undefined);
+    // a name keeps it; a drag's edit of the shape drops it; so does a set of the shape
+    t.run({ op: "set", id: 2, name: "Blade root" });
+    assert.ok(t.item(2).airfoil);
+    const moved = t.item(2).shape.points.map(([x, y], i) => (i === 5 ? [x + 1, y] : [x, y]));
+    t.run({ op: "edit", items: [{ id: 2, shape: { ...t.item(2).shape, points: moved } }] });
+    assert.deepStrictEqual([t.item(2).airfoil, t.item(2).shape.points[5]], [undefined, moved[5]]);
+    t.run({ op: "set", id: 9, shape: t.item(9).shape });
+    assert.strictEqual(t.item(9).airfoil, undefined);
+    // refusals: no airfoil to set; a bad set leaves the document as it was
+    refused(t, { op: "set", id: 2, airfoil: { chord: 70 } }, /^set: #2 is not an airfoil/);
+    t.run(airfoil({ id: 11, plane: 1 }));
+    refused(t, { op: "set", id: 11, airfoil: { chord: -1 } }, /^airfoil: .*chord/);
+    refused(t, { op: "set", id: 11, airfoil: { closedTe: false } }, /^airfoil: an open trailing edge needs an id for its line/);
+    t.free();
+}
+
 console.log("forge-commands: ok");
