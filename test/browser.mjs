@@ -23,6 +23,7 @@
 //     node test/browser.mjs --no-move               # no Move/Copy check
 //     node test/browser.mjs --no-sketch-move        # no Sketch › move check
 //     node test/browser.mjs --no-ribbons            # no ribbon width check
+//     node test/browser.mjs --no-airfoil            # no Sketch › airfoil check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
 import { spawn } from "node:child_process";
@@ -1206,6 +1207,143 @@ async function checkSketchMove(cdp, base, { webgl2, out }) {
     }
 }
 
+// Sketch › airfoil in Top: the tool's click places a 2412's leading edge on a grid point; the
+// session previews it (one commit while open) and re-runs it as the chord is typed; OK keeps one
+// `airfoil` commit whose curve's ends meet. Then a surface over it and an extrusion: one solid,
+// no error. A code that does not parse turns the field red and OK off; Esc rolls back.
+async function checkAirfoil(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    const settled = () => evaluate("window.__forgeTest.settled()");
+    const key = async (k, code, vk) => {
+        await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk });
+        await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk });
+    };
+    const press = async (id) => { await evaluate(`document.getElementById(${JSON.stringify(id)}).click()`); await sleep(100); await settled(); };
+    const field = async (id, v) => {
+        await evaluate(`(() => { const el = document.getElementById(${JSON.stringify(id)}); el.value = ${JSON.stringify(String(v))}; el.dispatchEvent(new Event("input", { bubbles: true })); })()`);
+        await sleep(100);
+        await settled();
+    };
+    const origin = await evaluate(`(() => { const r = document.getElementById("overlay").getBoundingClientRect(); return [r.left, r.top]; })()`);
+    const at = async (p) => {
+        const q = await evaluate(`window.__forgeTest.screenOf(0, ${JSON.stringify(p)})`);
+        if (!q) throw new Error(`no pixel for ${JSON.stringify(p)} in Top`);
+        return [origin[0] + q[0], origin[1] + q[1]];
+    };
+    const mouse = (type, [x, y]) => send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : "left",
+        buttons: type === "mousePressed" ? 1 : 0, clickCount: type === "mouseMoved" ? 0 : 1, pointerType: "mouse" });
+    async function click(px) {
+        await mouse("mouseMoved", [px[0] - 6, px[1] - 6]);
+        await mouse("mouseMoved", px);
+        await sleep(250);
+        await mouse("mousePressed", px);
+        await mouse("mouseReleased", px);
+        await sleep(100);
+        await settled();
+    }
+    const airfoils = async () => (await evaluate("window.__forgeTest.items()")).filter((c) => c.kind === "nurbs" && c.airfoil);
+    try {
+        // Top filling the area, framed; the grid snap alone, every 10.
+        await evaluate(`document.querySelector('#viewbar [data-view="0"]').click()`);
+        await frame(); await sleep(300);
+        await key("f", "KeyF", 70);
+        await frame(); await sleep(500); await frame();
+        await evaluate(`window.__forgeTest.snap({ on: true, kinds: { vertex: false, midpoint: false, centre: false, quadrant: false, edge: false, face: false, grid: true }, step: 10 })`);
+        const head0 = await evaluate("window.__forgeTest.headCount()");
+
+        // The tool, a click: the session previews a 2412 at the click, chord 50.
+        const button = `document.querySelector("#ribbon-sketch [data-kind=airfoil]")`;
+        if (!(await evaluate(`!!${button}`))) throw new Error("no airfoil button in the Sketch ribbon");
+        await evaluate(`${button}.click()`);
+        await frame(); await sleep(300);
+        await click(await at([-40, -20, 0]));
+        let made = await airfoils();
+        if (made.length !== 1) throw new Error(`the click previews ${made.length} airfoils`);
+        if (await evaluate(`document.getElementById("dialog").hidden`)) throw new Error("no dialog while the airfoil previews");
+        const code = await evaluate(`document.getElementById("airfoil-code").value`);
+        if (code !== "2412" || made[0].airfoil.code !== "2412" || made[0].airfoil.chord !== 50) throw new Error(`the preview is ${JSON.stringify(made[0].airfoil)}, the field ${code}`);
+        const placed = made[0].airfoil.at;
+        if (Math.hypot(placed[0] + 40, placed[1] + 20) > 1e-6) throw new Error(`the leading edge is at ${placed}, not the grid point (-40, -20)`);
+        const fit = await evaluate(`document.getElementById("airfoil-fit").textContent`);
+        if (!/^within [0-9.]+ mm$/.test(fit)) throw new Error(`the readout says ${JSON.stringify(fit)}`);
+        // Typed chords re-run the one command.
+        await field("airfoil-chord", 80);
+        made = await airfoils();
+        if (made.length !== 1 || made[0].airfoil.chord !== 80) throw new Error(`chord 80 previews ${JSON.stringify(made.map((c) => c.airfoil))}`);
+        await field("airfoil-chord", 50);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 1) throw new Error("the session is not one commit while it is open");
+        if (out) {
+            await frame(); await sleep(300); await frame();
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `airfoil${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        }
+        await press("dialog-ok");
+        made = await airfoils();
+        if (made.length !== 1 || made[0].airfoil.chord !== 50) throw new Error(`OK keeps ${JSON.stringify(made.map((c) => c.airfoil))}`);
+        const pts = made[0].shape.points;
+        if (pts.length !== 32 || pts[0][0] !== pts[31][0] || pts[0][1] !== pts[31][1]) throw new Error(`the curve's ends do not meet: ${JSON.stringify([pts[0], pts[pts.length - 1]])}`);
+        if (Math.abs(pts[0][0] - 10) > 1e-9 || Math.abs(pts[0][1] + 20) > 1e-9) throw new Error(`the trailing edge is at ${pts[0]}, not (10, -20)`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 1) throw new Error("the airfoil is not one commit");
+        const log = await evaluate("window.__forgeTest.history()");
+        if (!JSON.stringify(log[0]).includes("airfoil")) throw new Error(`the last commit is not the airfoil: ${JSON.stringify(log[0]).slice(0, 200)}`);
+
+        // Selected, its rows are its meta's; a changed chord is one `set` that writes it again.
+        const A = made[0].id;
+        await evaluate(`window.__forgeTest.select([${A}])`);
+        await sleep(100); await settled();
+        if (await evaluate(`document.getElementById("airfoil-chord").value`) !== "50" || await evaluate(`document.querySelector('[data-for="airfoil"]').hidden`)) throw new Error("the selected airfoil's rows are not shown");
+        await evaluate(`(() => { const el = document.getElementById("airfoil-chord"); el.value = "60"; el.dispatchEvent(new Event("change", { bubbles: true })); })()`);
+        await sleep(100); await settled();
+        const edited = (await airfoils()).find((c) => c.id === A);
+        if (edited?.airfoil.chord !== 60 || Math.abs(edited.shape.points[0][0] - 20) > 1e-9) throw new Error(`chord 60 on the selected airfoil gives ${JSON.stringify(edited?.airfoil)} ${JSON.stringify(edited?.shape.points[0])}`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head0 + 2) throw new Error("the re-edit is not one commit");
+
+        // A surface over it, extruded 10: one solid.
+        const S = await evaluate("window.__forgeTest.nextId()");
+        await evaluate(`window.__forgeTest.run({ op: "surface", id: ${S}, loops: [[${A}]], plane: ${JSON.stringify(made[0].plane)} })`);
+        await evaluate(`window.__forgeTest.run({ op: "solid", id: ${S + 1}, from: ${S}, height: 10 })`);
+        await settled();
+        const figures = await until("the extrusion's figures", async () => {
+            const f = (await evaluate("window.__forgeTest.figures()")).find((b) => b.id === S + 1);
+            return f && (f.volume !== null || f.error) ? f : null;
+        });
+        if (figures.kind !== "solid" || figures.error || !(figures.volume > 0)) throw new Error(`the extrusion is ${JSON.stringify(figures)}`);
+        const solids = (await evaluate("window.__forgeTest.items()")).filter((c) => c.id > A && c.kind === "solid");
+        if (solids.length !== 1) throw new Error(`${solids.length} solids made over the airfoil`);
+
+        // A code that does not parse: red, OK off, nothing run; Esc: as it was.
+        const head1 = await evaluate("window.__forgeTest.headCount()");
+        await evaluate(`${button}.click()`);
+        await frame(); await sleep(300);
+        await click(await at([50, 0, 0]));
+        if ((await airfoils()).length !== 2) throw new Error("the second airfoil does not preview");
+        await field("airfoil-code", "12a");
+        const red = await evaluate(`document.getElementById("airfoil-code").getAttribute("aria-invalid")`);
+        const off = await evaluate(`document.getElementById("dialog-ok").disabled`);
+        if (red !== "true" || !off) throw new Error(`a bad code: field invalid ${red}, OK disabled ${off}`);
+        await key("Escape", "Escape", 27);
+        await sleep(100); await settled();
+        if ((await airfoils()).length !== 1) throw new Error(`Esc leaves ${(await airfoils()).length} airfoils`);
+        if (await evaluate("window.__forgeTest.headCount()") !== head1) throw new Error("Esc left a commit behind");
+        if (await evaluate(`document.getElementById("dialog-ok").disabled`)) throw new Error("OK stays disabled after the session");
+
+        await sleep(300);
+        if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
+        console.log(`ok - airfoil: a click places a 2412 (fit ${fit}), chord 80 then 50 re-run it, OK keeps one airfoil commit with its ends met; selected, chord 60 is one set; surface + extrude 10 make one solid; a bad code is red with OK off, Esc rolls back`);
+    } catch (e) {
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" }).catch(() => null);
+            if (shot) writeFileSync(join(out, `airfoil${webgl2 ? "-webgl2" : ""}-failed.png`), Buffer.from(shot.data, "base64"));
+        }
+        throw e;
+    } finally {
+        await close();
+    }
+}
+
 async function main() {
     if (!existsSync(join(root, "pkg", "cadaclysm_bg.wasm"))) throw new Error("no pkg/: run `npm run setup` first");
     const all = readdirSync(join(root, "examples")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
@@ -1287,6 +1425,14 @@ async function main() {
             } catch (e) {
                 failed++;
                 console.error(`not ok - sketch move: ${e.message}`);
+            }
+        }
+        if (!failed && !flag("--no-airfoil")) {
+            try {
+                await checkAirfoil(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - airfoil: ${e.message}`);
             }
         }
     } finally {

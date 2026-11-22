@@ -1835,7 +1835,7 @@ const airfoil = (fields) => ({ op: "airfoil", code: "2412", naca: NACA("2412"), 
     assert.ok(close(pts[0], [60, 5], 1e-9), `the trailing edge at ${pts[0]}`);
     const a = c.airfoil;
     assert.deepStrictEqual([a.code, a.naca, a.chord, a.controls, a.closedTe, a.at, a.angle], ["2412", NACA("2412"), 50, 32, true, [10, 5], 0]);
-    assert.ok(a.error > 0 && a.error < 1e-3 * 50, `fit ${a.error}`);
+    assert.ok(a.fit > 0 && a.fit < 1e-3 * 50, `fit ${a.fit}`);
     assert.strictEqual(a.line, undefined);
     // a surface over it: the section's area
     t.run({ op: "surface", id: 3, loops: [[2]], plane: 1 });

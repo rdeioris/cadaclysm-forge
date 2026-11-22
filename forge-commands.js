@@ -2732,7 +2732,8 @@ function copyCurve(m, c, copyOf, n, { turned, mirror }) {
 
 /// An airfoil's controls (the kernel's `naca_spline`: an open clamped cubic on uniform knots,
 /// from the upper trailing edge round the leading edge to the lower), turned by `angle`
-/// degrees and moved to `at`, and the fit's error. A closed trailing edge's last point is its
+/// degrees and moved to `at`, and the fit's error (the meta's `fit`: `error` is a key the page
+/// keeps for its own). A closed trailing edge's last point is its
 /// first, bit for bit: the loop finder takes the ends as they are. Refused in the kernel's
 /// words, as `<op>: ...`.
 function airfoilShape(kernel, a, op) {
@@ -2776,7 +2777,7 @@ const nextRecordId = (s) => 1 + (s.constraints ?? []).reduce((m, k) => Math.max(
 /// its records.
 function writeAirfoil(d, op, n, a, plane, { fresh, base, lineId }) {
     const { points, error } = airfoilShape(d.kernel, a, op);
-    const meta = { ...a, error };
+    const meta = { ...a, fit: error };
     delete meta.line;
     let line = a.line;
     if (!a.closedTe && (line === undefined || !d.item(line))) {

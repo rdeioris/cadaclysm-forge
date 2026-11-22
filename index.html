@@ -55,7 +55,7 @@
     .ribbon { display: none; padding: 6px 10px; gap: 14px; align-items: stretch; overflow-x: auto; }
     .ribbon.open { display: flex; }
     .ribbon .group { display: flex; flex-direction: column; gap: 3px; }
-    .ribbon .group > div { display: flex; gap: 4px; }
+    .ribbon .group > div { display: flex; gap: 2px; }
     .ribbon .group > span { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: center; }
     .ribbon button { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 48px; padding: 3px 5px 2px; background: none; border: 1px solid transparent; border-radius: 0; color: var(--fg); font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap; }
     .ribbon button .g { width: 22px; height: 22px; color: var(--glyph); fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -109,6 +109,8 @@
     #dialog .row.sep { min-height: 0; border-top: 1px solid var(--rule); margin: 3px 0; }
     #dialog input[type=number], #dialog select { width: 100%; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--edge); border-radius: 0; padding: 2px 5px; font: inherit; }
     #dialog input[type=range] { width: 100%; }
+    #dialog input[type=text] { width: 100%; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--edge); border-radius: 0; padding: 2px 5px; font: inherit; }
+    #dialog input[aria-invalid="true"] { border-color: var(--error); outline: 1px solid var(--error); }
     #dialog input[type=color] { width: 44px; height: 22px; padding: 0 2px; background: var(--bg); border: 1px solid var(--edge); border-radius: 0; cursor: pointer; }
     #dialog button { background: var(--hover); color: inherit; border: 1px solid var(--edge); border-radius: 0; padding: 2px 6px; font: inherit; }
     #dialog button:hover { background: var(--lit); }
@@ -226,6 +228,7 @@
     <symbol id="i-ellipse" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="5.5"/></symbol>
     <symbol id="i-polygon" viewBox="0 0 24 24"><path d="M12 3 L20 7.5 V16.5 L12 21 L4 16.5 V7.5 Z"/></symbol>
     <symbol id="i-nurbs" viewBox="0 0 24 24"><path d="M3 17 C8 2 14 22 21 7"/></symbol>
+    <symbol id="i-airfoil" viewBox="0 0 24 24"><path d="M2 13 C2 8 9 7 14 8.5 C17.5 9.6 20.5 11.5 22 13 C17 13.6 11 15.5 6 15.5 C3.5 15.5 2 14.5 2 13 Z"/><path d="M2 13 H22" stroke-dasharray="1.5 2"/></symbol>
     <symbol id="i-polycurve" viewBox="0 0 24 24"><path d="M3 18 L9 18 A5 5 0 0 0 14 13 L14 8 A4 4 0 0 1 18 4 L21 4"/></symbol>
     <symbol id="i-add-point" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v5 M12 16v5 M3 12h5 M16 12h5"/></symbol>
     <symbol id="i-closed" viewBox="0 0 24 24"><path d="M5 16 A8 8 0 1 1 19 16 Z"/></symbol>
@@ -339,6 +342,7 @@
                 <button data-kind="ellipse"><svg class="g"><use href="#i-ellipse"/></svg>ellipse</button>
                 <button data-kind="polygon" title="a regular polygon (P)"><svg class="g"><use href="#i-polygon"/></svg>polygon</button>
                 <button data-kind="nurbs"><svg class="g"><use href="#i-nurbs"/></svg>spline</button>
+                <button data-kind="airfoil" title="a NACA airfoil section: click where its leading edge goes, then the code (or camber, position and thickness), the chord and the angle in the dialog -- OK or Enter"><svg class="g"><use href="#i-airfoil"/></svg>airfoil</button>
             </div>
             <span>create</span>
         </div>
@@ -479,6 +483,16 @@
             <div id="dialog-head"><span id="dialog-glyph"></span><span id="dialog-title"></span><span id="dialog-sub"></span></div>
             <div id="dialog-body">
                 <label class="row" data-for="nurbs">degree <select id="degree" disabled><option>2</option><option selected>3</option></select></label>
+                <label class="row" data-for="airfoil">code <input type="text" id="airfoil-code" value="2412" spellcheck="false" autocomplete="off" title="a NACA 4-digit code (2412: 2% camber at 40% of the chord, 12% thick) or 5-digit (23012)"></label>
+                <label class="row" data-for="airfoil">custom <input type="checkbox" id="airfoil-custom" title="the camber, its position and the thickness typed instead of a code: a 4-digit section"></label>
+                <label class="row" data-for="airfoil-custom">camber % <input type="number" id="airfoil-m" value="2" min="0" max="9.9" step="0.5"></label>
+                <label class="row" data-for="airfoil-custom">position <input type="number" id="airfoil-p" value="0.4" min="0.05" max="0.95" step="0.05" title="where the camber is greatest, a fraction of the chord"></label>
+                <label class="row" data-for="airfoil-custom">thickness % <input type="number" id="airfoil-t" value="12" min="1" max="40" step="1"></label>
+                <label class="row" data-for="airfoil">chord <input type="number" id="airfoil-chord" value="50" min="0.1" max="5000" step="1"></label>
+                <label class="row" data-for="airfoil">angle° <input type="number" id="airfoil-angle" value="0" min="-360" max="360" step="5" title="the chord's direction in the sketch, counter-clockwise from x"></label>
+                <label class="row" data-for="airfoil">controls <input type="number" id="airfoil-controls" value="32" min="8" max="200" step="1" title="the spline's control points: more fit the exact section closer"></label>
+                <label class="row" data-for="airfoil">closed TE <input type="checkbox" id="airfoil-closed" checked title="a sharp trailing edge; off, the classic open edge, closed by a line held to both ends"></label>
+                <div class="row" data-for="airfoil">fit <span id="airfoil-fit" title="the spline's largest distance from the exact section"></span></div>
                 <label class="row" data-for="nurbs-point">weight <span style="display:flex;gap:6px;align-items:center"><input type="range" id="weight" min="0" max="1" step="0.01" value="0.5" disabled> <span id="weight-value"></span></span></label>
                 <label class="row" data-for="body">colour <span style="display:flex;gap:6px;align-items:center"><input type="color" id="look-colour" value="#a5a5a9"><button id="look-reset" title="the default grey">reset</button></span></label>
                 <label class="row" data-for="body">material <select id="look-material"><option value="plastic">plastic</option><option value="metal">metal</option><option value="matte">matte (rubber)</option><option value="paint">gloss paint</option><option value="brushed">brushed metal</option><option value="glass">glass (dithered)</option></select></label>

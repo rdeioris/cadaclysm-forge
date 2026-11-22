@@ -88,6 +88,8 @@ const lookAtEl = document.getElementById("look-at");
 const addSketchEl = document.getElementById("add-sketch");
 const copySketchEl = document.getElementById("copy-sketch");
 const copySketchWhatEl = document.getElementById("copy-sketch-what");
+const [airfoilCodeEl, airfoilCustomEl, airfoilMEl, airfoilPEl, airfoilTEl, airfoilChordEl, airfoilAngleEl, airfoilControlsEl, airfoilClosedEl, airfoilFitEl] =
+    ["code", "custom", "m", "p", "t", "chord", "angle", "controls", "closed", "fit"].map((k) => document.getElementById(`airfoil-${k}`));
 const sketchFilletEl = document.getElementById("sketch-fillet");
 const tabSketchEl = document.getElementById("tab-sketch");
 const tabSolidEl = document.getElementById("tab-solid");
@@ -1328,10 +1330,10 @@ let selected = null;
 let selectedPoint = null;   // an index into the active NURBS's or polyline's points, or null
 const LABELS = { held: "Body", held_profile: "Profile", image: "Image", line: "Line", polyline: "Polyline", rect: "Rectangle", circle: "Circle", arc: "Arc", ellipse: "Ellipse", polygon: "Polygon", nurbs: "NURBS", polycurve: "Polycurve", surface: "Surface", extrusion: "Extrusion", revolution: "Revolution", solid: "Solid", sweep: "Sweep", loft: "Loft", join: "Join", cut: "Cut", intersect: "Intersect", chamfer: "Chamfer", shell: "Shell", thicken: "Thicken", trim: "Trim", prism: "Solid", press: "Press Pull", refillet: "Refillet", rechamfer: "Rechamfer", remove: "Remove", fillet: "Fillet", sketch: "Sketch", face: "Face",
                  box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split",
-                 pattern: "Pattern", instance: "Instance", pattern_feature: "Pattern", mirror: "Mirror", move: "Move", "sketch-move": "Move" };
-const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽", pattern: "⁂", instance: "◇", pattern_feature: "⁂", mirror: "⧎", move: "✥" };
+                 pattern: "Pattern", instance: "Instance", pattern_feature: "Pattern", mirror: "Mirror", move: "Move", "sketch-move": "Move", airfoil: "Airfoil" };
+const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽", pattern: "⁂", instance: "◇", pattern_feature: "⁂", mirror: "⧎", move: "✥", airfoil: "◒" };
 // A kind's icon (the sprite in forge.html), or its glyph as text where there is none.
-const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror", "pattern_feature", "copy-sketch", "move", "sketch-move"]);
+const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "pattern", "mirror", "pattern_feature", "copy-sketch", "move", "sketch-move", "airfoil"]);
 // A kind drawn with another's icon: a feature pattern is a pattern, a sketch's move a move.
 const ICON_OF = { pattern_feature: "pattern", "sketch-move": "move" };
 function iconOf(kind, glyph = GLYPHS[kind] ?? "•") {
@@ -1461,7 +1463,7 @@ function startDrawing(kind) {
 function drawingHint() {
     const { kind, stage } = drawing;
     const view = drawing.id !== null ? NAMES[viewOf(byId(drawing.id).plane) ?? 0] : "a view";
-    const first = { line: "the start", rect: "the first corner", circle: "the centre", polygon: "the centre", ellipse: "the centre", arc: "the start", polyline: "the first point", nurbs: "the first point" }[kind];
+    const first = { line: "the start", rect: "the first corner", circle: "the centre", polygon: "the centre", ellipse: "the centre", arc: "the start", polyline: "the first point", nurbs: "the first point", airfoil: "the leading edge" }[kind];
     if (stage === 0) return `click ${first} in ${view} · Esc cancels`;
     if (kind === "line") return "click the end · ends snap onto other ends and bodies (Alt: no snap) · Esc cancels";
     if (kind === "rect") return "click the opposite corner · Esc cancels";
@@ -1530,6 +1532,8 @@ function pendingSpot() {
 // is what the click snapped onto (`snapSpot`'s), kept as a fact for inference.
 async function drawClick(w, plane, target = null) {
     const { kind } = drawing;
+    // An airfoil is one click: its leading edge, then the dialog's session (`newAirfoil`).
+    if (kind === "airfoil") { drawing = null; endDrawingMode(); return newAirfoil(w, plane); }
     const placing = placingSpot();
     // A snap onto a body or the grid (no `curve`) lands the point and is no fact: coordinates only.
     if (target?.curve !== undefined && placing) drawing.snaps.push({ at: placing, target: { curve: target.curve, at: target.spot } });
@@ -3767,7 +3771,7 @@ function openTool(openedAt, ids, title, glyph) {
     // A body is looked at in Perspective: a sketch view filling the area gives way
     // (a surface stays in its sketch's view, being flat there; a revolve too, its axis
     // being placed in that view).
-    if (maximized !== null && maximized !== 1 && title !== "Surface" && title !== "Revolve" && title !== "Pattern" && title !== "Mirror" && glyph !== "sketch-move" && !(title === "Sweep" && sweepMode)) { setMaximized(1); rebuild(); frameAll(); }
+    if (maximized !== null && maximized !== 1 && title !== "Surface" && title !== "Revolve" && title !== "Pattern" && title !== "Mirror" && title !== "Airfoil" && glyph !== "sketch-move" && !(title === "Sweep" && sweepMode)) { setMaximized(1); rebuild(); frameAll(); }
     renderDialog();
     return tool;
 }
@@ -3846,10 +3850,10 @@ operationEl.addEventListener("change", () => act(async () => {
 // shell being picked, an extrude with an operation to choose.
 function renderDialog() {
     const c = current();
-    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid || tool?.copy || tool?.move || tool?.sketchMove);
+    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick || tool?.copies || tool?.solid || tool?.copy || tool?.move || tool?.sketchMove || tool?.airfoil);
     // A pattern or a mirror in progress (a sketch's, the bodies'): the dialog is the tool's,
     // as while a pick is.
-    const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid || tool?.move || tool?.sketchMove);
+    const owned = !!(sketchPick || sketchTrim || tool?.copies || tool?.solid || tool?.move || tool?.sketchMove || tool?.airfoil);
     if (!c && !tool && !modeOn) { dialogEl.hidden = true; return; }
     dialogEl.hidden = false;
     const kinds = new Set();
@@ -3894,6 +3898,16 @@ function renderDialog() {
         renderMove(s);
     }
     if (tool?.sketchMove) { kinds.add("sketch-move"); renderSketchMove(tool.sketchMove); }
+    // The airfoil's rows: the session's, or a selected airfoil's own (filled from its meta).
+    const foil = tool?.airfoil ? byId(tool.airfoil.made) ?? null : !tool && !owned && c?.kind === "nurbs" && c.airfoil ? c : null;
+    if (tool?.airfoil || foil) {
+        kinds.add("airfoil");
+        writeAirfoilRows(tool?.airfoil ? tool.airfoil.rows : rowsOfMeta(foil.airfoil));
+        if (tool?.airfoil?.hint) hintEl.textContent = tool.airfoil.hint;
+        if (airfoilCustomEl.checked) kinds.add("airfoil-custom");
+        airfoilFitEl.textContent = tool?.airfoil?.bad ? "--" : typeof foil?.airfoil?.fit === "number" ? `within ${+foil.airfoil.fit.toPrecision(2)} mm` : "";
+    }
+    dialogOkEl.disabled = !!tool?.airfoil?.bad;
     // The separator before the item's own numbers, when a tool's rows come first.
     if (propsEl.children.length && !owned && [...dialogEl.querySelectorAll("[data-for]")].some((row) => row.dataset.for !== "props" && row.dataset.for.split(" ").some((k) => kinds.has(k)))) kinds.add("props");
     propsEl.style.display = owned ? "none" : "contents";
@@ -3956,6 +3970,7 @@ function renderPicks() {
 // the history stood when it was armed.
 function confirmPicks() {
     if (sketchPick) { runSketchPick(); return; }
+    if (tool?.airfoil?.bad) return;   // a code that does not parse: OK is off
     if (tool) { commitTool(); return; }
     if (shellMode) newShell();
     if (trimMode) setTrimMode(null);
@@ -4001,7 +4016,7 @@ function timelineChips() {
             chip = { at: i, ids: added.slice(), glyph: GLYPHS.sketch, kind: "sketch" };
             if (added.length) bySketch.set(added[0], chip);
             break;
-        case "add": case "merge": {
+        case "add": case "merge": case "airfoil": {
             const plane = byId(added[0])?.plane;
             const own = plane !== undefined ? bySketch.get(plane) : undefined;
             if (own) { own.ids.push(...added); own.end = i; }
@@ -6628,6 +6643,121 @@ function renderCopySketch(s) {
     copySketchWhatEl.textContent = `${s.name} · ${s.count} curve${s.count === 1 ? "" : "s"}${s.skipped ? ` · ${s.skipped} not copied` : ""}`;
 }
 
+// ------------------------------------------------------------------ Sketch › airfoil
+
+// Sketch › airfoil (`airfoil`, forge-commands.js `writeAirfoil`): a NACA section placed by one
+// click, its leading edge there; a tool session (`openTool`, `tool.airfoil`) that runs the command
+// at once and again from where it opened at every change in the dialog (`rerunSession`): the
+// code, or a 4-digit section's camber, position and thickness typed; the chord; the angle; the
+// controls; the trailing edge closed or open (a line held to its ends). A code that does not
+// parse turns its field red and OK off, and runs nothing. OK (or Enter) keeps the one command,
+// Esc rolls it back. A selected airfoil shows the same rows from its meta: a change there is a
+// `set` of its `airfoil` (the controls written again); a dragged control point makes it a plain
+// spline.
+// The airfoil rows as typed (`rows`, strings and flags: what a session keeps, and puts back
+// after a rollback's redraw), and what they say: the numbers the code parses to (or the custom
+// section's), null where it does not parse, and the other fields.
+const AIRFOIL_TEXT = { code: airfoilCodeEl, m: airfoilMEl, p: airfoilPEl, t: airfoilTEl, chord: airfoilChordEl, angle: airfoilAngleEl, controls: airfoilControlsEl };
+function readAirfoilRows() {
+    const rows = Object.fromEntries(Object.entries(AIRFOIL_TEXT).map(([k, el]) => [k, el.value]));
+    rows.custom = airfoilCustomEl.checked;
+    rows.closed = airfoilClosedEl.checked;
+    return rows;
+}
+function writeAirfoilRows(rows) {
+    for (const [k, el] of Object.entries(AIRFOIL_TEXT)) if (el !== document.activeElement && rows[k] !== undefined) el.value = rows[k];
+    airfoilCustomEl.checked = rows.custom;
+    airfoilClosedEl.checked = rows.closed;
+}
+function airfoilOf(rows) {
+    let naca = null, code;
+    if (rows.custom) {
+        const v = [rows.m, rows.p, rows.t].map((x) => (String(x).trim() === "" ? NaN : Number(x)));
+        if (v.every(Number.isFinite)) naca = [4, v[0] / 100, v[1], v[2] / 100, 0];
+    } else {
+        code = String(rows.code).trim();
+        try { naca = Array.from(wasm.cadaclysm_blacksmith_naca_parse(code)); } catch { naca = null; }
+    }
+    const a = { naca, chord: Number(rows.chord), angle: Number(rows.angle) || 0, controls: Math.round(Number(rows.controls)), closedTe: rows.closed };
+    if (code !== undefined) a.code = code;
+    return a;
+}
+// A selected airfoil's meta as rows.
+function rowsOfMeta(a) {
+    const four = a.naca?.[0] === 4;
+    return { code: a.code ?? "", custom: a.code === undefined, m: four ? round(a.naca[1] * 100) : undefined, p: four ? round(a.naca[2]) : undefined, t: four ? round(a.naca[3] * 100) : undefined,
+             chord: round(a.chord), angle: round(a.angle), controls: a.controls, closed: a.closedTe !== false };
+}
+// The code row red where it does not parse.
+function markAirfoil(rows, bad) {
+    airfoilCodeEl.setAttribute("aria-invalid", String(bad && !rows.custom));
+}
+// The session opened at `w` on `plane`, its first run made.
+function newAirfoil(w, plane) {
+    return act(async () => {
+        if (tool) commitTool();
+        const session = openTool(headNow(), [], "Airfoil", "airfoil");
+        const rows = readAirfoilRows();
+        session.airfoil = { plane, at: [w[0], w[1]], rows, made: null, bad: airfoilOf(rows).naca === null, doneAt: head };
+        markAirfoil(rows, session.airfoil.bad);
+        if (!session.airfoil.bad) await runAirfoil(session);
+        else session.airfoil.hint = "the code is no NACA code: 4 digits (2412) or 5 (23012) · Esc cancels";
+        renderDialog();
+        syncToolbar();
+    });
+}
+// One run of the session's command, its ids from `nextId`: the curve's, then an open trailing
+// edge's line. What it made selected.
+async function runAirfoil(session) {
+    const s = session.airfoil;
+    const f = airfoilOf(s.rows);
+    if (f.naca === null) return;
+    const id = nextId;
+    const cmd = { op: "airfoil", id, plane: s.plane, at: s.at.slice(), angle: f.angle, chord: f.chord, naca: f.naca, controls: f.controls, closedTe: f.closedTe, ids: f.closedTe ? [] : [id + 1] };
+    if (f.code !== undefined) cmd.code = f.code;
+    const ok = await run(cmd);
+    s.made = ok && byId(id) ? id : null;
+    s.doneAt = head;
+    session.ids = s.made !== null ? [id, ...cmd.ids.filter((n) => byId(n))] : [];
+    keepView = true;
+    try { setSelection(session.ids); } finally { keepView = false; }
+    if (tool !== session) return;   // closed by OK while this ran: nothing left to say
+    s.hint = `the section follows the numbers · OK or Enter keeps ${s.made !== null ? "it" : "nothing"} · Esc cancels`;
+    if (!ok) s.hint = `${statusEl.textContent} · ${s.hint}`;
+    hintEl.textContent = s.hint;
+}
+// A row changed. In a session (`input`): the command run again, unless the code does not
+// parse. A selected airfoil (`change`): a `set` of its fields -- with an id for the line when
+// its trailing edge opens.
+function airfoilChanged(final) {
+    const s = tool?.airfoil;
+    if (s ? final : !final) return;
+    const rows = readAirfoilRows();
+    const f = airfoilOf(rows);
+    const bad = f.naca === null;
+    markAirfoil(rows, bad);
+    if (s) {
+        s.rows = rows;
+        s.bad = bad;
+        if (bad) s.hint = "the code is no NACA code: 4 digits (2412) or 5 (23012) · Esc cancels";
+        renderDialog();
+        if (!bad) rerunSession("airfoil", runAirfoil);
+        return;
+    }
+    const c = current();
+    if (bad || !(c?.kind === "nurbs" && c.airfoil)) { renderDialog(); return; }
+    const a = { naca: f.naca, chord: f.chord, angle: f.angle, controls: f.controls, closedTe: f.closedTe };
+    if (f.code !== undefined) a.code = f.code;
+    const cmd = { op: "set", id: c.id, airfoil: a };
+    if (!f.closedTe && !(c.airfoil.line !== undefined && byId(c.airfoil.line))) cmd.ids = [nextId];
+    run(cmd);
+}
+for (const el of [airfoilCodeEl, airfoilCustomEl, airfoilMEl, airfoilPEl, airfoilTEl, airfoilChordEl, airfoilAngleEl, airfoilControlsEl, airfoilClosedEl]) {
+    el.addEventListener("input", () => airfoilChanged(false));
+    el.addEventListener("change", () => airfoilChanged(true));
+}
+airfoilCustomEl.addEventListener("change", () => renderDialog());
+
 // ------------------------------------------------------------------ the sketch's pattern and mirror
 
 // Sketch › pattern and Sketch › mirror (`sketch_pattern`, `sketch_mirror`, forge-commands.js
@@ -8606,6 +8736,7 @@ function onKeydown(e) {
     if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool?.move?.picking || tool?.sketchMove?.picking) { const s = tool.move ?? tool.sketchMove; s.from = null; armMovePick(s, null); renderDialog(); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
     const inDialog = e.target instanceof HTMLElement && e.target.closest("#dialog");
     if (e.key === "Enter" && drawing && !inDialog) { e.preventDefault(); finishDrawing(); return; }
+    if (e.key === "Enter" && tool?.airfoil?.bad) { e.preventDefault(); return; }
     if (e.key === "Enter" && tool && (e.target === document.body || inDialog || e.target instanceof HTMLButtonElement)) { e.preventDefault(); commitTool(); return; }
     if (e.key === "Enter" && axisMode && e.target === document.body) { newBody("revolution"); return; }
     // Enter from anywhere but a field -- the shell button itself has the focus after
