@@ -22,6 +22,7 @@
 //     node test/browser.mjs --no-solid-tools        # no solid pattern / mirror check
 //     node test/browser.mjs --no-move               # no Move/Copy check
 //     node test/browser.mjs --no-sketch-move        # no Sketch › move check
+//     node test/browser.mjs --no-ribbons            # no ribbon width check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
 import { spawn } from "node:child_process";
@@ -765,6 +766,47 @@ async function checkSolidCopies(cdp, base, { webgl2, out }) {
 // (X and Y, never Z), and a click on the X arrow with 10 typed (Esc in the field does nothing).
 // `--out`: those pictures (move-session.png, move-pivot.png, manipulator-new.png with the arc
 // hovered, manipulator-drag.png mid-drag, manipulator-old.png in the older rings-only look).
+// The ribbons: at the browser check's 1600 px and at 1920 px, every tab's ribbon fits its
+// row (no button past the right edge, where a click lands outside the window); narrower
+// (1280 px) a ribbon may overflow, but then its scroll arrows show and scrolling brings
+// its last button into view.
+async function checkRibbons(cdp, base, { webgl2 }) {
+    const page = await openForge(cdp, base, "box-fillet", { webgl2 });
+    try {
+        const measure = () => page.evaluate(`(() => [...document.querySelectorAll(".ribbon")].map((r) => {
+            const was = r.classList.contains("open");
+            r.classList.add("open");
+            const out = { id: r.id, scroll: r.scrollWidth, client: r.clientWidth, widest: [...r.querySelectorAll("button")].map((b) => [Math.round(b.getBoundingClientRect().width), (b.textContent || b.id).trim()]).sort((a, b) => b[0] - a[0]).slice(0, 8).map(([w, t]) => t + " " + w).join(", "), arrows: !!r.parentElement.querySelector(".ribbon-scroll:not([hidden])") && r.scrollWidth > r.clientWidth };
+            if (!was) r.classList.remove("open");
+            return out;
+        }))()`);
+        for (const width of [1600, 1920]) {
+            await page.send("Emulation.setDeviceMetricsOverride", { width, height: H, deviceScaleFactor: 1, mobile: false });
+            await sleep(200);
+            const over = (await measure()).filter((r) => r.scroll > r.client);
+            if (over.length) throw new Error(`at ${width} px: ${over.map((r) => `${r.id} is ${r.scroll} px wide in ${r.client} (widest: ${r.widest})`).join(", ")}`);
+        }
+        await page.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: H, deviceScaleFactor: 1, mobile: false });
+        await sleep(200);
+        await page.evaluate(`window.dispatchEvent(new Event("resize"))`);
+        await sleep(100);
+        const sketch = (await measure()).find((r) => r.id === "ribbon-sketch");
+        if (sketch.scroll > sketch.client) {
+            const shown = await page.evaluate(`(() => { const b = document.querySelector("#ribbon-sketch-right"); return !!b && !b.hidden && b.getBoundingClientRect().width > 0; })()`);
+            if (!shown) throw new Error("at 1280 px the sketch ribbon overflows with no scroll arrow shown");
+            await page.evaluate(`document.querySelector("#ribbon-sketch-right").click()`);
+            await sleep(400);
+            const inView = await page.evaluate(`(() => { const r = document.querySelector("#copy-sketch").getBoundingClientRect(); return r.right <= window.innerWidth && r.left >= 0; })()`);
+            if (!inView) throw new Error("at 1280 px the scroll arrow does not bring copy to plane into view");
+        }
+        await page.send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+        if (page.errors.length) throw new Error(page.errors.join("; "));
+        console.log("ok - ribbons fit at 1600 and 1920 px, and scroll at 1280");
+    } finally {
+        await page.close();
+    }
+}
+
 async function checkMove(cdp, base, { webgl2, out }) {
     const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
     const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
@@ -1189,6 +1231,14 @@ async function main() {
                 failed++;
                 console.error(`not ok - ${name}: ${e.message}`);
                 break;
+            }
+        }
+        if (!failed && !flag("--no-ribbons")) {
+            try {
+                await checkRibbons(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2") });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - ribbons: ${e.message}`);
             }
         }
         if (!failed && !flag("--no-snap")) {

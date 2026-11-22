@@ -3237,7 +3237,41 @@ function showTab(which) {
     ribbonSolidEl.classList.toggle("open", which === "solid");
     ribbonConstructEl.classList.toggle("open", which === "construct");
     ribbonInspectEl.classList.toggle("open", which === "inspect");
+    syncRibbonScrolls();
 }
+// A ribbon wider than the window (a narrow one: every ribbon fits 1600 px) scrolls sideways:
+// an arrow pinned at each end it can still scroll toward, and the mouse wheel over it scrolls
+// it, so no button sits unseen past the window's edge.
+function syncRibbonScroll(r) {
+    if (!r.classList.contains("open")) return;
+    const over = r.scrollWidth > r.clientWidth + 1;
+    r.querySelector(".ribbon-scroll.left").hidden = !over || r.scrollLeft <= 0;
+    r.querySelector(".ribbon-scroll.right").hidden = !over || r.scrollLeft + r.clientWidth >= r.scrollWidth - 1;
+}
+function syncRibbonScrolls() { for (const r of document.querySelectorAll(".ribbon")) syncRibbonScroll(r); }
+for (const r of document.querySelectorAll(".ribbon")) {
+    const arrow = (side) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = `ribbon-scroll ${side}`;
+        b.id = `${r.id}-${side}`;
+        b.textContent = side === "left" ? "‹" : "›";
+        b.title = `scroll the ribbon ${side}`;
+        b.hidden = true;
+        b.addEventListener("click", () => { r.scrollLeft += (side === "left" ? -1 : 1) * Math.max(120, r.clientWidth * 0.8); syncRibbonScroll(r); });
+        return b;
+    };
+    r.prepend(arrow("left"));
+    r.append(arrow("right"));
+    r.addEventListener("scroll", () => syncRibbonScroll(r), { passive: true });
+    r.addEventListener("wheel", (e) => {
+        if (r.scrollWidth <= r.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        r.scrollLeft += e.deltaY;
+        e.preventDefault();
+    }, { passive: false });
+}
+window.addEventListener("resize", syncRibbonScrolls);
+syncRibbonScrolls();
 tabSketchEl.addEventListener("click", () => showTab("sketch"));
 tabSolidEl.addEventListener("click", () => showTab("solid"));
 tabConstructEl.addEventListener("click", () => showTab("construct"));

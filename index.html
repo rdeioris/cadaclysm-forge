@@ -52,12 +52,12 @@
     #snap-pop { position: absolute; top: 100%; right: 0; z-index: 20; margin-top: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; background: var(--raised); border: 1px solid var(--edge); }
     #snap-pop[hidden] { display: none; }
     #snap-pop input[type=number] { width: 64px; border: 1px solid var(--edge); background: var(--bg); color: var(--fg); font: inherit; font-size: 12px; padding: 1px 4px; }
-    .ribbon { display: none; padding: 6px 10px; gap: 18px; align-items: stretch; overflow-x: auto; }
+    .ribbon { display: none; padding: 6px 10px; gap: 14px; align-items: stretch; overflow-x: auto; }
     .ribbon.open { display: flex; }
     .ribbon .group { display: flex; flex-direction: column; gap: 3px; }
     .ribbon .group > div { display: flex; gap: 4px; }
     .ribbon .group > span { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: center; }
-    .ribbon button { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 54px; padding: 3px 6px 2px; background: none; border: 1px solid transparent; border-radius: 0; color: var(--fg); font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap; }
+    .ribbon button { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 48px; padding: 3px 5px 2px; background: none; border: 1px solid transparent; border-radius: 0; color: var(--fg); font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap; }
     .ribbon button .g { width: 22px; height: 22px; color: var(--glyph); fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     svg.icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; flex: none; }
     .ribbon button:hover { background: var(--raised); border-color: var(--rule); }
@@ -67,6 +67,14 @@
     .ribbon button:disabled:hover { background: none; border-color: transparent; }
     .ribbon button[aria-pressed=true] { background: var(--blue); border-color: var(--blue); color: var(--bg); }
     .ribbon button[aria-pressed=true] .g { color: var(--bg); }
+    /* The constraints, as Fusion draws them: glyphs alone, each named by its tooltip. */
+    .ribbon .group.icons button { font-size: 0; min-width: 34px; padding: 3px 5px 2px; justify-content: center; }
+    /* A ribbon wider than the window scrolls: an arrow pinned at each end it can scroll toward. */
+    .ribbon button.ribbon-scroll { position: sticky; z-index: 2; align-self: stretch; justify-content: center; min-width: 22px; width: 22px; padding: 0; border: none; background: var(--bg); color: var(--fg); font-size: 18px; box-shadow: 0 0 10px 6px var(--bg); }
+    .ribbon button.ribbon-scroll.left { left: -10px; margin-right: -14px; }
+    .ribbon button.ribbon-scroll.right { right: -10px; margin-left: -14px; }
+    .ribbon button.ribbon-scroll:hover { background: var(--raised); }
+    .ribbon button.ribbon-scroll[hidden] { display: none; }
     #panel button, #panel input {
         background: var(--raised); color: inherit; border: 1px solid var(--edge); border-radius: 0;
         padding: 2px 6px; font: inherit;
@@ -348,7 +356,7 @@
             </div>
             <span>modify</span>
         </div>
-        <div class="group">
+        <div class="group icons">
             <div>
                 <button data-constrain="coincident" aria-pressed="false" title="hold two points together -- or a point on a line, an arc or a circle: click them on a sketch"><svg class="g"><use href="#i-c-coincident"/></svg>coincident</button>
                 <button data-constrain="horizontal" aria-pressed="false" title="hold a line level -- or two points at one height: click it, or them, on a sketch"><svg class="g"><use href="#i-c-horizontal"/></svg>horizontal</button>
