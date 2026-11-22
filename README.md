@@ -48,6 +48,7 @@ and a body mirror.
 
 | tab | tool | what it makes | kernel call |
 |---|---|---|---|
+| Sketch | airfoil | a NACA 4- or 5-digit section (by code, or a 4-digit's camber, position and thickness) placed by its leading edge, with a chord and an angle: one spline, its ends meeting at a closed trailing edge (an open one is closed by a line held to both ends); selected, its fields edit it again until a control point is dragged | `cadaclysm_blacksmith_naca_parse`, `cadaclysm_blacksmith_naca_spline` |
 | Sketch | pattern | copies of the picked curves on the same sketch, circular about the origin or a picked point (count, angle) or rectangular (two directions, counts and spacings), held by constraints so the original's size and the step drive them | `cadaclysm_blacksmith_sketch_pattern_circular`, `cadaclysm_blacksmith_sketch_pattern_rectangular` on the sketch session |
 | Sketch | mirror | the picked curves reflected across a line of the sketch, held symmetric to the originals | `cadaclysm_blacksmith_sketch_mirror` on the sketch session |
 | Sketch | move | the selected curves of one sketch slid and turned as a block in its plane (x, y, angle) about a pivot (their box's middle, or a snapped point), or copies of them so moved; on a constrained sketch what is held to them follows. The manipulator: arrows, plane squares and arcs; Shift drags free of the steps; click a handle to type a value | the sketch session's solve (`cadaclysm_blacksmith_sketch_drag`) where it has constraints |
