@@ -195,6 +195,8 @@
     #views canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     #overlay { cursor: default; touch-action: none; }
     /* A dimension's value typed over its label on a double-click. */
+    #views .move-typed { position: absolute; z-index: 3; display: flex; align-items: center; gap: 4px; background: var(--bg); color: var(--fg); border: 1px solid var(--blue); padding: 0 0 0 5px; height: 18px; box-sizing: border-box; font: 11px system-ui, sans-serif; }
+    #views .move-typed input { width: 72px; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 0; border-left: 1px solid var(--edge); border-radius: 0; padding: 0 4px; height: 16px; font: inherit; }
     #views input.dim-edit { position: absolute; z-index: 3; width: 76px; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--blue); border-radius: 0; padding: 0 4px; height: 18px; font: 11px system-ui, sans-serif; }
     #text-file { background: var(--raised); color: var(--fg); border: 1px solid var(--edge); border-radius: 0; padding: 12px; width: min(720px, 90vw); }
     #text-file::backdrop { background: rgba(0, 0, 0, .5); }

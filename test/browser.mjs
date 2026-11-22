@@ -759,8 +759,12 @@ async function checkSolidCopies(cdp, base, { webgl2, out }) {
 // pivot onto a corner (a vertex snap): the pivot readout is that corner. Point to point from a
 // corner of box 1 to the same corner of box 2: box 1 lands on box 2. Copy: the originals
 // stay, the copies move. Then six boxes in a ring (a box and its pattern): the session about
-// their middle, and Set pivot onto a corner of one. `--out`: those two pictures
-// (move-session.png, move-pivot.png).
+// their middle, and Set pivot onto a corner of one. The manipulator's look (F3), on the ring:
+// the Z arc's grip hovered (the grab cursor), a drag of it about 50 degrees that steps to 45
+// (and with Shift does not), the readout and the ghost boxes during it, a drag of the XY square
+// (X and Y, never Z), and a click on the X arrow with 10 typed (Esc in the field does nothing).
+// `--out`: those pictures (move-session.png, move-pivot.png, manipulator-new.png with the arc
+// hovered, manipulator-drag.png mid-drag, manipulator-old.png in the older rings-only look).
 async function checkMove(cdp, base, { webgl2, out }) {
     const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
     const frame = () => evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
@@ -953,8 +957,110 @@ async function checkMove(cdp, base, { webgl2, out }) {
         }
         await key("Escape", "Escape", 27);
         await sleep(300);
+
+        // The look: arrows, plane squares, quarter arcs.
+        const shoot = async (name) => {
+            if (!out) return;
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `${name}${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        };
+        const openRing = async () => { await T(`select([${R}, ${R + 1}])`); await key("m", "KeyM", 77); await frame(); await sleep(200); await frame(); };
+        const dragAlong = async (from, path, { modifiers = 0, mid = null } = {}) => {
+            await mouse("mouseMoved", from);
+            await sleep(100);
+            await send("Input.dispatchMouseEvent", { type: "mousePressed", x: from[0], y: from[1], button: "left", buttons: 1, clickCount: 1, modifiers, pointerType: "mouse" });
+            for (const q of path) {
+                await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: q[0], y: q[1], button: "left", buttons: 1, modifiers, pointerType: "mouse" });
+                await sleep(16);
+            }
+            const during = mid ? await mid() : null;
+            const end = path.at(-1);
+            await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: end[0], y: end[1], button: "left", buttons: 0, clickCount: 1, modifiers, pointerType: "mouse" });
+            await sleep(200); await settled();
+            return during;
+        };
+        // Round the Z arc about the pivot (0, 0, 5), from its grip (45 degrees) to 95: 50 degrees.
+        const zTurn = async (modifiers, mid) => {
+            const gz = await T("gizmo()");
+            const grip = gz.arcs.find((a) => a.name === "Z")?.grip;
+            if (!grip) throw new Error(`the ring's manipulator has no Z arc: ${JSON.stringify(gz)}`);
+            const path = [];
+            for (let k = 1; k <= 20; k++) { const t = (45 + 50 * k / 20) * Math.PI / 180; path.push(await at([10 * Math.cos(t), 10 * Math.sin(t), 5])); }
+            return dragAlong(grip, path, { modifiers, mid });
+        };
+        await openRing();
+        const g5 = await T("gizmo()");
+        if (!g5.arcs?.length || !g5.planes?.length) throw new Error(`the session's manipulator has no arcs or squares: ${JSON.stringify(g5)}`);
+        const zGrip = g5.arcs.find((a) => a.name === "Z").grip;
+        await mouse("mouseMoved", [zGrip[0] - 20, zGrip[1] - 20]);
+        await mouse("mouseMoved", zGrip);
+        await sleep(100); await frame();
+        const cursor = await evaluate(`document.getElementById("overlay").style.cursor`);
+        const look = await T("manipulatorState()");
+        if (cursor !== "grab" || look.hover !== "rotate Z") throw new Error(`over the Z arc's grip the cursor is ${cursor} and the hover ${look.hover}, not grab and rotate Z`);
+        await frame(); await sleep(300); await frame();
+        await shoot("manipulator-new");
+        await T("oldLook(true)");
+        await frame(); await sleep(300); await frame();
+        await shoot("manipulator-old");
+        await T("oldLook(false)");
+        await frame();
+        // The Z arc dragged 50 degrees, snapping on: 45, in 15-degree steps.
+        await T("snap({ on: true })");
+        const during = await zTurn(0, async () => { await frame(); await sleep(200); await frame(); await shoot("manipulator-drag"); return T("manipulatorState()"); });
+        st = await T("moveState()");
+        if (Math.abs(st.turn[2] - 45) > 1e-6 || Math.abs(st.turn[0]) > 1e-6 || Math.abs(st.turn[1]) > 1e-6) throw new Error(`the Z arc dragged 50 degrees gives turn ${text(st.turn)}, not (0, 0, 45)`);
+        if (during.readout !== "Z 45°") throw new Error(`the readout during the drag says ${JSON.stringify(during.readout)}, not "Z 45°"`);
+        if (during.ghosts !== 6) throw new Error(`the drag shows ${during.ghosts} ghost boxes, not 6`);
+        if ((await T("manipulatorState()")).readout !== null) throw new Error("the readout stays after the drag");
+        await key("Escape", "Escape", 27);
+        // With Shift: free of the steps.
+        await openRing();
+        await zTurn(8, null);
+        st = await T("moveState()");
+        const free = st.turn[2];
+        if (Math.abs(free) < 1 || Math.abs(free / 15 - Math.round(free / 15)) < 0.05) throw new Error(`the Z arc dragged with Shift gives ${free} degrees, a step of 15`);
+        await key("Escape", "Escape", 27);
+        // The XY square: X and Y, never Z.
+        await openRing();
+        const sq = (await T("gizmo()")).planes.find((p) => p.name === "Z")?.centre;
+        if (!sq) throw new Error("no XY square on the ring's manipulator");
+        const p0 = await at([0, 0, 5]), p1 = await at([16, 14, 5]);
+        const sqPath = [];
+        for (let k = 1; k <= 20; k++) sqPath.push([sq[0] + (p1[0] - p0[0]) * k / 20, sq[1] + (p1[1] - p0[1]) * k / 20]);
+        await dragAlong(sq, sqPath);
+        st = await T("moveState()");
+        if (st.by[0] === 0 || st.by[1] === 0 || st.by[2] !== 0) throw new Error(`a drag of the XY square gives by ${text(st.by)}`);
+        await key("Escape", "Escape", 27);
+        // A click on the X arrow: a field; 10 and Enter moves the bodies 10 along X.
+        await openRing();
+        const before = centre(await boxOf(R));
+        const typeAt = async (name, typed, enter) => {
+            const tip = (await T("gizmo()")).axes.find((a) => a.name === name).tip;
+            await click(tip);
+            const label = await evaluate(`document.querySelector(".move-typed")?.dataset.label ?? null`);
+            const focused = await evaluate(`document.activeElement?.closest?.(".move-typed") ? document.activeElement.value : null`);
+            if (label !== name || focused !== "") throw new Error(`a click on the ${name} arrow opens ${JSON.stringify(label)} with ${JSON.stringify(focused)} focused, not an empty ${name} field`);
+            await send("Input.insertText", { text: typed });
+            const [k, vk] = enter ? ["Enter", 13] : ["Escape", 27];
+            await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code: k, windowsVirtualKeyCode: vk });
+            await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code: k, windowsVirtualKeyCode: vk });
+            await sleep(150); await settled();
+            if (await evaluate(`!!document.querySelector(".move-typed")`)) throw new Error(`the ${name} field stays after ${k}`);
+        };
+        await typeAt("Y", "5", false);
+        st = await T("moveState()");
+        if (!st || !near(st.by, [0, 0, 0], 0)) throw new Error(`Esc in the typed field changed the session: ${JSON.stringify(st)}`);
+        await typeAt("X", "10", true);
+        st = await T("moveState()");
+        if (!near(st.by, [10, 0, 0], 1e-9)) throw new Error(`X 10 typed gives by ${text(st.by)}`);
+        if (Number(await evaluate(`document.getElementById("move-x").value`)) !== 10) throw new Error("the dialog's X does not read 10");
+        const after = centre(await boxOf(R));
+        if (!near(after, [before[0] + 10, before[1], before[2]])) throw new Error(`X 10 typed leaves the box at ${text(after)}, from ${text(before)}`);
+        await key("Escape", "Escape", 27);
+        await sleep(300);
         if (errors.length) throw new Error(`errors logged:\n  ${errors.join("\n  ")}`);
-        console.log(`ok - move: no manipulator on a selection; M at the box centre; Z° 90 one commit and one chip, the boxes at ${text(c1)} ${text(c2)}; Esc restores; Set pivot onto ${text(corner)}; point to point lands box 1 on box 2; copy keeps the originals; the ring's session about (0, 0, 5)`);
+        console.log(`ok - move: no manipulator on a selection; M at the box centre; Z° 90 one commit and one chip, the boxes at ${text(c1)} ${text(c2)}; Esc restores; Set pivot onto ${text(corner)}; point to point lands box 1 on box 2; copy keeps the originals; the ring's session about (0, 0, 5); the Z arc's grip grabs, steps to 45 (Shift ${+free.toFixed(2)}) with the readout and 6 ghosts; the XY square stays in Z; X 10 typed`);
     } catch (e) {
         if (out) {
             mkdirSync(out, { recursive: true });

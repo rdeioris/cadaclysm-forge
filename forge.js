@@ -47,7 +47,7 @@ import { attachViewer } from "./pkg/viewer-client.js";
 import { VIEW_ID, dropRedo, itemOfNode, createQuarantine } from "./forge-scene.js";
 import { cameraOf } from "./projection.js";
 import { cubeFaces, cubeFaceAt, aimAt } from "./view-cube.js";
-import { AXES3, RINGS3, layoutManipulator as layoutShared, drawManipulator as drawShared, hitManipulator as hitShared, manipulatorPoint as pointShared, dragDelta, segmentDistance } from "./manipulator.js";
+import { AXES3, RINGS3, ARCS3, PLANES3, PLANES2, AXIS_COLOURS, layoutManipulator as layoutShared, drawManipulator as drawShared, hitManipulator as hitShared, manipulatorPoint as pointShared, dragDelta, stepDelta, segmentDistance } from "./manipulator.js";
 import { createRouter } from "./forge-input.js";
 import { createOrder, deferWhileBusy, createUndoOrder } from "./forge-order.js";
 import { KINDS as SNAP_KINDS, readSettings, writeSettings, viewKinds, bodyAnswer, choose, fresh as freshSnap, glyphOf } from "./forge-snap.js";
@@ -4536,6 +4536,7 @@ function drawOverlay() {
             const m = manipulatorOf(v);
             if (m) drawManipulator(m, v, rects[v]);
         }
+        drawManipulatorDrag(rects);
         // The revolve tool's axis while it is armed.
         if (axisMode) inView(axisMode.plane, (top) => drawAxis(axisMode.plane, axisMode.axis, top, ACCENT));
         { const c = inHand(); if (c) drawRubberBand(c, drawing ? OUTLINE_COLOUR : ACCENT); }
@@ -4798,15 +4799,20 @@ function drawAxis(plane, axis, top, colour) {
 
 
 // The manipulator, one style in every view: at the pivot of what is
-// moved, an arrow along each axis that slides it, a ring about each that turns it,
-// the centre disc that slides it in the plane facing the camera, and a square beside
-// the centre that scales it. What the axes are depends on the subject and the view:
-//  - the bodies of the Move session (`tool.move`), in every view: the world's X, Y, Z and
-//    the rings about them, at the session's pivot, no scale -- shown only in the session (a
-//    selected body shows none);
+// moved, an arrow along each axis that slides it, a square between each two that slides it
+// in their plane, a quarter arc about each that turns it, and the centre disc that slides it
+// in the plane facing the camera (F3's look; the older rings with `oldLook`, a test's). What
+// the axes are depends on the subject and the view:
+//  - the bodies of the Move session (`tool.move`), in every view: the world's X, Y, Z, the
+//    squares between them and the arcs about them, at the session's pivot, no scale -- shown
+//    only in the session (a selected body shows none);
 //  - the curves of Sketch › move's session (`tool.sketchMove`): the plane's x and y and the
-//    ring about its normal, no scale -- the curves moved and turned as a block, their
-//    shapes rewritten (a rectangle turned becomes a polyline, an ellipse does not turn).
+//    arc about its normal from x to y, no squares (the plane is the centre's), no scale -- the
+//    curves moved and turned as a block, their shapes rewritten (a rectangle turned becomes a
+//    polyline, an ellipse does not turn).
+// A drag steps (`stepDelta`): a slide on the snap step and a turn by 15 degrees while
+// snapping is on; Shift drags free. A press that never moves on an arrow, a square or an arc
+// opens a field there to type the step in (`openMoveTyped`).
 // Sized on screen at any distance, an arrow or a ring seen edge-on in a view left out of it:
 // the layout, the drawing, the hit test and the drag's maths are manipulator.js's, shared
 // with other cadaclysm pages; what the subject is and what a drag does to it are the forge's.
@@ -4816,7 +4822,9 @@ function manipulatorOf(view) {
         // the centre, rotate the rings. None while a pick is armed (the click is the pick's).
         const s = tool.move;
         if (s.picking) return null;
-        return { subject: "move", pivot: s.live ?? V.add(s.pivot, s.by), axes: s.type === "rotate" ? [] : AXES3, rings: s.type === "translate" ? [] : RINGS3, scale: false };
+        const pivot = s.live ?? V.add(s.pivot, s.by);
+        if (manipulatorOld) return { subject: "move", pivot, axes: s.type === "rotate" ? [] : AXES3, rings: s.type === "translate" ? [] : RINGS3, scale: false };
+        return { subject: "move", pivot, axes: s.type === "rotate" ? [] : AXES3, planes: s.type === "rotate" ? [] : PLANES3, arcs: s.type === "translate" ? [] : ARCS3, scale: false };
     }
     if (tool?.sketchMove) return sketchManipulator();
     const c = current();
@@ -4832,8 +4840,15 @@ function sketchManipulator() {
     if (!items.length) return null;
     const pivot2 = s.live ?? [s.pivot2[0] + s.by2[0], s.pivot2[1] + s.by2[1]];
     const F = planeInfo(s.plane).frame;
-    return { subject: "curves", session: true, items, plane: s.plane, pivot2, pivot: embed3(s.plane, pivot2), axes: [{ a: F.x, name: "X" }, { a: F.y, name: "Y" }], rings: [{ n: F.z, name: "Z" }], scale: false };
+    const m = { subject: "curves", session: true, items, plane: s.plane, pivot2, pivot: embed3(s.plane, pivot2), axes: [{ a: F.x, name: "X" }, { a: F.y, name: "Y" }], scale: false };
+    return manipulatorOld ? { ...m, rings: [{ n: F.z, name: "Z" }] } : { ...m, arcs: [{ n: F.z, name: "Z", from: F.x, to: F.y }], planes: PLANES2 };
 }
+// The older look (rings, no squares or arcs), for a picture beside the new one: a test's.
+let manipulatorOld = false;
+// The handle the pointer is over with no drag on (`{ view, kind, name }`), drawn brighter.
+let manipulatorHover = null;
+// A square's two axes by its name, for the readout and the typed field.
+const PLANE_LABELS = { Z: "XY", X: "YZ", Y: "ZX" };
 // A curve's points in its plane, for a box round it: its handles, or a polycurve's
 // Bézier control points.
 const curvePoints = (k) => k.kind === "polycurve" ? Array.from({ length: k.sketch.length / 4 }, (_, i) => [k.sketch[4 * i], k.sketch[4 * i + 1]]) : handlesOf(k);
@@ -4848,7 +4863,79 @@ function manipulatorCamera(view) {
 const layoutManipulator = (m, view, size) => layoutShared(m, manipulatorCamera(view), size);
 function drawManipulator(m, view, [x, y, w, h]) {
     const hot = (kind, name) => drag?.handle?.gizmo && drag.handle.kind === kind && drag.handle.name === name;
-    drawShared(ctx, layoutManipulator(m, view, [w, h]), [x, y, w, h], { hot, colours: { accent: ACCENT, handle: HANDLE_COLOUR, stem: ACTIVE_COLOUR } });
+    const hover = (kind, name) => !drag && manipulatorHover?.view === view && manipulatorHover.kind === kind && manipulatorHover.name === name;
+    // A turn being dragged: its arc's ring and the angle swept.
+    const held = drag?.kind === "handle" && drag.handle.gizmo && drag.moved ? drag.handle : null;
+    const sweep = held?.kind === "rotate" && held.shown ? { name: held.name, turn: held.shown.turn } : null;
+    drawShared(ctx, layoutManipulator(m, view, [w, h]), [x, y, w, h], { hot, hover, sweep, colours: { accent: ACCENT, handle: HANDLE_COLOUR, stem: ACTIVE_COLOUR } });
+}
+// A drag of the manipulator, over every view: the ghost -- where the bodies (or the curves)
+// stood when it began, their boxes' edges dashed and faint -- and the readout of the step
+// beside the pointer, on a dark plate.
+function drawManipulatorDrag(rects) {
+    const h = drag?.kind === "handle" && drag.handle.gizmo && drag.moved ? drag.handle : null;
+    if (!h) return;
+    for (let v = 0; v < 4; v++) {
+        const [x, y, w, hh] = rects[v];
+        const cam = w > 0 && hh > 0 ? camOf(v) : null;
+        if (!cam || !h.ghost?.length) continue;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(x, y, w, hh); ctx.clip();
+        ctx.globalAlpha = 0.4; ctx.strokeStyle = HANDLE_COLOUR; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        for (const edges of h.ghost) for (const [a, b] of edges) {
+            const p = cam.worldToPx(a, [w, hh]), q = cam.worldToPx(b, [w, hh]);
+            if (p && q) { ctx.moveTo(x + p[0], y + p[1]); ctx.lineTo(x + q[0], y + q[1]); }
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+    if (!h.readout || !pointerAt) return;
+    ctx.save();
+    ctx.font = MEASURE_FONT; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    const [px, py] = [pointerAt.px[0] + 14, pointerAt.px[1] + 14], tw = ctx.measureText(h.readout).width + 10;
+    ctx.fillStyle = "rgba(33, 35, 40, 0.85)";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(px, py - 9, tw, 18, 4); else ctx.rect(px, py - 9, tw, 18);
+    ctx.fill();
+    ctx.fillStyle = MEASURE_COLOUR;
+    ctx.fillText(h.readout, px + 5, py);
+    ctx.restore();
+}
+// Where every body (or curve) a drag of `h` moves stands as it begins: each body's world box
+// (as the session's command left it), each curve's handle box in its plane, as edges.
+function ghostOf(h) {
+    const { m } = h;
+    const boxEdges = (lo, hi) => {
+        const c = (i) => [i & 1 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 4 ? hi[2] : lo[2]];
+        const out = [];
+        for (let i = 0; i < 8; i++) for (const bit of [1, 2, 4]) if (!(i & bit)) out.push([c(i), c(i | bit)]);
+        return out;
+    };
+    if (m.subject === "move") return h.was.map((w) => byId(w.id)?.gpu?.box).filter((b) => b).map((b) => boxEdges([...b.lo], [...b.hi]));
+    if (m.subject === "curves") {
+        return m.items.map((k) => {
+            const pts = curvePoints(k);
+            if (!pts.length) return null;
+            const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+            const lo = [Math.min(...xs), Math.min(...ys)], hi = [Math.max(...xs), Math.max(...ys)];
+            const corners = [[lo[0], lo[1]], [hi[0], lo[1]], [hi[0], hi[1]], [lo[0], hi[1]]].map((q) => embed3(m.plane, q));
+            return corners.map((q, i) => [q, corners[(i + 1) % 4]]);
+        }).filter((e) => e);
+    }
+    return [];
+}
+// The hover: the handle under the pointer, the cursor it takes (`move` on an arrow, a square
+// or the centre; `grab` on an arc). None outside a Move session or while a field is typed in.
+function hoverManipulatorAt(px) {
+    const i = viewportAt(px);
+    const on = (tool?.move || tool?.sketchMove) && !moveTyped && i >= 0;
+    const h = on ? hitManipulator(i, local(px, i), sizeOf(i)) : null;
+    const next = h ? { view: i, kind: h.kind, name: h.name } : null;
+    if (JSON.stringify(next) === JSON.stringify(manipulatorHover)) return;
+    manipulatorHover = next;
+    overlay.style.cursor = !next ? "default" : next.kind === "rotate" ? "grab" : "move";
+    schedule();
 }
 // The manipulator's handle under pixel `p` of view `view`, or null. The handle carries what
 // its drag needs: the subject, the pivot, the axis or the ring's normal.
@@ -4856,7 +4943,10 @@ function hitManipulator(view, p, size) {
     const m = manipulatorOf(view);
     if (!m) return null;
     const hit = hitShared(layoutManipulator(m, view, size), p);
-    return hit ? { gizmo: true, ...hit, m, view } : null;
+    if (!hit) return null;
+    // A square's two axes, for its steps and its typed numbers.
+    const pl = hit.kind === "plane" ? (m.planes ?? []).find((k) => k.name === hit.name) : null;
+    return { gizmo: true, ...hit, ...(pl ? { a: pl.a, b: pl.b, label: PLANE_LABELS[pl.name] ?? pl.name } : {}), m, view };
 }
 // The world point a manipulator drag reads at pixel `p`.
 const manipulatorPoint = (h, p, size) => pointShared({ kind: h.kind, axis: h.axis, pivot: h.m.pivot }, manipulatorCamera(h.view), p, size);
@@ -4873,14 +4963,32 @@ function beginManipulator(h, p, size) {
     } else if (m.subject === "curves") {
         h.was = m.items.map((k) => ({ id: k.id, kind: k.kind, shape: structuredClone(k.shape) }));
     } else h.was = { ...structuredClone(placeOf(m.body)), ...m.body.transform };
+    h.ghost = ghostOf(h);
+    h.shown = null; h.readout = null;
+}
+// A number as the readout shows it: two decimals at most, a true minus.
+const readoutNumber = (v) => fmt(v).replace("-", "\u2212");
+// The readout of a drag's stepped delta on handle `h`: `X 12.5`, `XY 12.5, -3`, `Z 45°`.
+function readoutOf(h, delta) {
+    if (h.kind === "rotate") return `${h.name} ${readoutNumber(delta.turn * 180 / Math.PI)}°`;
+    if (!delta.slide) return null;
+    if (h.kind === "plane") return `${h.label} ${readoutNumber(V.dot(delta.slide, h.a))}, ${readoutNumber(V.dot(delta.slide, h.b))}`;
+    if (h.kind === "move" && h.axis) return `${h.name} ${readoutNumber(V.dot(delta.slide, h.axis))}`;
+    return delta.slide.map(readoutNumber).join(", ");
 }
 // A move of the drag: the delta since it began -- a slide (world), a turn (radians
 // about the ring's normal) or a scale (the pointer's distance from the centre on
-// screen, as a ratio) -- applied to the subject afresh from what it was.
+// screen, as a ratio) -- put on the steps (`stepDelta`: the snap step, 15 degrees; Shift or
+// snapping off, free), then applied to the subject afresh from what it was. The stepped delta
+// and its readout are kept on the handle for the overlay (`drawManipulatorDrag`).
 function moveManipulator(h, p, size) {
     const { m } = h;
-    const delta = dragDelta({ ...h, pivot: m.pivot }, manipulatorCamera(h.view), p, size);
-    if (!delta) return;
+    const raw = dragDelta({ ...h, pivot: m.pivot }, manipulatorCamera(h.view), p, size);
+    if (!raw) return;
+    // On the steps: the snap step and 15 degrees while snapping is on; Shift drags free.
+    const delta = stepDelta(raw, h, { step: snapSettings.step, angle: 15, free: !!h.free || !snapSettings.on });
+    h.shown = delta;
+    h.readout = readoutOf(h, delta);
     const { slide, turn, scale } = delta;
     if (m.subject === "move") {
         // Every body moved from where it stood, about the pivot: the preview. A rotate-only
@@ -4927,6 +5035,79 @@ function moveManipulator(h, p, size) {
     }
     schedule();
 }
+// A turn of `rad` about the world `axis` through where the pivot went, composed into the Move
+// session `s`'s `turn`.
+function foldMoveTurn(s, axis, rad) {
+    const world = Q.mul(Q.fromAxisAngle(axis, rad), moveTurnQ(s));
+    s.turn = eulerOf(s.axes === "object" ? Q.mul(Q.mul(qInverse(s.R), world), s.R) : world);
+}
+// Click to type: a field at pixel `px` (the overlay's) for handle `h` of a Move session's
+// manipulator, labelled with it (`X`, `XY`, `Z°`), empty. Enter adds the number to the
+// session's -- an arrow's along its axis, a square's two (comma between) along its axes, an
+// arc's degrees composed into the turn -- and runs it again; Esc or a blur closes it with
+// nothing done. Its keys are its own.
+let moveTyped = null;
+function openMoveTyped(h, px) {
+    closeMoveTyped();
+    const plane = h.kind === "plane";
+    const label = h.kind === "rotate" ? `${h.name}°` : plane ? h.label : h.name;
+    const wrap = document.createElement("label");
+    wrap.className = "move-typed";
+    wrap.dataset.label = label;
+    wrap.style.left = `${Math.round(px[0] + 12)}px`;
+    wrap.style.top = `${Math.round(px[1] - 9)}px`;
+    const name = document.createElement("span");
+    name.textContent = label;
+    const el = document.createElement("input");
+    el.type = plane ? "text" : "number";   // a square's two numbers take a comma
+    if (!plane) el.step = "any";
+    el.inputMode = "decimal";
+    if (plane) el.placeholder = "a, b";
+    el.setAttribute("aria-label", label);
+    wrap.append(name, el);
+    overlay.parentElement.append(wrap);
+    moveTyped = { wrap, el, h };
+    el.addEventListener("keydown", (e) => {
+        e.stopPropagation();   // the page's keys (Enter, Esc, WASD, Delete) are not this field's
+        if (e.key === "Escape") { e.preventDefault(); closeMoveTyped(); return; }
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const text = el.value;
+        closeMoveTyped();
+        applyMoveTyped(h, text);
+    });
+    el.addEventListener("keyup", (e) => e.stopPropagation());
+    el.addEventListener("blur", () => { if (moveTyped?.el === el) closeMoveTyped(); });
+    el.focus();
+}
+function closeMoveTyped() {
+    const t = moveTyped;
+    moveTyped = null;
+    t?.wrap.remove();
+}
+function applyMoveTyped(h, text) {
+    const nums = text.split(",").map((t) => t.trim()).filter((t) => t !== "").map(Number);
+    if (!nums.length || nums.length > (h.kind === "plane" ? 2 : 1) || nums.some((v) => !Number.isFinite(v))) {
+        if (text.trim() !== "") say(h.kind === "plane" ? "a square takes two numbers, a comma between" : "the field takes a number", true);
+        return;
+    }
+    const slide = h.kind === "plane" ? V.add(V.mul(h.a, nums[0]), V.mul(h.b, nums[1] ?? 0)) : h.kind === "move" && h.axis ? V.mul(h.axis, nums[0]) : null;
+    if (h.m.subject === "move") {
+        const s = tool?.move;
+        if (!s) return;
+        if (h.kind === "rotate") foldMoveTurn(s, h.axis, nums[0] * Math.PI / 180);
+        else if (slide) s.by = V.add(s.by, slide);
+        renderDialog();
+        rerunMove();
+    } else if (h.m.subject === "curves" && h.m.session) {
+        const s = tool?.sketchMove;
+        if (!s) return;
+        if (h.kind === "rotate") s.turn += nums[0];
+        else if (slide) { const F = planeInfo(h.m.plane).frame; s.by2 = [s.by2[0] + V.dot(slide, F.x), s.by2[1] + V.dot(slide, F.y)]; }
+        renderDialog();
+        rerunSketchMove();
+    }
+}
 // The drag done: one command for what it changed.
 function endManipulator(h) {
     const { m } = h;
@@ -4937,10 +5118,7 @@ function endManipulator(h) {
         if (!s) return;
         s.live = null;
         if (h.delta?.slide) s.by = V.add(s.by, h.delta.slide);
-        else if (h.delta?.turn) {
-            const world = Q.mul(Q.fromAxisAngle(h.axis, h.delta.turn), moveTurnQ(s));
-            s.turn = eulerOf(s.axes === "object" ? Q.mul(Q.mul(qInverse(s.R), world), s.R) : world);
-        }
+        else if (h.delta?.turn) foldMoveTurn(s, h.axis, h.delta.turn);
         if (!h.delta) return;
         renderDialog();
         rerunMove();
@@ -5964,6 +6142,8 @@ overlay.addEventListener("pointermove", (e) => {
         return;
     }
     if (!drag) {
+        // The manipulator's handle under the pointer lights up, its cursor shown.
+        if (tool?.move || tool?.sketchMove || manipulatorHover) hoverManipulatorAt([e.offsetX, e.offsetY]);
         // The cube face under the pointer lights up.
         const was = viewCubeHover;
         viewCubeHover = viewportAt([e.offsetX, e.offsetY]) === 1 ? viewCubeFaceAt([e.offsetX, e.offsetY])?.label ?? null : null;
@@ -5994,6 +6174,7 @@ overlay.addEventListener("pointermove", (e) => {
     const px = [e.offsetX, e.offsetY];
     if (drag.kind === "handle" && drag.handle.gizmo) {
         if (!drag.moved && Math.hypot(px[0] - drag.from[0], px[1] - drag.from[1]) > 3) drag.moved = true;
+        drag.handle.free = e.shiftKey;   // Shift: free of the steps
         if (drag.moved) moveManipulator(drag.handle, local(px, drag.view), sizeOf(drag.view));
     } else if (drag.kind === "handle") {
         const plane = drag.curve ? drag.curve.plane : axisMode ? axisMode.plane : viewPlane[drag.view];
@@ -8317,8 +8498,9 @@ const endDrag = (e) => {
     // revolution's axis, a curve's shape (a point added on the way down included).
     if (drag?.kind === "handle" && drag.handle.gizmo && (drag.handle.m.subject === "move" || drag.handle.m.session) && !drag.moved) {
         // A click on a Move session's manipulator: Ctrl on its centre arms Set pivot.
-        const s = tool?.move ?? tool?.sketchMove;
-        if (s && e.ctrlKey && drag.handle.kind === "move" && drag.handle.axis === null) { armMovePick(s, "pivot"); renderDialog(); }
+        const s = tool?.move ?? tool?.sketchMove, k = drag.handle.kind;
+        if (s && e.ctrlKey && k === "move" && drag.handle.axis === null) { armMovePick(s, "pivot"); renderDialog(); }
+        else if (s && !e.ctrlKey && (k === "rotate" || k === "plane" || (k === "move" && drag.handle.axis))) openMoveTyped(drag.handle, drag.from);
     } else if (drag?.kind === "handle" && drag.handle.gizmo && !drag.moved && drag.under) {
         // A click on the gizmo, not a drag: whatever body lies under it is selected
         // (the gizmo's own body stays selected when it is that body, or nothing is).
@@ -9803,7 +9985,8 @@ function installTestHook() {
         // The page replica's save text as it stands: no pending run committed for it.
         pageSave: () => wasm.cadaclysm_blacksmith_document_save(doc),
         // The selected body's gizmo in the first pane showing it, in the page's CSS pixels:
-        // its centre and its arrows' tips (a drag of one moves the body along the axis).
+        // its centre, its arrows' tips (a drag of one moves the body along the axis), its arcs'
+        // grips and its squares' centres.
         gizmo() {
             const o = overlay.getBoundingClientRect();
             const rects = layout();
@@ -9814,10 +9997,18 @@ function installTestHook() {
                 const g = m && layoutManipulator(m, view, [w, h]);
                 if (!g) continue;
                 const at = (p) => [o.left + x + p[0], o.top + y + p[1]];
-                return { view, centre: at(g.centre), axes: g.axes.map((a) => ({ name: a.name, tip: at(a.tip) })) };
+                return { view, centre: at(g.centre), axes: g.axes.map((a) => ({ name: a.name, tip: at(a.tip) })), arcs: (g.arcs ?? []).map((a) => ({ name: a.name, grip: at(a.grip) })), planes: (g.planes ?? []).map((k) => ({ name: k.name, centre: at(k.centre) })) };
             }
             return null;
         },
+        // The manipulator as the pointer has it: the handle hovered ("rotate Z"), and during a
+        // drag the readout's text and how many ghost boxes show; the typed field's label.
+        manipulatorState: () => {
+            const h = drag?.kind === "handle" && drag.handle.gizmo && drag.moved ? drag.handle : null;
+            return { hover: manipulatorHover ? `${manipulatorHover.kind} ${manipulatorHover.name}` : null, readout: h?.readout ?? null, ghosts: h?.ghost?.length ?? 0, typing: moveTyped?.wrap.dataset.label ?? null };
+        },
+        // The older look (rings, no squares or arcs) on or off: a picture of it beside the new one.
+        oldLook: (on) => { manipulatorOld = !!on; schedule(); return manipulatorOld; },
         // The Move session's state (null when none is open): the bodies, the pivot, the numbers.
         sketchMoveState: () => tool?.sketchMove ? structuredClone({ ids: tool.sketchMove.ids, made: tool.sketchMove.made, plane: tool.sketchMove.plane, pivot2: tool.sketchMove.pivot2, by2: tool.sketchMove.by2, turn: tool.sketchMove.turn, copy: tool.sketchMove.copy, picking: tool.sketchMove.picking }) : null,
         moveState: () => tool?.move ? structuredClone({ ids: tool.move.ids, made: tool.move.made, pivot: tool.move.pivot, by: tool.move.by, turn: tool.move.turn, axes: tool.move.axes, copy: tool.move.copy, type: tool.move.type, picking: tool.move.picking }) : null,
