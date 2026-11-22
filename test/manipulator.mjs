@@ -6,7 +6,8 @@
 //
 // Run: node test/manipulator.mjs
 import assert from "node:assert/strict";
-import { AXES3, RINGS3, COLOURS, AXIS_COLOURS, GIZMO3_PX, MIN_SCALE, layoutManipulator, hitManipulator, manipulatorPoint, beginDrag, dragDelta, deltaMatrix, drawManipulator, segmentDistance } from "../manipulator.js";
+import { readFileSync } from "node:fs";
+import { AXES3, RINGS3, COLOURS, AXIS_COLOURS, GIZMO3_PX, MIN_SCALE, ARCS3, PLANES3, PLANES2, ARROW_PX, HEAD_PX, HEAD_W, PLANE_AT, PLANE_PX, ARC_AT, GRIP_PX, layoutManipulator, hitManipulator, manipulatorPoint, beginDrag, dragDelta, deltaMatrix, drawManipulator, segmentDistance } from "../manipulator.js";
 
 const near = (a, b, tol, what) => { assert.equal(a.length, b.length, what); for (let k = 0; k < a.length; k++) assert.ok(Math.abs(a[k] - b[k]) <= tol, `${what}: ${a} vs ${b}`); };
 const apply = (m, p) => [0, 1, 2].map((r) => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]);
@@ -157,6 +158,109 @@ check("draws_the_hot_handle_in_the_accent", () => {
     assert.equal(strokes.length, 3 + 3 + 1 + 1, "rings, shafts, the centre circle, the square's stem");
     assert.equal(strokes[6], COLOURS.handle, "the centre circle");
     assert.equal(fills.length, 3 + 1, "the arrow heads and the square: no disc");
+});
+
+// ---- F3: arrows 90 px, plane squares, quarter arcs ---------------------------------------
+// The forge's Move sessions pass `arcs` and `planes`; a manipulator with `rings` and no `arcs`
+// is the one above, unchanged (pinned against what the code laid out before F3).
+const OLD = JSON.parse(readFileSync(new URL("./fixtures/manipulator-old.json", import.meta.url), "utf8"));
+const look = (pivot) => ({ pivot, axes: AXES3, arcs: ARCS3, planes: PLANES3 });
+const P = (cam, p) => cam.worldToPx(p, SIZE);
+const scaleV = (v, s) => v.map((x) => x * s);
+const plus = (a, b) => a.map((x, i) => x + b[i]);
+
+check("f3_the_handle_sets", () => {
+    assert.deepEqual(ARCS3.map((a) => [a.name, a.n, a.from, a.to]), [
+        ["X", [1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        ["Y", [0, 1, 0], [0, 0, 1], [1, 0, 0]],
+        ["Z", [0, 0, 1], [1, 0, 0], [0, 1, 0]],
+    ], "each a quarter turn from one positive axis to the next, about the third");
+    assert.deepEqual(PLANES3, [{ n: [0, 0, 1], a: [1, 0, 0], b: [0, 1, 0], name: "Z" }, { n: [1, 0, 0], a: [0, 1, 0], b: [0, 0, 1], name: "X" }, { n: [0, 1, 0], a: [0, 0, 1], b: [1, 0, 0], name: "Y" }]);
+    assert.deepEqual(PLANES2, [], "a sketch's own plane is the centre's");
+    assert.deepEqual([ARROW_PX, HEAD_PX, HEAD_W, PLANE_AT, PLANE_PX, ARC_AT, GRIP_PX], [90, 14, 10, 0.38, 13, 0.75, 4.5]);
+});
+
+check("f3_arcs_and_squares_laid_out_in_the_oblique_view", () => {
+    // 100 px a unit, so the arrow is 0.9 units, an arc 0.675 round, a square 0.13 a side.
+    const g = layoutManipulator(look([0, 0, 0]), tilted, SIZE);
+    near(g.centre, [400, 300], 1e-9, "the pivot");
+    near(g.axes[0].tip, P(tilted, [0.9, 0, 0]), 1e-9, "X, 90 px out");
+    assert.deepEqual(g.arcs.map((a) => a.name), ["X", "Y", "Z"], "nothing edge-on");
+    const r = 0.75 * 0.9;
+    for (const a of g.arcs) {
+        const arc = ARCS3.find((k) => k.name === a.name);
+        assert.equal(a.points.length, 13, `${a.name}: 13 samples`);
+        near(a.points[0], P(tilted, scaleV(arc.from, r)), 1e-9, `${a.name} starts at from`);
+        near(a.points[12], P(tilted, scaleV(arc.to, r)), 1e-9, `${a.name} ends at to`);
+        near(a.points[6], P(tilted, plus(scaleV(arc.from, r * Math.SQRT1_2), scaleV(arc.to, r * Math.SQRT1_2))), 1e-9, `${a.name}: half way`);
+        near(a.grip, a.points[6], 0, `${a.name}'s grip at its middle sample`);
+        assert.equal(a.ring.length, 48, "the full ring, for the sweep");
+        near(a.ring[0], a.points[0], 1e-9, "the ring starts at from");
+        near(a.ring[12], a.points[12], 1e-9, "a quarter of the way round it, at to");
+    }
+    assert.deepEqual(g.planes.map((p) => p.name), ["Z", "X", "Y"]);
+    for (const p of g.planes) {
+        const pl = PLANES3.find((k) => k.name === p.name);
+        near(p.centre, P(tilted, scaleV(plus(pl.a, pl.b), 0.38 * 0.9)), 1e-6, `${p.name}'s square centre`);
+        assert.equal(p.quad.length, 4);
+        const h = 0.065, c = scaleV(plus(pl.a, pl.b), 0.38 * 0.9);
+        near(p.quad[0], P(tilted, plus(c, plus(scaleV(pl.a, -h), scaleV(pl.b, -h)))), 1e-9, `${p.name}'s first corner`);
+        near(p.quad[2], P(tilted, plus(c, plus(scaleV(pl.a, h), scaleV(pl.b, h)))), 1e-9, `${p.name}'s opposite corner`);
+    }
+    // A pivot away from the origin: the square's centre in px to 1e-6.
+    const g2 = layoutManipulator(look([1, 2, 3]), tilted, SIZE);
+    near(g2.planes[0].centre, P(tilted, [1 + 0.342, 2 + 0.342, 3]), 1e-6, "the Z square at the pivot + 0.38 arrow (X + Y)");
+});
+
+check("f3_edge_on_arcs_and_squares_dropped", () => {
+    const g = layoutManipulator(look([0, 0, 0]), top, SIZE);
+    assert.deepEqual(g.axes.map((a) => a.name), ["X", "Y"]);
+    near(g.axes[0].tip, [490, 300], 1e-9, "X, 90 px right");
+    assert.deepEqual(g.arcs.map((a) => a.name), ["Z"], "the arcs about X and Y are edge-on");
+    assert.deepEqual(g.planes.map((p) => p.name), ["Z"], "the squares about X and Y are edge-on");
+    for (const p of g.arcs[0].points) assert.ok(Math.abs(Math.hypot(p[0] - 400, p[1] - 300) - 67.5) < 1e-9, "a 67.5 px arc");
+    near(g.arcs[0].grip, [400 + 67.5 * Math.SQRT1_2, 300 - 67.5 * Math.SQRT1_2], 1e-9, "the grip at 45 degrees");
+    near(g.planes[0].centre, [434.2, 265.8], 1e-6, "the square 34.2 px along X and Y");
+    near(g.planes[0].quad.flat(), [427.7, 272.3, 440.7, 272.3, 440.7, 259.3, 427.7, 259.3], 1e-6, "13 px a side");
+});
+
+check("f3_hits_tips_squares_centre_grips_arcs_rings", () => {
+    const g = layoutManipulator(look([0, 0, 0]), top, SIZE);
+    assert.deepEqual(hitManipulator(g, [496, 305]), { kind: "move", name: "X", axis: [1, 0, 0] }, "within 9 px of the X tip");
+    assert.deepEqual(hitManipulator(g, [434, 266]), { kind: "plane", name: "Z", axis: [0, 0, 1] }, "inside the Z square");
+    assert.deepEqual(hitManipulator(g, [443.7, 266])?.kind, "plane", "3 px outside it");
+    assert.equal(hitManipulator(g, [445.7, 266]), null, "5 px outside it");
+    assert.deepEqual(hitManipulator(g, [403, 302]), { kind: "move", name: null, axis: null }, "the centre");
+    const grip = g.arcs[0].grip, out = [Math.SQRT1_2, -Math.SQRT1_2];
+    assert.deepEqual(hitManipulator(g, plus(grip, scaleV(out, 8.5))), { kind: "rotate", name: "Z", axis: [0, 0, 1] }, "8.5 px out from the grip: the grip");
+    assert.equal(hitManipulator(g, plus(grip, scaleV(out, 9.5))), null, "9.5 px out: nothing");
+    const t = Math.PI / 96;   // half way between the first two samples
+    assert.deepEqual(hitManipulator(g, [400 + 74.5 * Math.cos(t), 300 - 74.5 * Math.sin(t)]), { kind: "rotate", name: "Z", axis: [0, 0, 1] }, "7 px outside the arc");
+    assert.equal(hitManipulator(g, [400 + 76.5 * Math.cos(t), 300 - 76.5 * Math.sin(t)]), null, "9 px outside it");
+    assert.equal(hitManipulator(g, [400 - 67.5, 300]), null, "the arc is a quarter: nothing on the far side");
+    // Every kind at one pixel: tips, squares, the centre, grips, arcs, rings -- in that order.
+    const crowd = {
+        centre: [0, 0],
+        axes: [{ name: "X", a: [1, 0, 0], tip: [0, 0] }],
+        planes: [{ name: "Z", n: [0, 0, 1], quad: [[-5, -5], [5, -5], [5, 5], [-5, 5]] }],
+        arcs: [{ name: "Y", n: [0, 1, 0], points: [[-10, 0], [10, 0]], grip: [50, 50] }, { name: "Z", n: [0, 0, 1], points: [[50, 50], [60, 60]], grip: [0, 0] }],
+        rings: [{ name: "X", n: [1, 0, 0], points: [[0, -10], [0, 10]] }],
+        scale: null,
+    };
+    const order = [];
+    for (const drop of [(c) => { c.axes = []; }, (c) => { c.planes = []; }, (c) => { c.centre = [500, 500]; }, (c) => { c.arcs[1].grip = [500, 500]; }, (c) => { c.arcs = []; }, (c) => { c.rings = []; }]) {
+        const h = hitManipulator(crowd, [0, 0]);
+        order.push(h && `${h.kind} ${h.name}`);
+        drop(crowd);
+    }
+    order.push(hitManipulator(crowd, [0, 0]));
+    assert.deepEqual(order, ["move X", "plane Z", "move null", "rotate Z", "rotate Y", "rotate X", null], "Z's grip before Y's arc");
+});
+
+check("f3_a_rings_only_manipulator_lays_out_as_before", () => {
+    assert.deepStrictEqual(layoutManipulator(full([1, 2, 3]), top, SIZE), OLD.layouts.topFull);
+    assert.deepStrictEqual(layoutManipulator(full([0, 0, 0]), tilted, SIZE), OLD.layouts.tiltedFull);
+    assert.deepStrictEqual(layoutManipulator({ pivot: [0, 0, 0], axes: AXES3, rings: [], scale: false }, tilted, SIZE), OLD.layouts.tiltedBare);
 });
 
 console.log(`ok manipulator: ${checks} checks`);

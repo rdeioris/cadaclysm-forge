@@ -20,11 +20,35 @@
 // Sized on screen (GIZMO3_PX for an arrow) at any distance; an arrow or a ring seen edge-on is
 // left out of the layout, so it can be neither drawn nor hit.
 
+//
+// The look of a CAD tool's (F3): a manipulator with `arcs` or `planes` in `m` is the new one --
+//  - `planes: [{ n, name, a, b }]`: a small square between the arrows along `a` and `b`, for a
+//    drag in that plane (normal `n`, coloured by it);
+//  - `arcs: [{ n, name, from, to }]`: a quarter turn about `n` from `from` to `to` (unit, at
+//    right angles, `from` x `to` = `n`), with a grip at its middle, for a turn;
+//  arrows ARROW_PX long with solid heads. One with `rings` and no `arcs` or `planes` is the
+//  older look, laid out, drawn and hit exactly as it was (GIZMO3_PX arrows, full rings).
+
+/** The older look's arrow (a manipulator with rings and no arcs or planes). */
 export const GIZMO3_PX = 80;
+/** The new look's sizes, in CSS pixels: the arrow; its head's length and width; a plane
+ *  square's centre (a fraction of the arrow along each of its two axes) and side; an arc's
+ *  radius (a fraction of the arrow); a grip's radius; the shafts' and the arcs' line width. */
+export const ARROW_PX = 90, HEAD_PX = 14, HEAD_W = 10, PLANE_AT = 0.38, PLANE_PX = 13, ARC_AT = 0.75, GRIP_PX = 4.5, LINE_W = 2.5;
 export const AXIS_COLOURS = { X: "#e06060", Y: "#70c070", Z: "#6090e8" };
 export const AXES3 = [{ a: [1, 0, 0], name: "X" }, { a: [0, 1, 0], name: "Y" }, { a: [0, 0, 1], name: "Z" }];
 /** The rings about the world's axes, for `m.rings`. */
 export const RINGS3 = AXES3.map(({ a, name }) => ({ n: a, name }));
+/** The quarter arcs about the world's axes, each between the other two positive axes. */
+export const ARCS3 = [
+    { n: [1, 0, 0], name: "X", from: [0, 1, 0], to: [0, 0, 1] },
+    { n: [0, 1, 0], name: "Y", from: [0, 0, 1], to: [1, 0, 0] },
+    { n: [0, 0, 1], name: "Z", from: [1, 0, 0], to: [0, 1, 0] },
+];
+/** The plane squares between the world's axes, each named and coloured by its normal. */
+export const PLANES3 = [{ n: [0, 0, 1], a: [1, 0, 0], b: [0, 1, 0], name: "Z" }, { n: [1, 0, 0], a: [0, 1, 0], b: [0, 0, 1], name: "X" }, { n: [0, 1, 0], a: [0, 0, 1], b: [1, 0, 0], name: "Y" }];
+/** A sketch's: none -- its own plane is the centre's. */
+export const PLANES2 = [];
 /** The colours of what is not an axis: the hot handle, the centre and the square, the
  *  square's stem. */
 export const COLOURS = { accent: "#378ADD", handle: "#F1EFE8", stem: "#5F5E5A" };
@@ -46,10 +70,26 @@ export function segmentDistance(p, a, b) {
     return Math.hypot(p[0] - a[0] - dx * t, p[1] - a[1] - dy * t);
 }
 
+// Whether pixel `p` lies inside the convex quad `q` (either winding).
+function insideQuad(q, p) {
+    let sign = 0;
+    for (let k = 0; k < q.length; k++) {
+        const a = q[k], b = q[(k + 1) % q.length];
+        const c = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+        if (c === 0) continue;
+        if (sign && Math.sign(c) !== sign) return false;
+        sign = Math.sign(c);
+    }
+    return true;
+}
+
 /** `m` laid out in a viewport of `size` seen by `cam`: `{ centre, axes: [{...ax, tip}],
  *  rings: [{...rg, points}], scale }` in its pixels -- the arrows' tips, 48 points round each
  *  ring, the scale square's centre (null without one) -- the edge-on ones dropped; null when
- *  the pivot is behind the eye. */
+ *  the pivot is behind the eye. The new look's (`m.arcs` or `m.planes`) adds `planes: [{...pl,
+ *  centre, quad}]` (the square's centre and its four corners) and `arcs: [{...arc, points,
+ *  grip, ring}]` (13 points from `from` to `to`, the grip at the middle one, 48 round the
+ *  whole ring from `from`), its arrows ARROW_PX long. */
 export function layoutManipulator(m, cam, size) {
     const centre = cam.worldToPx(m.pivot, size);
     if (!centre) return null;
@@ -59,25 +99,60 @@ export function layoutManipulator(m, cam, size) {
     const q = cam.worldToPx(add(m.pivot, s), size);
     const perUnit = q ? Math.hypot(q[0] - centre[0], q[1] - centre[1]) : 1;
     const px = 1 / Math.max(perUnit, 1e-6);
-    const arrow = GIZMO3_PX * px, ring = 0.75 * GIZMO3_PX * px;
+    const look = !!(m.arcs || m.planes);   // the new look
+    const arrow = (look ? ARROW_PX : GIZMO3_PX) * px, ring = 0.75 * GIZMO3_PX * px;
     const axes = m.axes.map((ax) => {
         const tip = cam.worldToPx(add(m.pivot, mul(ax.a, arrow)), size);
         return tip && Math.hypot(tip[0] - centre[0], tip[1] - centre[1]) >= 14 ? { ...ax, tip } : null;
     }).filter((ax) => ax);
-    const rings = m.rings.map((rg) => {
-        const e1 = unit(cross(rg.n, Math.abs(rg.n[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), e2 = cross(rg.n, e1);
+    // 48 points round a circle of radius `r` from `e1` towards `e2`; null seen edge-on.
+    const circle = (e1, e2, r) => {
         const points = [];
         for (let k = 0; k < 48; k++) {
             const t = 2 * Math.PI * k / 48;
-            const p = cam.worldToPx(add(m.pivot, add(mul(e1, ring * Math.cos(t)), mul(e2, ring * Math.sin(t)))), size);
+            const p = cam.worldToPx(add(m.pivot, add(mul(e1, r * Math.cos(t)), mul(e2, r * Math.sin(t)))), size);
             if (p) points.push(p);
         }
         if (points.length < 24) return null;
         const xs = points.map((p) => p[0]), ys = points.map((p) => p[1]);
         if (Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) < 12) return null;   // edge-on
-        return { ...rg, points };
+        return points;
+    };
+    const rings = (m.rings ?? []).map((rg) => {
+        const e1 = unit(cross(rg.n, Math.abs(rg.n[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0])), e2 = cross(rg.n, e1);
+        const points = circle(e1, e2, ring);
+        return points ? { ...rg, points } : null;
     }).filter((rg) => rg);
-    return { centre, axes, rings, scale: m.scale ? [centre[0] + 44, centre[1] + 44] : null };
+    const g = { centre, axes, rings, scale: m.scale ? [centre[0] + 44, centre[1] + 44] : null };
+    if (!look) return g;
+    // The squares: a quad round pivot + PLANE_AT arrow (a + b), PLANE_PX a side; edge-on (under
+    // 30 px² on the screen) dropped.
+    const half = PLANE_PX / 2 * px;
+    g.planes = (m.planes ?? []).map((pl) => {
+        const c = add(m.pivot, mul(add(pl.a, pl.b), PLANE_AT * arrow));
+        const at = cam.worldToPx(c, size);
+        const quad = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => cam.worldToPx(add(c, add(mul(pl.a, i * half), mul(pl.b, j * half))), size));
+        if (!at || quad.some((q) => !q)) return null;
+        let area = 0;
+        for (let k = 0; k < 4; k++) { const p = quad[k], q = quad[(k + 1) % 4]; area += p[0] * q[1] - q[0] * p[1]; }
+        return Math.abs(area) / 2 < 30 ? null : { ...pl, centre: at, quad };
+    }).filter((pl) => pl);
+    // The arcs: 13 points from `from` to `to`, ARC_AT of the arrow out, the grip at the middle
+    // one, and the whole ring through them (for the sweep); dropped where that ring is edge-on.
+    const r = ARC_AT * arrow;
+    g.arcs = (m.arcs ?? []).map((arc) => {
+        const ringPoints = circle(arc.from, arc.to, r);
+        if (!ringPoints || ringPoints.length < 48) return null;
+        const points = [];
+        for (let k = 0; k <= 12; k++) {
+            const t = Math.PI / 2 * k / 12;
+            const p = cam.worldToPx(add(m.pivot, add(mul(arc.from, r * Math.cos(t)), mul(arc.to, r * Math.sin(t)))), size);
+            if (!p) return null;
+            points.push(p);
+        }
+        return { ...arc, points, grip: points[6], ring: ringPoints };
+    }).filter((arc) => arc);
+    return g;
 }
 
 /** Layout `g` drawn on the 2D context `ctx` in the viewport `[x, y, w, h]` of it (clipped to
@@ -138,13 +213,28 @@ export function drawManipulator(ctx, g, [x, y, w, h], { hot = () => false, colou
 /** The handle of layout `g` under pixel `p`, or null: an arrow's tip, the scale square and
  *  the centre within nine pixels, a ring within eight of its polyline -- in that order.
  *  Answers `{ kind, name, axis }`: "move" with the arrow's direction (or null axis and name
- *  for the centre), "rotate" with the ring's normal, "scale". */
+ *  for the centre), "rotate" with the ring's normal, "scale". The new look's: a square
+ *  (inside it or within four pixels) after the tips, "plane" with its normal; the grips
+ *  within nine pixels and the arcs within eight after the centre, "rotate" with the arc's
+ *  normal, as a ring's -- so the order is tips, squares, the scale square, the centre, grips,
+ *  arcs, rings. */
 export function hitManipulator(g, p) {
     if (!g) return null;
     const close = (q, r) => q && Math.hypot(q[0] - p[0], q[1] - p[1]) <= r;
     for (const ax of g.axes) if (close(ax.tip, 9)) return { kind: "move", name: ax.name, axis: ax.a };
+    // The new look's squares: inside the quad, or within four pixels of it.
+    for (const pl of g.planes ?? []) {
+        if (insideQuad(pl.quad, p) || pl.quad.some((q, k) => segmentDistance(p, q, pl.quad[(k + 1) % pl.quad.length]) <= 4)) return { kind: "plane", name: pl.name, axis: pl.n };
+    }
     if (close(g.scale, 9)) return { kind: "scale", name: null, axis: null };
     if (close(g.centre, 9)) return { kind: "move", name: null, axis: null };
+    // The new look's arcs: every grip within nine pixels, then each arc within eight.
+    for (const arc of g.arcs ?? []) if (close(arc.grip, 9)) return { kind: "rotate", name: arc.name, axis: arc.n };
+    for (const arc of g.arcs ?? []) {
+        for (let k = 0; k + 1 < arc.points.length; k++) {
+            if (segmentDistance(p, arc.points[k], arc.points[k + 1]) <= 8) return { kind: "rotate", name: arc.name, axis: arc.n };
+        }
+    }
     for (const rg of g.rings) {
         for (let k = 0; k < rg.points.length; k++) {
             if (segmentDistance(p, rg.points[k], rg.points[(k + 1) % rg.points.length]) <= 8) return { kind: "rotate", name: rg.name, axis: rg.n };
