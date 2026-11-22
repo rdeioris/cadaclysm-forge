@@ -160,9 +160,16 @@ export function layoutManipulator(m, cam, size) {
  *  for the centre, "rotate" with a ring's, "scale" with null): it is drawn in the accent.
  *  `colours` overrides COLOURS. `hollow` draws the centre as a circle rather than a disc, the
  *  shafts and the stem starting outside it, so what the page draws at the pivot (a picked
- *  vertex's dot) shows through it. */
-export function drawManipulator(ctx, g, [x, y, w, h], { hot = () => false, colours = {}, hollow = false } = {}) {
+ *  vertex's dot) shows through it.
+ *  The new look's layout (with `arcs` or `planes`) draws the squares, the arcs with their grips
+ *  and the arrows with solid heads; `hover(kind, name)` says which handle the pointer is over
+ *  (drawn brighter and a pixel wider; a hot one is the accent still), and `sweep: { name,
+ *  turn }` -- a turn being dragged on arc `name` -- draws that arc's whole ring faint and the
+ *  angle swept from its `from` filled. */
+export function drawManipulator(ctx, g, rect, { hot = () => false, hover = () => false, sweep = null, colours = {}, hollow = false } = {}) {
     if (!g) return;
+    if (g.arcs || g.planes) { drawLook(ctx, g, rect, { hot, hover, sweep, colours, hollow }); return; }
+    const [x, y, w, h] = rect;
     const { accent, handle, stem } = { ...COLOURS, ...colours };
     const at = (p) => [x + p[0], y + p[1]];
     ctx.save();
@@ -202,6 +209,98 @@ export function drawManipulator(ctx, g, [x, y, w, h], { hot = () => false, colou
     if (g.scale) {
         const [sx, sy] = at(g.scale);
         const k = hollow ? 8 / Math.SQRT2 : 0;   // the stem, too (the square is diagonal from the centre)
+        ctx.strokeStyle = stem; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(cx + k, cy + k); ctx.lineTo(sx, sy); ctx.stroke();
+        ctx.fillStyle = hot("scale", null) ? accent : handle;
+        ctx.fillRect(sx - 5, sy - 5, 10, 10);
+    }
+    ctx.restore();
+}
+
+// A colour "#rrggbb" mixed `f` of the way toward white.
+function brighter(hex, f = 0.35) {
+    const v = parseInt(hex.slice(1), 16), out = [16, 8, 0].map((k) => { const c = (v >> k) & 255; return Math.round(c + (255 - c) * f); });
+    return `#${out.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+
+// The new look's drawing (`drawManipulator` with a layout that has arcs or planes).
+function drawLook(ctx, g, [x, y, w, h], { hot, hover, sweep, colours, hollow }) {
+    const { accent, handle, stem } = { ...COLOURS, ...colours };
+    const at = (p) => [x + p[0], y + p[1]];
+    const colourOf = (kind, name) => (hot(kind, name) ? accent : hover(kind, name) ? brighter(AXIS_COLOURS[name]) : AXIS_COLOURS[name]);
+    const widthOf = (kind, name, width) => (hot(kind, name) || hover(kind, name) ? width + 1 : width);
+    const path = (points, closed) => {
+        ctx.beginPath();
+        points.forEach((p, k) => { const q = at(p); if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+        if (closed) ctx.closePath();
+    };
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    // Rings, if a page passes them too: as the older look's.
+    ctx.lineWidth = 1.5;
+    for (const rg of g.rings ?? []) { ctx.strokeStyle = hot("rotate", rg.name) ? accent : AXIS_COLOURS[rg.name]; path(rg.points, true); ctx.stroke(); }
+    // The sweep, under the handles: the arc's whole ring, faint, and the angle turned, filled.
+    const swept = sweep && (g.arcs ?? []).find((a) => a.name === sweep.name);
+    if (swept) {
+        const colour = AXIS_COLOURS[swept.name], ring = swept.ring, n = ring.length;
+        ctx.globalAlpha = 0.35; ctx.strokeStyle = colour; ctx.lineWidth = 1.5;
+        path(ring, true); ctx.stroke();
+        const steps = Math.min(Math.abs(sweep.turn) / (2 * Math.PI / n), n), sign = sweep.turn < 0 ? -1 : 1;
+        const whole = Math.floor(steps + 1e-9), frac = steps - whole;
+        const pick = (k) => ring[((sign * k) % n + n) % n];
+        const wedge = [g.centre];
+        for (let k = 0; k <= whole; k++) wedge.push(pick(k));
+        if (frac > 1e-9 && whole < n) { const a = pick(whole), b = pick(whole + 1); wedge.push([a[0] + frac * (b[0] - a[0]), a[1] + frac * (b[1] - a[1])]); }
+        ctx.globalAlpha = 0.2; ctx.fillStyle = colour;
+        path(wedge, true); ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+    // The squares: filled at 0.55, outlined at full alpha.
+    for (const pl of g.planes ?? []) {
+        const colour = colourOf("plane", pl.name);
+        path(pl.quad, true);
+        ctx.globalAlpha = 0.55; ctx.fillStyle = colour; ctx.fill();
+        ctx.globalAlpha = 1; ctx.strokeStyle = colour; ctx.lineWidth = widthOf("plane", pl.name, 1); ctx.stroke();
+    }
+    // The arcs and their grips.
+    for (const arc of g.arcs ?? []) {
+        const colour = colourOf("rotate", arc.name);
+        ctx.strokeStyle = colour; ctx.lineWidth = widthOf("rotate", arc.name, LINE_W);
+        path(arc.points, false); ctx.stroke();
+        const [gx, gy] = at(arc.grip);
+        ctx.fillStyle = colour;
+        ctx.beginPath(); ctx.arc(gx, gy, GRIP_PX, 0, Math.PI * 2); ctx.fill();
+    }
+    // The arrows: a shaft to the head's base, a solid head whose point is the tip, the letter past it.
+    for (const ax of g.axes) {
+        const colour = colourOf("move", ax.name);
+        const a = at(g.centre), b = at(ax.tip);
+        const d = [b[0] - a[0], b[1] - a[1]], l = Math.hypot(d[0], d[1]) || 1, u = [d[0] / l, d[1] / l], n = [-u[1], u[0]];
+        const base = [b[0] - u[0] * HEAD_PX, b[1] - u[1] * HEAD_PX], s0 = hollow ? 8 : 0;
+        ctx.strokeStyle = colour; ctx.lineWidth = widthOf("move", ax.name, LINE_W);
+        ctx.beginPath(); ctx.moveTo(a[0] + u[0] * s0, a[1] + u[1] * s0); ctx.lineTo(base[0], base[1]); ctx.stroke();
+        ctx.fillStyle = colour;
+        ctx.beginPath();
+        ctx.moveTo(b[0], b[1]);
+        ctx.lineTo(base[0] + n[0] * HEAD_W / 2, base[1] + n[1] * HEAD_W / 2);
+        ctx.lineTo(base[0] - n[0] * HEAD_W / 2, base[1] - n[1] * HEAD_W / 2);
+        ctx.closePath(); ctx.fill();
+        ctx.font = "10px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(ax.name, b[0] + u[0] * 9, b[1] + u[1] * 9);
+    }
+    // The centre, and a scale square if a page asks for one: as the older look's.
+    const [cx, cy] = at(g.centre);
+    const centreColour = hot("move", null) ? accent : hover("move", null) ? brighter(handle) : handle;
+    if (hollow) {
+        ctx.strokeStyle = centreColour; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.stroke();
+    } else {
+        ctx.fillStyle = centreColour;
+        ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+    }
+    if (g.scale) {
+        const [sx, sy] = at(g.scale);
+        const k = hollow ? 8 / Math.SQRT2 : 0;
         ctx.strokeStyle = stem; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(cx + k, cy + k); ctx.lineTo(sx, sy); ctx.stroke();
         ctx.fillStyle = hot("scale", null) ? accent : handle;

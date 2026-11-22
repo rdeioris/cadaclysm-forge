@@ -3,6 +3,9 @@
 // centre, a ring between its sample points, in that order), the world point a drag reads,
 // a drag's delta (slide, turn, scale) and that delta as a matrix about the pivot, and what it
 // draws -- against cameras worked out by hand, not against another reading of the same maths.
+// F3's look too: plane squares and quarter arcs laid out, hit, dragged and drawn, stepping
+// (stepDelta), hover and the sweep; the older rings-only look pinned to what it laid out and
+// drew before (fixtures/manipulator-old.json).
 //
 // Run: node test/manipulator.mjs
 import assert from "node:assert/strict";
@@ -316,6 +319,132 @@ check("f3_steps_on_the_grid_and_at_15_degrees", () => {
     // No step given: nothing stepped; a delta of nothing is nothing.
     assert.deepEqual(stepDelta(raw, X, { angle: 15 }), raw);
     assert.equal(stepDelta(null, X, { step: 10 }), null);
+});
+
+// A context that records what is filled and stroked: each op with the style, the width, the
+// alpha and the path built since the last beginPath (save and restore kept).
+function recording() {
+    const ops = [], texts = [], stack = [];
+    let path = [];
+    const st = { fillStyle: "#000000", strokeStyle: "#000000", lineWidth: 1, globalAlpha: 1 };
+    const ctx = new Proxy(st, {
+        get: (o, k) => (k in o ? o[k] : (...a) => {
+            if (k === "beginPath") path = [];
+            else if (["moveTo", "lineTo", "arc", "closePath"].includes(k)) path.push([k, ...a]);
+            else if (k === "fill" || k === "stroke") ops.push({ op: k, style: k === "fill" ? o.fillStyle : o.strokeStyle, width: o.lineWidth, alpha: o.globalAlpha, path: path.slice() });
+            else if (k === "fillText") texts.push({ text: a[0], at: [a[1], a[2]], style: o.fillStyle });
+            else if (k === "save") stack.push({ ...o });
+            else if (k === "restore") Object.assign(o, stack.pop());
+        }),
+        set: (o, k, v) => { o[k] = v; return true; },
+    });
+    return { ctx, ops, texts };
+}
+// The old test's recorder, as the fixture's log was captured with: every call and every set.
+function logging() {
+    const log = [];
+    const ctx = new Proxy({}, {
+        get: (o, k) => (k in o ? o[k] : (...a) => { log.push([String(k), ...a]); }),
+        set: (o, k, v) => { o[k] = v; log.push(["=" + String(k), Array.isArray(v) ? [...v] : v]); return true; },
+    });
+    return { ctx, log };
+}
+const pathPoints = (path) => path.filter((s) => s[0] === "moveTo" || s[0] === "lineTo").map((s) => [s[1], s[2]]);
+const near2 = (a, b, tol = 1e-9) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) <= tol);
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+// The axis colours mixed 35% toward white, worked by hand: X #e06060 -> (235, 152, 152), Z #6090e8 -> (152, 183, 240).
+const BRIGHT = { X: "#eb9898", Z: "#98b7f0" };
+
+check("f3_draws_heads_squares_and_arcs", () => {
+    const g = layoutManipulator(look([0, 0, 0]), tilted, SIZE);
+    const { ctx, ops, texts } = recording();
+    drawManipulator(ctx, g, [0, 0, 800, 600]);
+    for (const ax of g.axes) {
+        const colour = AXIS_COLOURS[ax.name];
+        const shaft = ops.find((o) => o.op === "stroke" && o.style === colour && o.width === 2.5 && o.path.length === 2);
+        assert.ok(shaft, `${ax.name}: a shaft 2.5 wide`);
+        const [from, base] = pathPoints(shaft.path);
+        near(from, g.centre, 1e-9, `${ax.name}'s shaft from the centre`);
+        const head = ops.find((o) => o.op === "fill" && o.style === colour && o.path.length === 4 && near2(pathPoints(o.path)[0], ax.tip));
+        assert.ok(head, `${ax.name}: a filled head at the tip`);
+        const [tip, c1, c2] = pathPoints(head.path);
+        assert.ok(Math.abs(dist(tip, [(c1[0] + c2[0]) / 2, (c1[1] + c2[1]) / 2]) - 14) < 1e-9, "14 px long");
+        assert.ok(Math.abs(dist(c1, c2) - 10) < 1e-9, "10 px wide");
+        near(base, [(c1[0] + c2[0]) / 2, (c1[1] + c2[1]) / 2], 1e-9, "the shaft ends at the head's base");
+        assert.ok(texts.some((t) => t.text === ax.name && dist(t.at, ax.tip) < 20 && dist(t.at, g.centre) > dist(ax.tip, g.centre)), `${ax.name}'s letter beyond its head`);
+    }
+    for (const pl of g.planes) {
+        const colour = AXIS_COLOURS[pl.name];
+        const fill = ops.find((o) => o.op === "fill" && o.style === colour && o.alpha === 0.55);
+        assert.ok(fill, `${pl.name}: a square at alpha 0.55`);
+        near(pathPoints(fill.path).flat(), pl.quad.flat(), 1e-9, `${pl.name}: the quad`);
+        assert.equal(fill.path.at(-1)[0], "closePath");
+        const edge = ops.find((o) => o.op === "stroke" && o.style === colour && o.width === 1 && o.alpha === 1 && near2(pathPoints(o.path).flat(), pl.quad.flat()));
+        assert.ok(edge, `${pl.name}: outlined 1 px at full alpha`);
+    }
+    for (const arc of g.arcs) {
+        const colour = AXIS_COLOURS[arc.name];
+        const line = ops.find((o) => o.op === "stroke" && o.style === colour && o.width === 2.5 && o.path.length === 13);
+        assert.ok(line, `${arc.name}: an arc 2.5 wide`);
+        near(pathPoints(line.path).flat(), arc.points.flat(), 1e-9, `${arc.name}: its 13 points`);
+        const grip = ops.find((o) => o.op === "fill" && o.style === colour && o.path.length === 1 && o.path[0][0] === "arc");
+        assert.ok(grip, `${arc.name}: a grip`);
+        near(grip.path[0].slice(1, 4), [...arc.grip, 4.5], 1e-9, `${arc.name}: the grip 4.5 round at the middle`);
+    }
+    assert.equal(ops.filter((o) => o.alpha !== 1 && o.alpha !== 0.55).length, 0, "no sweep without one");
+});
+
+check("f3_hover_brightens_hot_stays_the_accent", () => {
+    const g = layoutManipulator(look([0, 0, 0]), tilted, SIZE);
+    const arcOf = (ops, colour) => ops.find((o) => o.op === "stroke" && o.style === colour && o.path.length === 13);
+    let r = recording();
+    drawManipulator(r.ctx, g, [0, 0, 800, 600], { hover: (kind, name) => kind === "rotate" && name === "Z" });
+    const z = arcOf(r.ops, BRIGHT.Z);
+    assert.ok(z, "the hovered arc mixed 35% toward white");
+    assert.equal(z.width, 3.5, "and 1 px wider");
+    assert.ok(arcOf(r.ops, AXIS_COLOURS.X)?.width === 2.5, "the others as they were");
+    assert.ok(r.ops.some((o) => o.op === "fill" && o.style === BRIGHT.Z && o.path[0][0] === "arc"), "its grip too");
+    r = recording();
+    drawManipulator(r.ctx, g, [0, 0, 800, 600], { hover: (kind, name) => kind === "move" && name === "X" });
+    assert.ok(r.ops.some((o) => o.op === "stroke" && o.style === BRIGHT.X && o.width === 3.5 && o.path.length === 2), "a hovered arrow's shaft");
+    r = recording();
+    drawManipulator(r.ctx, g, [0, 0, 800, 600], { hover: (kind, name) => kind === "plane" && name === "Z" });
+    assert.ok(r.ops.some((o) => o.op === "fill" && o.style === BRIGHT.Z && o.alpha === 0.55), "a hovered square");
+    assert.ok(r.ops.some((o) => o.op === "stroke" && o.style === BRIGHT.Z && o.width === 2), "its outline 1 px wider");
+    r = recording();
+    const held = (kind, name) => kind === "rotate" && name === "Z";
+    drawManipulator(r.ctx, g, [0, 0, 800, 600], { hover: held, hot: held, colours: { accent: "#123456" } });
+    assert.ok(arcOf(r.ops, "#123456"), "held: the accent");
+    assert.ok(!arcOf(r.ops, BRIGHT.Z), "not the hover's");
+});
+
+check("f3_the_sweep_of_a_turn", () => {
+    const g = layoutManipulator(look([0, 0, 0]), tilted, SIZE);
+    const z = g.arcs.find((a) => a.name === "Z"), colour = AXIS_COLOURS.Z;
+    const sweepOf = (turn) => { const r = recording(); drawManipulator(r.ctx, g, [0, 0, 800, 600], { sweep: { name: "Z", turn } }); return r.ops; };
+    let ops = sweepOf(Math.PI / 4);
+    const ring = ops.find((o) => o.op === "stroke" && o.alpha === 0.35);
+    assert.ok(ring && ring.style === colour, "the whole ring, faint, in the axis colour");
+    near(pathPoints(ring.path).flat(), z.ring.flat(), 1e-9, "its 48 points");
+    assert.equal(ring.path.at(-1)[0], "closePath");
+    const wedge = ops.find((o) => o.op === "fill" && o.alpha === 0.2);
+    assert.ok(wedge && wedge.style === colour, "the wedge at alpha 0.2");
+    near(pathPoints(wedge.path).flat(), [g.centre, ...z.ring.slice(0, 7)].flat(), 1e-9, "45 degrees: the centre and six steps of 7.5 from `from`");
+    ops = sweepOf(-Math.PI / 4);
+    near(pathPoints(ops.find((o) => o.op === "fill" && o.alpha === 0.2).path).flat(), [g.centre, z.ring[0], ...z.ring.slice(42).reverse()].flat(), 1e-9, "backwards round the ring");
+    ops = sweepOf(0.1);
+    const f = 0.1 / (Math.PI / 24), last = pathPoints(ops.find((o) => o.op === "fill" && o.alpha === 0.2).path).at(-1);
+    near(last, [z.ring[0][0] + f * (z.ring[1][0] - z.ring[0][0]), z.ring[0][1] + f * (z.ring[1][1] - z.ring[0][1])], 1e-9, "between two samples: on the chord");
+    assert.doesNotThrow(() => drawManipulator(recording().ctx, layoutManipulator(look([0, 0, 0]), top, SIZE), [0, 0, 800, 600], { sweep: { name: "X", turn: 1 } }), "an edge-on arc: no sweep");
+});
+
+check("f3_a_rings_only_manipulator_draws_as_before", () => {
+    const layouts = { topFull: layoutManipulator(full([1, 2, 3]), top, SIZE), tiltedFull: layoutManipulator(full([0, 0, 0]), tilted, SIZE) };
+    const draw = (g, rect, opts) => { const r = logging(); drawManipulator(r.ctx, g, rect, opts); return JSON.parse(JSON.stringify(r.log)); };
+    assert.deepStrictEqual(draw(layouts.tiltedFull, [10, 20, 800, 600], {}), OLD.draws.tilted);
+    assert.deepStrictEqual(draw(layouts.tiltedFull, [10, 20, 800, 600], { hot: (k, n) => k === "rotate" && n === "Y" }), OLD.draws.tiltedHotY);
+    assert.deepStrictEqual(draw(layouts.tiltedFull, [0, 0, 800, 600], { hollow: true }), OLD.draws.tiltedHollow);
+    assert.deepStrictEqual(draw(layouts.topFull, [0, 0, 800, 600], { hot: (k, n) => k === "move" && n === "X", colours: { accent: "#123456" } }), OLD.draws.top);
 });
 
 console.log(`ok manipulator: ${checks} checks`);
