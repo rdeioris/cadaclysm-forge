@@ -165,6 +165,19 @@ const ACCEPTED = {
         { step: 288, allow: "refused", lacks: ["Face 9", "Rechamfer 2"] },
         { step: 290, allow: "refused", lacks: ["Face 9", "Unfillet 2"] },
     ],
+    // The 0.15 kernel: the intersect of two spline prisms is a valid solid (0.14's faces
+    // turned inward, unmeasured): 18 edges and 12 vertices, measured; its fillets and the
+    // face taken off it follow.
+    "forge-kinds-v2-spline-fillet.json": [
+        { from: 0, body: "Intersect 1", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 0, body: "Fillet 1", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 65, to: 65, body: "Fillet 2", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 91, to: 91, body: "Fillet 2", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 69, to: 76, body: "Face 1", allow: "kernel", keys: ["edges", "vertices", "area"] },
+    ],
+    // The 0.15 kernel: a lofted frustum's shell measures with its accuracy unmet (polyline
+    // trims): its volume moves inside its own error.
+    "forge-kinds-sweeps.json": [{ from: 115, to: 115, body: "Shell 1", allow: "kernel", keys: ["volume"] }],
     // The 0.15 kernel: a press of a cone's face counts 28 vertices.
     "forge-kinds-quick.json": [{ from: 96, to: 96, body: "Press Pull 1", allow: "kernel", keys: ["vertices"] }],
     // A trim by a closed curve: its edge has one vertex.
@@ -217,7 +230,7 @@ function differences(got, want, allow = () => undefined, lacking = []) {
         }
         if (ok === "fails") { out.push(`${name} must fail (the 0.15 kernel), it builds`); continue; }
         for (const k of ["kind", "faces", "edges", "vertices", "closed"]) if (!free(k)) check(g[k] === w[k], `${name}: ${k} ${g[k]} != ${w[k]}`);
-        check((g.mass !== undefined) === (w.mass !== undefined), `${name}: measured`);
+        if (!free("mass")) check((g.mass !== undefined) === (w.mass !== undefined), `${name}: measured`);
         for (const k of ["area", "volume"]) if (w[k] !== undefined && !free(k)) check(near(g[k], w[k]), `${name}: ${k} ${g[k]} != ${w[k]}`);
         if (ok === "placed") continue;
         check(g.bounds.length === w.bounds.length, `${name}: bounds`);

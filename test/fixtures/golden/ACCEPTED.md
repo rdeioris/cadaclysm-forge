@@ -125,9 +125,28 @@ the 0.15 package over the same sequences, gives these very answers, so they are 
   narrower than two walls" (`allow: "fails"`).
 - **A join of a box moved off a cylinder's middle** counts 20 edges, not 19:
   `the-scene-s-commands.json` step 20, "Join 1" (`edges`).
+- **The intersect of two spline prisms is a valid solid.** `forge-kinds-v2-spline-fillet.json`'s
+  "Intersect 1" was 8 faces, 17 edges and 33 vertices in 0.14, its faces turned inward (no
+  mass); 0.15 answers 8 faces, 18 edges, 12 vertices (V - E + F = 2), closed and measured:
+  the first prism's side is split at its knot `(10, 2)` along a ruling up to the second
+  prism's wall. Its face 7 measures 54.5251427 where an independent quadrature of the two
+  splines gives 54.5251482; 0.14 read 54.522967. So "Face 1" taken off it (steps 69 to 76)
+  has 4 edges, not 3 (`edges`, `vertices`, `area`), and its fillets "Fillet 1" (every step)
+  and "Fillet 2" (steps 65 and 91) are measured with 20 edges, not 19 (`edges`, `vertices`,
+  `mass`: the summary's measured flag). Their figures are pinned in `forge-pins.json`.
+- **A lofted frustum's shell measures with its accuracy unmet.** `forge-kinds-sweeps.json`
+  step 115, "Shell 1" (`volume`): the shell's walls are exact (every surface and edge curve
+  within 1e-13 of the frustum's planes), but they are trimmed by polylines the measure cannot
+  refine, so `mass_properties` ends with `accuracy_met` false and a volume error bound of
+  about 83 at the shell's tolerance 0.05. Its value moves inside that bound with the last
+  digits of a projection: 654.2701498 (exact, and 0.14's) until the kernel's rim projection
+  changed (`ae107e2999`, 2026-11-20), 654.2714536 since. A kernel follow-up below.
 
 ## Kernel follow-ups
 
+- **A shell's walls trimmed by polylines.** The shell of `kinds-sweeps.json`'s frustum (loft
+  of two rectangles) is 11 faces and 200 edges, its walls cut by chords; with exact trims
+  (lines on planes) it would measure exactly and the allowance above could go.
 - **A trim's split direction.** On a kernel whose `sheet.split_by_curve` takes `along`
   (0.15.1 on), a trim's split names its curve's own frame (`along`: the origin plane's key,
   the sketch, the face plane's frame node) and the kernel reads that frame's normal when the
