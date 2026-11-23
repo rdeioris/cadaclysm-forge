@@ -1184,6 +1184,24 @@ function refused(t, cmd, words) {
     t.free();
 }
 
+// sketch_copy of a hidden sketch (as a body's profile hides it and its curves) is shown,
+// its curves too; on a shown sketch, a curve hidden by its own eye stays hidden on the copy.
+{
+    const t = fresh();
+    t.run({ op: "sketch", id: 1, mode: "offset", base: "top", offset: 0 });
+    t.run({ op: "add", id: 2, kind: "circle", plane: 1, shape: { cx: 3, cy: 4, r: 2 } });
+    t.run({ op: "add", id: 3, kind: "line", plane: 1, shape: { x0: 0, y0: 0, x1: 6, y1: 1 } });
+    t.run({ op: "edit", items: [{ id: 1, hidden: true }, { id: 2, hidden: true }, { id: 3, hidden: true }] });
+    t.run({ op: "sketch_copy", sketch: 1, id: 4, copies: [5, 6], offset: 36 });
+    assert.deepStrictEqual([4, 5, 6].map((n) => !!t.item(n).hidden), [false, false, false]);
+    assert.deepStrictEqual([1, 2, 3].map((n) => !!t.item(n).hidden), [true, true, true]);
+    t.run({ op: "set", id: 4, hidden: false });
+    t.run({ op: "set", id: 6, hidden: true });
+    t.run({ op: "sketch_copy", sketch: 4, id: 7, copies: [8, 9], offset: 50 });
+    assert.deepStrictEqual([7, 8, 9].map((n) => !!t.item(n).hidden), [false, false, true]);
+    t.free();
+}
+
 // sketch_copy of a sketch on a body's face to an offset plane: the curves are kept, the face
 // and its reference are not, and nothing is skipped.
 {

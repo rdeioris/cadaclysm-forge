@@ -2418,7 +2418,8 @@ function curvesOnSketch(d, s) {
 /// Sketch `src` copied whole as sketch `id`, after the source's block (its nodes and its
 /// curves'): a fresh name, the plane fields of `frame` where given (else the source's),
 /// then each curve on it (`curvesOnSketch`, the k-th taking `ids[k]`) with a fresh name,
-/// `plane` the copy, every other field kept (shape, construction, hidden). The records are
+/// `plane` the copy, every other field kept (shape, construction, hidden) -- except that
+/// the copy of a hidden sketch (one a body consumed) is shown, its curves too. The records are
 /// the source's, ids kept, each ref's curve remapped; one naming a curve not copied, or a
 /// spot the copy lacks, goes (`pruneConstraints`). An item of a kind the page does not
 /// draw is not copied: `skipped` counts those (its id is taken all the same). `{ map:
@@ -2430,7 +2431,11 @@ function copySketch(d, op, src, id, ids, frame) {
     const block = [src, ...curves.map((c) => c.id)].flatMap((n) => d.nodesOf(n)).map((x) => d.index(x));
     let pos = Math.max(...block) + 1;
     d.bump(id);
+    // A hidden source -- consumed by a body's profile, or its eye off -- hid its curves
+    // with it; the copy is new work, nothing consumes it: it and its curves are shown.
+    const show = s.hidden === true;
     const c = { ...s, id, name: d.nameFor("sketch") };
+    if (show) c.hidden = false;
     if (frame) setPlane(c, frame);
     const map = new Map();
     let skipped = 0;
@@ -2439,7 +2444,7 @@ function copySketch(d, op, src, id, ids, frame) {
         if (isCurveKind(cv.kind)) map.set(cv.id, ids[k]);
         else skipped++;
     });
-    const copied = curves.filter((cv) => map.has(cv.id)).map((cv) => ({ ...cv, id: map.get(cv.id), name: d.nameFor(cv.kind), plane: id }));
+    const copied = curves.filter((cv) => map.has(cv.id)).map((cv) => ({ ...cv, id: map.get(cv.id), name: d.nameFor(cv.kind), plane: id, ...(show ? { hidden: false } : {}) }));
     if (Array.isArray(s.constraints)) {
         const moved = [];
         for (const k of s.constraints) {
