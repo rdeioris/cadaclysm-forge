@@ -10115,6 +10115,8 @@ function installTestHook() {
         },
         selection: () => [...selection],
         select: (ids) => setSelection(ids),
+        // Each dimension label drawn now: its sketch, record id and box in overlay pixels.
+        dimensionLabels: () => dimensionRects.map((d) => ({ sketch: d.sketch, id: d.id, rect: [...d.rect] })),
         // The last commands applied, in the order they were applied.
         applied: () => applied.slice(-8),
         // The worker stopped on the body it was building, as a kernel trap would stop it.
