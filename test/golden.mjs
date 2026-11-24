@@ -175,9 +175,9 @@ const ACCEPTED = {
         { from: 91, to: 91, body: "Fillet 2", allow: "kernel", keys: ["edges", "vertices", "mass"] },
         { from: 69, to: 76, body: "Face 1", allow: "kernel", keys: ["edges", "vertices", "area"] },
     ],
-    // The 0.15 kernel: a lofted frustum's shell measures with its accuracy unmet (polyline
-    // trims): its volume moves inside its own error.
-    "forge-kinds-sweeps.json": [{ from: 115, to: 115, body: "Shell 1", allow: "kernel", keys: ["volume"] }],
+    // The 0.15 kernel: a lofted frustum's shell has exact trims, its moved walls the planes
+    // they lie in: 24 edges and 16 vertices where 0.14 cut them in chords (200 and 192).
+    "forge-kinds-sweeps.json": [{ from: 115, to: 115, body: "Shell 1", allow: "kernel", keys: ["edges", "vertices"] }],
     // The 0.15 kernel: a press of a cone's face counts 28 vertices.
     "forge-kinds-quick.json": [{ from: 96, to: 96, body: "Press Pull 1", allow: "kernel", keys: ["vertices"] }],
     // A trim by a closed curve: its edge has one vertex.
