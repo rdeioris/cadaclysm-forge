@@ -8350,10 +8350,10 @@
     "id": 7,
     "kind": "intersect",
     "error": null,
-    "volume": 0,
-    "area": 0,
+    "volume": 986.0416030467745,
+    "area": 593.1909419153568,
     "faces": 8,
-    "edges": 17,
+    "edges": 18,
     "bounds": {
      "centre": [
       14.091708183288574,
@@ -8367,10 +8367,10 @@
     "id": 8,
     "kind": "fillet",
     "error": null,
-    "volume": 0,
-    "area": 0,
+    "volume": 985.2042150607726,
+    "area": 588.9301235855796,
     "faces": 10,
-    "edges": 19,
+    "edges": 20,
     "bounds": {
      "centre": [
       14.091708183288574,

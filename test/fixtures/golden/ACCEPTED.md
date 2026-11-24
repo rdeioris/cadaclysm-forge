@@ -119,6 +119,40 @@ the 0.15 package over the same sequences, gives these very answers, so they are 
 - **A join of a box moved off a cylinder's middle** counts 20 edges, not 19:
   `the-scene-s-commands.json` step 20, "Join 1" (`edges`).
 
+## The 0.16 kernel
+
+Where the 0.16 kernel answers otherwise than the 0.15 one did, each a closer answer: the same
+solid, measured to the same figures or now measured at all. `golden.mjs` lets the named keys
+differ (`allow: "kernel"`; `mass` where the 0.15 recording could not be measured), from the
+step given on; the pins (`test/fixtures/forge-pins.json`) hold the 0.16 figures.
+
+- **A loft through three circles has four walls.** A circle read back from `f32` points
+  could sweep a rounding over a half turn, and the 0.15 kernel split that half into three
+  pieces where its neighbours had two: the loft's walls did not pair up, five uneven walls
+  (5 faces, 15 edges) whose area, 318.646, missed the surface's. The 0.16 kernel splits a
+  loft profile's arcs alike, so the walls are four quarter turns (4 faces, 12 edges) and the
+  area, 320.228972, is the interpolated surface's own (320.229048 by quadrature, 2.4e-7
+  off, the measure's accuracy). Same bounds. `test/forge-commands.mjs`, "#16 loft" (`LATER`).
+- **A shelled loft's trims are exact.** The loft between two rectangles has flat NURBS walls;
+  the 0.16 kernel offsets each to the plane it lies in, moved, so the hollow's trims are
+  exact lines where the 0.15 kernel chopped them: "Shell 1" counts 24 edges and 16 vertices,
+  not 200 and 192. Faces, area, volume and bounds agree; the volume is the exact frustum's
+  less the cavity's, to 1.4e-11 relative. `forge-kinds-sweeps.json` step 115 ("Shell 1",
+  `edges`, `vertices`).
+- **Two spline prisms' common closes.** `kinds-v2-spline-fillet.json`'s "Intersect 1" (the
+  common of two extruded closed splines) lacked the edge where one prism's wall leaves the
+  other's: on the 0.15 kernel its face 4 and face 7 met in no edge, the B-rep's trims
+  crossed back (39 edges and 33 vertices in its manifold row) and mass properties refused it
+  ("face 4 is the likeliest reversed"). The 0.16 kernel ends that branch of the meet on the
+  cut's trim, so the edge is there: 18 edges where 17 were, 12 vertices (V - E + F = 2), and
+  it measures, volume 986.0416 (its mesh 986.022). Its fillet of the two straight edges
+  ("Fillet 1") follows: 20 edges where 19 were, and it measures, volume 985.2042. A fillet
+  of no edges of either is the same solid ("Fillet 2" at steps 65 and 91), and face 7 as a
+  face item ("Face 1", steps 69-76) has its fourth edge, area 54.525143 where it was
+  54.522967 (its mesh converges on the new figure: 54.5242, 54.5249). `forge-document.mjs`
+  and `forge-scene.mjs` pin bodies 7 and 8; `golden.mjs`: `edges`, `vertices`, `mass`, and
+  `area` for the face.
+
 ## Kernel follow-ups
 
 - **A trim's split direction.** On a kernel whose `sheet.split_by_curve` takes `along`

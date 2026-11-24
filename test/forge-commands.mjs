@@ -398,7 +398,10 @@ for (const [k, c] of [
 // the same commands, each item read back off the nodes as the old layer has it,
 // each body the same solid (counts exact; volume, area, bounds to 1e-6). The quick solids
 // on a tilted sketch, against `forge.primitive`. Where they differ by decision: the pivot
-// is the exact bounds' centre (a circle's to an ulp), a revolution says it is a sheet.
+// is the exact bounds' centre (a circle's to an ulp), a revolution says it is a sheet. Where
+// a later kernel answers otherwise (test/fixtures/golden/ACCEPTED.md), `LATER` says how: the
+// loft through three circles (#16) has the 0.16 kernel's four quarter walls, not five.
+const LATER = { 16: { faces: 4, edges: 12, area: 320.22897163819675 } };
 {
     const t = fresh();
     const seq = [
@@ -452,7 +455,7 @@ for (const [k, c] of [
         assert.ok(close(got, want, 1e-12), `#${n}: ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
         if (!isBody(t.model.item(n))) continue;
         assert.strictEqual(statuses.find((s) => s.id === `i${n}`)?.state, "ok", `#${n}`);
-        const [a, b] = [solidOf(t.doc, `i${n}`), answers.made.solids[n]];
+        const [a, b] = [solidOf(t.doc, `i${n}`), { ...answers.made.solids[n], ...LATER[n] }];
         assert.ok(close(a, b, 1e-6), `#${n} ${fields.kind}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`);
         bodies++;
     }

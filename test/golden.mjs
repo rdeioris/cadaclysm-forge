@@ -94,8 +94,9 @@ const near = (a, b) => a === b || Math.abs(a - b) <= 1e-6 * Math.max(Math.abs(a)
 // given), body `body` may differ as `allow` says -- "builds" (it builds where the 0.14 layer
 // failed), "placed" (only where it is: its counts, closure, area and volume still hold),
 // "fails" (it fails where the 0.14 layer built: the 0.15 kernel refuses it, the 0.14 layer
-// on the 0.15 package too) or "kernel" (its `keys` differ: the 0.15 kernel answers
-// otherwise, the 0.14 layer on the 0.15 package the same) or "differs" (its `keys` differ:
+// on the 0.15 package too) or "kernel" (its `keys` differ: the 0.15 or 0.16 kernel answers
+// otherwise, the 0.14 layer on the 0.15 package the same; `mass` lets it measure where the
+// recording could not) or "differs" (its `keys` differ:
 // the node layer builds it otherwise, the 0.14 layer on the 0.15 package as recorded); where
 // two cover a step, the later one in the list. Step `step`'s command may be "refused" where
 // the 0.14 layer did nothing or did what the node layer refuses (the bodies it made, `lacks`,
@@ -167,6 +168,17 @@ const ACCEPTED = {
     ],
     // The 0.15 kernel: a press of a cone's face counts 28 vertices.
     "forge-kinds-quick.json": [{ from: 96, to: 96, body: "Press Pull 1", allow: "kernel", keys: ["vertices"] }],
+    // The 0.16 kernel: a shelled loft's flat walls offset to planes, its trims exact.
+    "forge-kinds-sweeps.json": [{ from: 115, to: 115, body: "Shell 1", allow: "kernel", keys: ["edges", "vertices"] }],
+    // The 0.16 kernel: two spline prisms' common closes along the curve where their walls
+    // meet, and measures (key "mass": the 0.15 recording could not); so does its fillet.
+    "forge-kinds-v2-spline-fillet.json": [
+        { from: 0, body: "Intersect 1", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 0, body: "Fillet 1", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 65, to: 65, body: "Fillet 2", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 91, to: 91, body: "Fillet 2", allow: "kernel", keys: ["edges", "vertices", "mass"] },
+        { from: 69, to: 76, body: "Face 1", allow: "kernel", keys: ["edges", "vertices", "area"] },
+    ],
     // A trim by a closed curve: its edge has one vertex.
     "forge-sheet-trim.json": [
         { from: 0, body: "Trim 1", allow: "differs", keys: ["vertices"] },
@@ -217,7 +229,7 @@ function differences(got, want, allow = () => undefined, lacking = []) {
         }
         if (ok === "fails") { out.push(`${name} must fail (the 0.15 kernel), it builds`); continue; }
         for (const k of ["kind", "faces", "edges", "vertices", "closed"]) if (!free(k)) check(g[k] === w[k], `${name}: ${k} ${g[k]} != ${w[k]}`);
-        check((g.mass !== undefined) === (w.mass !== undefined), `${name}: measured`);
+        if (!free("mass")) check((g.mass !== undefined) === (w.mass !== undefined), `${name}: measured`);
         for (const k of ["area", "volume"]) if (w[k] !== undefined && !free(k)) check(near(g[k], w[k]), `${name}: ${k} ${g[k]} != ${w[k]}`);
         if (ok === "placed") continue;
         check(g.bounds.length === w.bounds.length, `${name}: bounds`);

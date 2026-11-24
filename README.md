@@ -215,7 +215,7 @@ WebAssembly module (the kernel and the View), its loader (`index.js`) and `view.
 holds the page modules that go with the View, which the forge imports from there instead of
 keeping copies: `viewer-host.js` and `viewer-client.js` (a View in a worker, drawing a
 canvas the page hands over) and `view-canvas.js` (the canvas's capped drawing size). The
-forge needs the SDK's web package 0.15 or later (setup fetches 0.15.0), which has the
+forge needs the SDK's web package 0.15 or later (setup fetches 0.16.0), which has the
 document calls the node layer reads with (`document_nodes`, `document_revision`,
 `document_probe`, `document_meta`, ...), the profile calls the sketch tools use
 (`profile_from_pieces`, `profile_fillet_corner`, ...) and the `solid.transform` and
