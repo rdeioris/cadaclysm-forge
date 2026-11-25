@@ -603,8 +603,8 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
                     if (body.table.edgeOnly) out.push({ key: item.key, deps, colour: EDGES, value: { body: item.body, ghost: false }, show: () => v.showCurves(wasm.cadaclysm_blacksmith_edge_beziers(body.solid, EDGE_TOLERANCE), EDGES) });
                     else out.push({ key: item.key, deps: item.pmi ? [...deps, "pmi"] : deps, faceColours, pmiHighlight: item.pmiHighlight, value: { body: item.body, ghost: false }, show: () => {
                         const id = v.showSolid(body.solid, lookOptions(item.look));
-                        // Its PMI drawn on it (the View's PMI calls, where the module has them).
-                        if (item.pmi && body.table.pmi?.length && typeof v.showPmi === "function") v.showPmi(id);
+                        // Its PMI drawn on it (`showSolidPmi`, where the module has it): a label an item.
+                        if (item.pmi && body.table.pmi?.length && typeof v.showSolidPmi === "function") v.showSolidPmi(id, body.solid, { tolerance: MESH_TOLERANCE });
                         return id;
                     } });
                 } else if (item.kind === "ghost") {

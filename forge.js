@@ -8201,7 +8201,7 @@ function onWorkerMessage({ data }) {
     const result = data.kind === "built"
         ? { key: data.key ?? null, error: null, version: data.version, bounds: data.table.bounds, closure: data.table.closure, ghostFaces: data.ghostFaces ?? 0,
             gpu: { faceKinds: data.table.faceKinds, frames: data.table.frames, rounds: data.table.rounds, chamfers: data.table.chamfers, edges: data.table.edges,
-                   box: data.table.box, edgeOnly: data.table.edgeOnly, faceRefs: data.refs } }
+                   box: data.table.box, edgeOnly: data.table.edgeOnly, faceRefs: data.refs, pmi: data.table.pmi ?? [] } }
         : { key: data.key ?? null, error: data.error, closure: null };
     const c = byId(data.id);
     bodyResults.set(data.id, { ...bodyResults.get(data.id), ...result, kind: c && isBody(c) ? c.kind : bodyResults.get(data.id)?.kind });
