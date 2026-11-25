@@ -43,7 +43,7 @@ import { V, Q, parseEdges, closureText } from "./forge-curves.js";
 import { typedBytes, createWantedSender } from "./forge-wanted.js";
 import { faceColoursOver } from "./forge-items.js";
 import { attachViewer } from "./pkg/viewer-client.js";
-import { VIEW_ID, dropRedo, itemOfNode, createQuarantine } from "./forge-scene.js";
+import { VIEW_ID, dropRedo, itemOfNode, createQuarantine, hasPmi } from "./forge-scene.js";
 import { cameraOf } from "./projection.js";
 import { cubeFaces, cubeFaceAt, aimAt } from "./view-cube.js";
 import { AXES3, RINGS3, layoutManipulator as layoutShared, drawManipulator as drawShared, hitManipulator as hitShared, manipulatorPoint as pointShared, dragDelta, segmentDistance } from "./manipulator.js";
@@ -77,6 +77,25 @@ const shellEl = document.getElementById("shell");
 const thickenEl = document.getElementById("thicken");
 const trimEl = document.getElementById("trim");
 const filletEl = document.getElementById("fillet");
+const annotateEl = document.getElementById("annotate");
+const pmiItemEl = document.getElementById("pmi-item");
+const pmiTypeEl = document.getElementById("pmi-type");
+const pmiLabelEl = document.getElementById("pmi-label");
+const pmiValueEl = document.getElementById("pmi-value");
+const pmiLowerEl = document.getElementById("pmi-lower");
+const pmiUpperEl = document.getElementById("pmi-upper");
+const pmiDatumsEl = document.getElementById("pmi-datums");
+const pmiModifiersEl = document.getElementById("pmi-modifiers");
+const pmiTextEl = document.getElementById("pmi-text");
+const pmiAddEl = document.getElementById("pmi-add");
+const pmiClearEl = document.getElementById("pmi-clear");
+const pmiShowEl = document.getElementById("pmi-show");
+const pmiListEl = document.getElementById("pmi-list");
+const pmiValueLabelEl = document.getElementById("pmi-value-label");
+// The loaded module authors PMI (a web package before it does not: Annotate is hidden).
+const pmiAvailable = hasPmi(wasm);
+// Whether bodies' PMI is drawn in the views.
+let showPmi = true;
 const chamferEl = document.getElementById("chamfer");
 const removeEl = document.getElementById("remove");
 const radiusEl = document.getElementById("radius");
@@ -1289,11 +1308,11 @@ function refsOf(id, what, indices) {
 let selection = [];
 let selected = null;
 let selectedPoint = null;   // an index into the active NURBS's or polyline's points, or null
-const LABELS = { held: "Body", held_profile: "Profile", image: "Image", line: "Line", polyline: "Polyline", rect: "Rectangle", circle: "Circle", arc: "Arc", ellipse: "Ellipse", polygon: "Polygon", nurbs: "NURBS", polycurve: "Polycurve", surface: "Surface", extrusion: "Extrusion", revolution: "Revolution", solid: "Solid", sweep: "Sweep", loft: "Loft", join: "Join", cut: "Cut", intersect: "Intersect", chamfer: "Chamfer", shell: "Shell", thicken: "Thicken", trim: "Trim", prism: "Solid", press: "Press Pull", refillet: "Refillet", rechamfer: "Rechamfer", remove: "Remove", fillet: "Fillet", sketch: "Sketch", face: "Face",
+const LABELS = { held: "Body", held_profile: "Profile", image: "Image", line: "Line", polyline: "Polyline", rect: "Rectangle", circle: "Circle", arc: "Arc", ellipse: "Ellipse", polygon: "Polygon", nurbs: "NURBS", polycurve: "Polycurve", surface: "Surface", extrusion: "Extrusion", revolution: "Revolution", solid: "Solid", sweep: "Sweep", loft: "Loft", join: "Join", cut: "Cut", intersect: "Intersect", chamfer: "Chamfer", shell: "Shell", thicken: "Thicken", trim: "Trim", prism: "Solid", press: "Press Pull", refillet: "Refillet", rechamfer: "Rechamfer", remove: "Remove", fillet: "Fillet", annotate: "Annotations", sketch: "Sketch", face: "Face",
                  box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split" };
-const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽" };
+const GLYPHS = { image: "▧", line: "╱", polyline: "⌇", rect: "□", circle: "○", arc: "◜", ellipse: "⬭", polygon: "⬡", nurbs: "~", polycurve: "⌁", surface: "▣", extrusion: "⬢", revolution: "◍", solid: "◆", sweep: "↝", loft: "⌬", join: "◈", cut: "◩", intersect: "◪", shell: "◫", thicken: "▰", trim: "◧", prism: "◆", press: "⇕", refillet: "◡", rechamfer: "◺", remove: "⌫", fillet: "◠", annotate: "⌖", sketch: "✎", face: "▱", box: "▣", cylinder: "▯", sphere: "●", cone: "▲", pyramid: "◭", torus: "◎", coil: "§", pipe: "⌒", split: "⫽" };
 // A kind's icon (the sprite in forge.html), or its glyph as text where there is none.
-const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split"]);
+const ICONS = new Set(["image", "snip", "line", "polyline", "rect", "circle", "arc", "ellipse", "polygon", "nurbs", "polycurve", "surface", "extrusion", "revolution", "solid", "sweep", "loft", "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "fillet", "sketch", "folder", "closed", "round", "merge", "explode", "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "pipe", "split", "annotate"]);
 function iconOf(kind, glyph = GLYPHS[kind] ?? "•") {
     if (!ICONS.has(kind)) { const span = document.createElement("span"); span.textContent = glyph; return span; }
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -1317,14 +1336,14 @@ const isBody = (c) => c?.kind === "surface" || c?.kind === "extrusion" || c?.kin
 // held profile (`profile.path`) is listed and kept, not drawn, and no curve a tool takes.
 const isHeld = (c) => c?.kind === "held";
 const isHeldProfile = (c) => c?.kind === "held_profile";
-const isSolid = (c) => (isHeld(c) && !c.sheet) || c?.kind === "solid" || (c?.kind === "revolution" && c.sheet === false) || (c?.kind === "sweep" && !c.sheet) || (c?.kind === "loft" && !c.sheet) || c?.kind === "join" || c?.kind === "cut" || c?.kind === "intersect" || c?.kind === "shell" || c?.kind === "thicken" || c?.kind === "prism" || c?.kind === "press" || c?.kind === "refillet" || c?.kind === "rechamfer" || c?.kind === "remove" || c?.kind === "fillet"
+const isSolid = (c) => (isHeld(c) && !c.sheet) || c?.kind === "solid" || (c?.kind === "revolution" && c.sheet === false) || (c?.kind === "sweep" && !c.sheet) || (c?.kind === "loft" && !c.sheet) || c?.kind === "join" || c?.kind === "cut" || c?.kind === "intersect" || c?.kind === "shell" || c?.kind === "thicken" || c?.kind === "prism" || c?.kind === "press" || c?.kind === "refillet" || c?.kind === "rechamfer" || c?.kind === "remove" || c?.kind === "fillet" || c?.kind === "annotate"
     || isQuickKind(c?.kind) || c?.kind === "pipe" || c?.kind === "split";
 // A body meant to be solid whose B-rep the kernel says is not closed: the browser's amber
 // dot.
 const notClosed = (c) => isSolid(c) && c.error === null && !!c.closure && !c.closure.closed;
 // A body made of other bodies' definitions (a join, a shell), its solid built once
 // and kept, and moved by the gizmo as a rigid whole.
-const isMade = (c) => c?.kind === "join" || c?.kind === "cut" || c?.kind === "intersect" || c?.kind === "shell" || c?.kind === "thicken" || c?.kind === "trim" || c?.kind === "prism" || c?.kind === "press" || c?.kind === "refillet" || c?.kind === "rechamfer" || c?.kind === "remove" || c?.kind === "fillet" || c?.kind === "face"
+const isMade = (c) => c?.kind === "join" || c?.kind === "cut" || c?.kind === "intersect" || c?.kind === "shell" || c?.kind === "thicken" || c?.kind === "trim" || c?.kind === "prism" || c?.kind === "press" || c?.kind === "refillet" || c?.kind === "rechamfer" || c?.kind === "remove" || c?.kind === "fillet" || c?.kind === "annotate" || c?.kind === "face"
     || isQuickKind(c?.kind) || c?.kind === "pipe" || c?.kind === "split" || isHeld(c);
 // The quick solids' sizes, in the order the kernel takes them, as the dialog names them,
 // and what a new one starts with; a pipe's radius and wall (zero for a rod) likewise.
@@ -2269,12 +2288,234 @@ function newFillet(style = "round") {
         openTool(at, [id], style === "chamfer" ? "Chamfer" : "Fillet", "fillet");
     });
 }
+// The Annotate button: ends the picking when armed; arms an Annotations selected; on a solid
+// selected, a new Annotations of it.
+annotateEl.addEventListener("click", () => {
+    if (annotateMode) { if (tool) commitTool(); else setAnnotateMode(null); return; }
+    const c = current();
+    if (c?.kind === "annotate" && selection.length === 1) { if (c.gpu) setAnnotateMode(c); return; }
+    newAnnotate();
+});
+pmiItemEl.addEventListener("change", () => { fillPmiTypes(); renderDialog(); });
+pmiAddEl.addEventListener("click", () => addPmi());
+pmiClearEl.addEventListener("click", () => { if (!annotateMode) return; annotateMode.faces = []; annotateMode.edges = []; annotateMode.editing = null; renderDialog(); schedule(); });
+pmiShowEl.addEventListener("change", () => { showPmi = pmiShowEl.checked; schedule(); });
 chamferEl.addEventListener("click", () => {
     if (filletMode) { pressedAgain(filletMode.body.edges.length > 0); return; }
     const c = current();
     if (c?.kind === "fillet" && c.style === "chamfer" && selection.length === 1) { if (c.gpu) setFilletMode(c); return; }
     newFillet("chamfer");
 });
+// Annotate: PMI on a solid -- datums, dimensions (a value with its limits), geometric
+// tolerances (a class, a zone, datum references) and notes -- each on faces or edges of
+// it. A solid selected makes an Annotations item standing in for it (the solid hidden, as a
+// fillet's is), whose `pmi` list is its entries; each is a `solid.pmi` node on the
+// document, so the entries ride every later feature on their faces (a cut, a fillet) and
+// a STEP export writes them as AP242. While the item is armed (`annotateMode`) a click on
+// it picks a face, or an edge within a few pixels of the pointer (clicked again, not);
+// the dialog's form takes the rest and `add` makes the entry. The list below it lights an
+// entry in the views on hover, loads it into the form on `edit` (`save` writes it back),
+// and takes it out on `x`. Hidden where the loaded module has no PMI (a web package
+// before it: `hasPmi`).
+let annotateMode = null;   // { body, at, faces: [], edges: [], editing: index | null } while armed
+const PMI_TYPES = {
+    dimension: ["linear_distance", "length", "width", "height", "thickness", "diameter", "radius", "angular_location", "angular_size", "curved_distance", "curve_length", "spherical_diameter", "spherical_radius"],
+    tolerance: ["flatness", "straightness", "roundness", "cylindricity", "line_profile", "surface_profile", "parallelism", "perpendicularity", "angularity", "position", "concentricity", "coaxiality", "symmetry", "circular_runout", "total_runout"],
+};
+const PMI_LOCATIONS = new Set(["linear_distance", "angular_location", "curved_distance"]);
+let pmiLit = null;   // the entry of the active Annotations under the pointer in its list, or null
+function setAnnotateMode(body) {
+    annotateMode = body ? { body, at: headNow(), faces: [], edges: [], editing: null } : null;
+    annotateEl.setAttribute("aria-pressed", String(!!body));
+    overlay.style.cursor = body ? "crosshair" : trimMode || shellMode || filletMode || picking === "face" || drawing ? "crosshair" : "default";
+    hintEl.textContent = body ? annotateHint() : hintFor(current()?.kind);
+    setHover(null);
+    renderDialog();
+    schedule();
+}
+function annotateHint() {
+    return `click a face or an edge of ${annotateMode.body.name} to put the next item on · click again to leave it · pick the item in the dialog and add · OK or annotate again ends · Esc cancels`;
+}
+const pmiPicksText = (m) => {
+    const part = (what, ns) => ns.length ? `${what}${ns.length === 1 ? "" : "s"} ${ns.map((n) => n + 1).join(", ")}` : "";
+    return [part("face", m.faces), part("edge", m.edges)].filter(Boolean).join(" · ") || "nothing yet (a note may stand on the whole part)";
+};
+// One entry as a line of the list: its kind and what it says.
+function pmiLine(e) {
+    const t = (e.type ?? "").replace(/_/g, " ");
+    const lim = (v) => (v === undefined || v === null ? "" : v >= 0 ? `+${v}` : `${v}`);
+    if (e.item === "datum") return `datum ${e.label}`;
+    if (e.item === "dimension") return `${t} ${e.value}${e.lower !== undefined || e.upper !== undefined ? ` ${lim(e.upper)}/${lim(e.lower)}` : ""}`;
+    if (e.item === "tolerance") return `${t} ${e.value}${e.datums ? ` | ${e.datums}` : ""}${e.modifiers ? ` (${e.modifiers})` : ""}`;
+    return `note "${e.text}"`;
+}
+function fillPmiTypes() {
+    const kind = pmiItemEl.value, list = PMI_TYPES[kind] ?? [];
+    if (pmiTypeEl.dataset.kind === kind) return;
+    pmiTypeEl.dataset.kind = kind;
+    pmiTypeEl.replaceChildren(...list.map((t) => { const o = document.createElement("option"); o.value = t; o.textContent = t.replace(/_/g, " "); return o; }));
+}
+// The dialog's Annotations panel: the form (its rows shown by `pmi-<item>`), the add/save
+// button, and the entries, each with edit and delete.
+function renderPmiPanel(c) {
+    fillPmiTypes();
+    pmiValueLabelEl.textContent = pmiItemEl.value === "tolerance" ? "zone" : "value";
+    pmiAddEl.textContent = annotateMode && annotateMode.editing !== null ? "save" : "add";
+    pmiAddEl.disabled = !annotateMode;
+    const entries = Array.isArray(c.pmi) ? c.pmi : [];
+    const rows = entries.map((e, i) => {
+        const row = document.createElement("div");
+        row.className = "pmi-entry";
+        row.dataset.index = String(i);
+        const text = document.createElement("span");
+        text.textContent = `${i + 1}. ${pmiLine(e)}`;
+        const edit = document.createElement("button");
+        edit.textContent = "edit"; edit.title = "load this item into the form and pick its faces again";
+        edit.addEventListener("click", () => editPmi(c, i));
+        const del = document.createElement("button");
+        del.textContent = "×"; del.title = "delete this item";
+        del.addEventListener("click", () => deletePmi(c, i));
+        row.addEventListener("pointerenter", () => { pmiLit = i; schedule(); });
+        row.addEventListener("pointerleave", () => { if (pmiLit === i) { pmiLit = null; schedule(); } });
+        row.append(text, edit, del);
+        return row;
+    });
+    if (!rows.length) { const none = document.createElement("span"); none.className = "muted"; none.textContent = "no item yet"; rows.push(none); }
+    pmiListEl.replaceChildren(...rows);
+}
+// The entry the form and the picks make, or null with the reason said.
+function pmiEntryOfForm() {
+    const m = annotateMode;
+    const item = pmiItemEl.value;
+    const e = { item, faces: m.faces.slice(), edges: m.edges.slice() };
+    const number = (el, what, optional) => {
+        if (el.value.trim() === "") { if (optional) return undefined; say(`the ${what} must be a number`, true); return null; }
+        const v = +el.value;
+        if (!Number.isFinite(v)) { say(`the ${what} must be a number`, true); return null; }
+        return v;
+    };
+    if (item === "datum") {
+        const label = pmiLabelEl.value.trim().toUpperCase();
+        if (!/^[A-Z]+$/.test(label)) { say("a datum's label is capital letters: A, B, ...", true); return null; }
+        if (m.faces.length !== 1 || m.edges.length) { say("a datum sits on one face: pick one", true); return null; }
+        e.label = label;
+    } else if (item === "dimension" || item === "tolerance") {
+        if (!m.faces.length && !m.edges.length) { say(`a ${item} needs a face or an edge: pick one`, true); return null; }
+        e.type = pmiTypeEl.value;
+        const value = number(pmiValueEl, item === "tolerance" ? "zone" : "value", false);
+        if (value === null) return null;
+        e.value = value;
+        if (item === "dimension") {
+            const lower = number(pmiLowerEl, "lower limit", true), upper = number(pmiUpperEl, "upper limit", true);
+            if (lower === null || upper === null) return null;
+            if (lower !== undefined) e.lower = lower;
+            if (upper !== undefined) e.upper = upper;
+            // A location runs from the first pick (its origin) to the rest.
+            if (PMI_LOCATIONS.has(e.type)) {
+                if (m.faces.length + m.edges.length < 2) { say(`a ${e.type.replace(/_/g, " ")} runs between two picks: the first is its origin`, true); return null; }
+                e.origin = 1;
+            }
+        } else {
+            e.datums = pmiDatumsEl.value.trim().toUpperCase();
+            e.modifiers = pmiModifiersEl.value.trim();
+        }
+    } else {
+        const text = pmiTextEl.value.trim();
+        if (!text) { say("a note needs its text", true); return null; }
+        e.text = text;
+    }
+    return e;
+}
+function newAnnotate() {
+    return act(async () => {
+        if (curves.some((c) => c.dirty)) rebuild();
+        const src = selectedCurves().find(isSolid);
+        if (!src || selectedCurves().length !== 1) return;
+        await whenBuilt([src.id]);
+        if (src.error !== null || !src.gpu) { say(`${src.name} has not been built`, true); return; }
+        const at = headNow(), id = nextId;
+        await run({ op: "annotate", id, source: src.id });
+        select(id);
+        setAnnotateMode(byId(id));
+        openTool(at, [id], "Annotate", "annotate");
+    });
+}
+// The form's entry added to the armed Annotations (or written over the one being edited).
+function addPmi() {
+    const m = annotateMode;
+    if (!m) return;
+    const c = m.body;
+    const e = pmiEntryOfForm();
+    if (!e) return;
+    return act(async () => {
+        // The picks' references, off the worker's solid (the body the entries stand on).
+        const [faceRefs, edgeRefs] = await Promise.all([refsOf(c.id, "faces", e.faces), refsOf(c.id, "edges", e.edges)]);
+        const now = byId(c.id);
+        if (!now) return;
+        if (faceRefs) e.faceRefs = faceRefs;
+        if (edgeRefs) e.edgeRefs = edgeRefs;
+        const pmi = (Array.isArray(now.pmi) ? now.pmi : []).slice();
+        if (m.editing !== null && m.editing < pmi.length) pmi[m.editing] = e; else pmi.push(e);
+        await run({ op: "set", id: c.id, pmi });
+        if (annotateMode) { annotateMode.faces = []; annotateMode.edges = []; annotateMode.editing = null; annotateMode.body = byId(c.id) ?? annotateMode.body; hintEl.textContent = annotateHint(); }
+        // The next datum's letter: the one after the last.
+        if (e.item === "datum") pmiLabelEl.value = String.fromCharCode(Math.min(90, e.label.charCodeAt(e.label.length - 1) + 1));
+        renderDialog();
+        schedule();
+    });
+}
+function editPmi(c, i) {
+    if (!annotateMode || annotateMode.body.id !== c.id) { if (!c.gpu) return; setAnnotateMode(c); }
+    const e = c.pmi[i];
+    Object.assign(annotateMode, { faces: (e.faces ?? []).slice(), edges: (e.edges ?? []).slice(), editing: i });
+    pmiItemEl.value = e.item;
+    fillPmiTypes();
+    if (e.type) pmiTypeEl.value = e.type;
+    pmiLabelEl.value = e.label ?? pmiLabelEl.value;
+    pmiValueEl.value = e.value ?? "";
+    pmiLowerEl.value = e.lower ?? "";
+    pmiUpperEl.value = e.upper ?? "";
+    pmiDatumsEl.value = e.datums ?? "";
+    pmiModifiersEl.value = e.modifiers ?? "";
+    pmiTextEl.value = e.text ?? "";
+    hintEl.textContent = annotateHint();
+    renderDialog();
+    schedule();
+}
+function deletePmi(c, i) {
+    return act(async () => {
+        const now = byId(c.id);
+        if (!now) return;
+        const pmi = (now.pmi ?? []).filter((_, k) => k !== i);
+        if (annotateMode?.editing === i) annotateMode.editing = null;
+        pmiLit = null;
+        await run({ op: "set", id: c.id, pmi });
+        if (annotateMode) annotateMode.body = byId(c.id) ?? annotateMode.body;
+        renderDialog();
+        schedule();
+    });
+}
+// A face or an edge of the armed body clicked: picked, or (picked already) left.
+function pickPmiTarget(view, px, face) {
+    const m = annotateMode, c = m ? byId(m.body.id) : null;
+    if (!c?.gpu) return;
+    const edge = nearestEdge(c, view, px, face);
+    const toggle = (list, k) => { const at = list.indexOf(k); if (at >= 0) list.splice(at, 1); else list.push(k); };
+    if (edge !== null) toggle(m.edges, edge);
+    else if (face !== null) toggle(m.faces, face);
+    else return;
+    hintEl.textContent = annotateHint();
+    renderDialog();
+    schedule();
+}
+// The PMI index (the body's own numbering: what came on it before first) of the entry lit
+// in the list, for the View's highlight; null for none.
+function pmiHighlightOf(c) {
+    if (pmiLit === null || current() !== c || c.kind !== "annotate" || !c.gpu?.pmi) return null;
+    const entries = Array.isArray(c.pmi) ? c.pmi.length : 0;
+    const k = c.gpu.pmi.length - entries + pmiLit;
+    return k >= 0 && k < c.gpu.pmi.length ? k : null;
+}
 // The solid a fillet stands in for, as shown while its edges are picked: the item
 // itself where it still stands, with its edge list.
 const filletSource = (c) => curves.find((k) => k.id === c.tool && isBody(k)) ?? null;
@@ -2657,7 +2898,7 @@ function pickInto(sketch, id) {
 let hover = null;        // { body, index, ghost, edge } or null
 let hoverAsk = null;     // the pointer's [view, px] waiting for the pass, while one is out
 let hoverOut = false;
-const pickingFaces = () => !!(shellMode || trimMode || filletMode || (facePicking() && isSketch(current())) || (sketchPick && SKETCH_PICKS[sketchPick.kind].faces));
+const pickingFaces = () => !!(shellMode || trimMode || filletMode || annotateMode || (facePicking() && isSketch(current())) || (sketchPick && SKETCH_PICKS[sketchPick.kind].faces));
 function setHover(next) {
     const same = (a, b) => a === b || (a && b && a.body === b.body && a.index === b.index && !!a.ghost === !!b.ghost && a.edge === b.edge);
     if (same(hover, next)) return;
@@ -2675,6 +2916,10 @@ function hoverAt(view, px) {
             const src = filletSource(filletMode.body);
             const edge = src ? nearestEdge(src, view, px, hit?.body === src ? hit.index : null) : null;
             next = edge !== null ? { body: src, index: null, edge } : null;
+        } else if (annotateMode) {
+            const c = byId(annotateMode.body.id);
+            const edge = c ? nearestEdge(c, view, px, hit?.body === c ? hit.index : null) : null;
+            next = edge !== null ? { body: c, index: null, edge } : hit && hit.body === c ? { body: c, index: hit.index } : null;
         } else if (shellMode) {
             next = hit && hit.body === shellMode.body ? { body: hit.body, index: hit.index } : null;
         } else if (trimMode) {
@@ -2699,6 +2944,7 @@ function faceColoursOf(c, base, ghost = false) {
     const colours = {};
     const n = ghost ? c.ghostFaces : c.gpu?.faceKinds ? c.gpu.faceKinds.length : 0;
     if (shellMode && shellMode.body === c && !ghost) for (const k of shellMode.open) if (k < n) colours[k] = litFace(base, 0.75);
+    if (annotateMode && annotateMode.body.id === c.id && !ghost) for (const k of annotateMode.faces) if (k < n) colours[k] = litFace(base, 0.75);
     if (hover && hover.body === c && hover.index !== null && hover.index < n && !!hover.ghost === ghost) colours[hover.index] = litFace(base, colours[hover.index] ? 1 : 0.45);
     return Object.keys(colours).length ? colours : undefined;
 }
@@ -2861,6 +3107,7 @@ function deleteCurve() {
     if (trimMode && doomed.has(trimMode.body.id)) setTrimMode(null);
     if (sketchTrim && sketchTrim.ids.some((id) => doomed.has(id))) setSketchTrim(false);
     if (filletMode && doomed.has(filletMode.body.id)) setFilletMode(null);
+    if (annotateMode && doomed.has(annotateMode.body.id)) setAnnotateMode(null);
     runStructural({ op: "delete", ids: [...selection] }, gone.filter(isCurve).map((c) => c.plane));   // a view looking at a deleted sketch looks at its origin plane again
     select(after?.id ?? before?.id ?? null);
     if (!curves.length) say("add a curve from the panel");
@@ -2895,6 +3142,7 @@ function setSelection(ids) {
     if (sketchTrim && !selection.some((id) => sketchTrim.ids.includes(id))) setSketchTrim(false);
     if (trimMode && !(selection.length === 1 && selected === trimMode.body.id)) setTrimMode(null);
     if (filletMode && !(selection.length === 1 && selected === filletMode.body.id)) setFilletMode(null);
+    if (annotateMode && !(selection.length === 1 && selected === annotateMode.body.id)) setAnnotateMode(null);
     showPlaneOf(current());
     syncToolbar();
     renderList();
@@ -3320,6 +3568,8 @@ function syncToolbar() {
     thickenEl.disabled = sketchPick?.kind !== "thicken" && !selectedCurves().some(isSheet);
     shellEl.disabled = !shellMode && selectedCurves().filter(isSolid).length !== 1;
     filletEl.disabled = !filletMode && !(c?.kind === "fillet" && selection.length === 1) && !(selectedCurves().length === 1 && isSolid(c));
+    annotateEl.hidden = !pmiAvailable;
+    annotateEl.disabled = !annotateMode && !(c?.kind === "annotate" && selection.length === 1) && !(selectedCurves().length === 1 && isSolid(c));
     sketchFilletEl.setAttribute("aria-pressed", String(sketchPick?.kind === "fillet"));
     chamferEl.disabled = !filletMode && !(c?.kind === "fillet" && c.style === "chamfer" && selection.length === 1) && !(selectedCurves().length === 1 && isSolid(c));
     if (c?.kind === "fillet" || c?.kind === "refillet" || c?.kind === "rechamfer") radiusEl.value = c.radius;
@@ -3646,7 +3896,7 @@ function commitTool() {
     else if (axisMode) newBody("revolution");
     if (sweepMode) setSweepMode(null);
     if (trimMode) setTrimMode(null);
-    if (filletMode) setFilletMode(null);
+    if (filletMode) setFilletMode(null); if (annotateMode) setAnnotateMode(null);
     renderDialog();
 }
 function cancelTool() {
@@ -3657,7 +3907,7 @@ function cancelTool() {
     if (shellMode) setShellMode(null);
     if (sweepMode) setSweepMode(null);
     if (trimMode) setTrimMode(null);
-    if (filletMode) setFilletMode(null);
+    if (filletMode) setFilletMode(null); if (annotateMode) setAnnotateMode(null);
     return act(async () => {
         flushPending();
         if (doneSince(cancelAt)) { await rollbackTo(cancelAt); say(`cancelled · ${head} of ${history.length}`); }
@@ -3708,7 +3958,7 @@ operationEl.addEventListener("change", () => act(async () => {
 // shell being picked, an extrude with an operation to choose.
 function renderDialog() {
     const c = current();
-    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || sweepMode || axisMode || picking || drawing || sketchPick);
+    const modeOn = !!(shellMode || trimMode || sketchTrim || filletMode || annotateMode || sweepMode || axisMode || picking || drawing || sketchPick);
     if (!c && !tool && !modeOn) { dialogEl.hidden = true; return; }
     dialogEl.hidden = false;
     const kinds = new Set();
@@ -3727,7 +3977,8 @@ function renderDialog() {
     if (c?.kind === "nurbs" && selectedPoint !== null && !sketchPick && !sketchTrim) kinds.add("nurbs-point");
     if (axisMode) kinds.add("axis");
     if (shellMode) kinds.add("shellmode");
-    if (shellMode || filletMode || trimMode || sketchTrim || sketchPick) { kinds.add("picks"); renderPicks(); }
+    if (shellMode || filletMode || annotateMode || trimMode || sketchTrim || sketchPick) { kinds.add("picks"); renderPicks(); }
+    if (c?.kind === "annotate" && !sketchPick && !sketchTrim) { kinds.add(`pmi-${pmiItemEl.value}`); renderPmiPanel(c); }
     if (sketchPick?.kind === "fillet") kinds.add("fillet");
     if (sketchPick?.kind === "split") kinds.add("split-pick");
     if (tool?.rerun) kinds.add("operation");
@@ -3754,7 +4005,7 @@ function renderDialog() {
     const note = modeOn ? hintEl.textContent : c?.error ?? "";
     dialogNoteEl.textContent = note;
     dialogNoteEl.classList.toggle("error", !modeOn && !!c?.error);
-    dialogFootEl.hidden = !tool && !(shellMode || filletMode || trimMode || sketchTrim || sketchPick);
+    dialogFootEl.hidden = !tool && !(shellMode || filletMode || annotateMode || trimMode || sketchTrim || sketchPick);
 }
 // The picks so far, in the dialog: the shell's open faces, the fillet's edges, the
 // trim's pieces removed -- by number, as the views count them.
@@ -3784,6 +4035,7 @@ function renderPicks() {
         return;
     }
     if (shellMode) { picksLabelEl.textContent = "open"; picksEl.textContent = list("face", [...shellMode.open].sort((a, b) => a - b)); }
+    else if (annotateMode) { picksLabelEl.textContent = "on"; picksEl.textContent = pmiPicksText(annotateMode); }
     else if (filletMode) { picksLabelEl.textContent = filletMode.body.style === "chamfer" ? "cut back" : "rounded"; picksEl.textContent = list("edge", filletMode.body.edges); }
     else if (trimMode) { picksLabelEl.textContent = "removed"; picksEl.textContent = list("piece", trimMode.body.drop); }
     else if (sketchTrim) { picksLabelEl.textContent = "removed"; picksEl.textContent = sketchTrim.removed ? `${sketchTrim.removed} piece${sketchTrim.removed === 1 ? "" : "s"}` : "no piece yet"; }
@@ -3797,7 +4049,7 @@ function confirmPicks() {
     if (shellMode) newShell();
     if (trimMode) setTrimMode(null);
     if (sketchTrim) setSketchTrim(false);
-    if (filletMode) setFilletMode(null);
+    if (filletMode) setFilletMode(null); if (annotateMode) setAnnotateMode(null);
     renderDialog();
 }
 function cancelPicks() {
@@ -3807,7 +4059,7 @@ function cancelPicks() {
     if (shellMode) setShellMode(null);
     if (trimMode) setTrimMode(null);
     if (sketchTrim) setSketchTrim(false);
-    if (filletMode) setFilletMode(null);
+    if (filletMode) setFilletMode(null); if (annotateMode) setAnnotateMode(null);
     flushPending();
     if (at !== null && doneSince(at)) return act(async () => { await rollbackTo(at); say(`cancelled · ${head} of ${history.length}`); renderDialog(); });
     renderDialog();
@@ -4300,6 +4552,32 @@ function drawOverlay() {
     // names and borders alone, as the page shows while it loads.
     if (lastReport === null) { drawNames(rects); return; }
 
+    // An annotation's edge picks, and the edge under the pointer, in the accent.
+    const annotated = annotateMode ? byId(annotateMode.body.id) : null;
+    if (annotated?.gpu?.edges && visible(annotated)) {
+        const all = parseEdges(annotated.gpu.edges);
+        for (let v = 0; v < rects.length; v++) {
+            const top = rects[v];
+            if (top[2] <= 0 || top[3] <= 0) continue;
+            ctx.save();
+            ctx.beginPath(); ctx.rect(top[0], top[1], top[2], top[3]); ctx.clip();
+            const size = [top[2], top[3]];
+            all.forEach((e, k) => {
+                const picked = annotateMode.edges.includes(k), lit = hover?.body === annotated && hover.edge === k;
+                if (!picked && !lit) return;
+                ctx.strokeStyle = picked ? ACCENT : HOVER_EDGE;
+                ctx.lineWidth = picked ? 3 : 2;
+                ctx.beginPath();
+                for (const [a, b] of e.segments) {
+                    const pa = camOf(v).worldToPx(a, size), pb = camOf(v).worldToPx(b, size);
+                    if (!pa || !pb) continue;
+                    ctx.moveTo(top[0] + pa[0], top[1] + pa[1]); ctx.lineTo(top[0] + pb[0], top[1] + pb[1]);
+                }
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+    }
     // A fillet's picks: its solid's edges in every view, the rounded ones in the accent.
     if (filletMode) {
         const src = filletSource(filletMode.body);
@@ -5579,7 +5857,7 @@ function handleUnderPress(i, px) {
     const c = current();
     const facePick = facePicking() && isSketch(c);
     const picking_ = !!(sketchPick || sweepMode || sketchTrim || (picking === "points" && isSketch(c)));
-    const modal = !!(shellMode || trimMode || filletMode || facePick || picking_);
+    const modal = !!(shellMode || trimMode || filletMode || annotateMode || facePick || picking_);
     if (modal || drawing) return false;
     if (c) {
         const size = sizeOf(i), p = local(px, i);
@@ -5660,7 +5938,7 @@ function pressAt(i, px, e) {
         return;
     }
     // A constraint's mark or a dimension's label under the click selects the constraint.
-    if (!sketchTrim && !shellMode && !trimMode && !filletMode && !axisMode && !facePicking()) {
+    if (!sketchTrim && !shellMode && !trimMode && !filletMode && !annotateMode && !axisMode && !facePicking()) {
         const dim = constraintAt(px);
         if (dim) { selectDimension(dim); return; }
     }
@@ -5673,9 +5951,14 @@ function pressAt(i, px, e) {
     }
     const c = current();
     const facePick = facePicking() && isSketch(c);
-    if (!shellMode && !trimMode && !filletMode && !facePick && (i === 1 || (!c && !axisMode))) { selectAt(i, px, e, !axisMode); return; }
-    if (shellMode || trimMode || filletMode || facePick) {
+    if (!shellMode && !trimMode && !filletMode && !annotateMode && !facePick && (i === 1 || (!c && !axisMode))) { selectAt(i, px, e, !axisMode); return; }
+    if (shellMode || trimMode || filletMode || annotateMode || facePick) {
         pickThen(i, px, e, (hitBody) => {
+            if (annotateMode) {
+                if (hitBody?.body?.id === annotateMode.body.id) pickPmiTarget(i, px, hitBody.index);
+                else pickPmiTarget(i, px, null);
+                return;
+            }
             if (filletMode) {
                 const src = filletSource(filletMode.body);
                 if (src && hitBody?.body === src) pickFilletEdge(filletMode.body, i, px, hitBody.index);
@@ -6752,7 +7035,7 @@ function constraintStatus(sketch, id) {
     return why ? `${name}: ${why.applied ? "" : "not applied — "}${why.text}` : name;
 }
 // The hovered constraint, while nothing armed takes the pointer (a tool, a pick, a drawing).
-const constraintHoverable = () => !drawing && !sketchPick && !sketchTrim && !shellMode && !trimMode && !filletMode && !axisMode && !facePicking();
+const constraintHoverable = () => !drawing && !sketchPick && !sketchTrim && !shellMode && !trimMode && !filletMode && !annotateMode && !axisMode && !facePicking();
 const liveHover = () => constraintHoverable() ? hoverConstraint : null;
 function drawGlyphs(rects) {
     glyphRects = [];
@@ -7353,7 +7636,7 @@ const MOVE_CODES = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "Shi
 addEventListener("keydown", (e) => { entry(() => onKeydown(e)); overlayDirty(); });
 function onKeydown(e) {
     if (e.key === "Alt") e.preventDefault();   // held for an orbit; on its own it would take the browser's menu
-    if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); return; }
+    if (e.key === "Escape") { if (measure) { setMeasure(false); return; } if (drawing) { cancelDrawing(); return; } if (sketchPick) { disarmSketchPick(true); return; } if (tool) { cancelTool(); return; } if (axisMode) setAxisMode(null); if (picking) setPicking(null); if (sweepMode) setSweepMode(null); if (shellMode) setShellMode(null); if (trimMode) setTrimMode(null); if (sketchTrim) { cancelPicks(); return; } if (filletMode) setFilletMode(null); if (annotateMode) setAnnotateMode(null); return; }
     const inDialog = e.target instanceof HTMLElement && e.target.closest("#dialog");
     if (e.key === "Enter" && drawing && !inDialog) { e.preventDefault(); finishDrawing(); return; }
     if (e.key === "Enter" && tool && (e.target === document.body || inDialog || e.target instanceof HTMLButtonElement)) { e.preventDefault(); commitTool(); return; }
@@ -8259,6 +8542,7 @@ function show() {
             const tint = tinted(c) ? tintOf(own.colour) : undefined;
             const faceCount = c.gpu.faceKinds.length;
             out.push({ key: `body:${c.id}`, deps: [look.colour.join(), look.material, look.opacity], kind: "body", body: c.id, look,
+                       pmi: showPmi && (c.gpu.pmi?.length ?? 0) > 0, pmiHighlight: pmiHighlightOf(c),
                        faceColours: encodedFaces(faceColoursOver(faceCount, tint, faceColoursOf(c, tint ?? own.colour))) });
         } else out.push({ key: `body:${c.id}`, deps: [], kind: "body", body: c.id, look });   // no exact face: its edges, as curves
         if (showIsocurves) out.push({ key: `iso:${c.id}`, deps: [], kind: "isocurves", body: c.id, colour: encoded(ISO_CURVE) });

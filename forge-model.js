@@ -106,6 +106,7 @@ const LABELS = {
     surface: "Surface", extrusion: "Extrusion", revolution: "Revolution", solid: "Solid", sweep: "Sweep", loft: "Loft", join: "Join", cut: "Cut", intersect: "Intersect", chamfer: "Chamfer",
     shell: "Shell", thicken: "Thicken", trim: "Trim", prism: "Solid", press: "Press Pull", refillet: "Refillet", rechamfer: "Rechamfer", remove: "Remove", fillet: "Fillet", sketch: "Sketch",
     face: "Face", box: "Box", cylinder: "Cylinder", sphere: "Sphere", cone: "Cone", pyramid: "Pyramid", torus: "Torus", coil: "Coil", pipe: "Pipe", split: "Split",
+    annotate: "Annotations",
 };
 
 /// An item kind's label; "undefined" for a kind it lacks, as a template string writes it.
@@ -118,7 +119,7 @@ const PAGE_CURVE_KINDS = Object.fromEntries(Object.entries(CURVE_KINDS).map(([k,
 /// The quick solids.
 export const QUICK_KINDS = ["box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil"];
 export const isQuickKind = (kind) => QUICK_KINDS.includes(kind);
-const MADE = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split", "held"];
+const MADE = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split", "held", "annotate"];
 /// A body made of other bodies, or a quick solid, a pipe, a split, a held body.
 export const isMadeKind = (kind) => MADE.includes(kind) || isQuickKind(kind);
 const DRAWN = ["surface", "extrusion", "revolution", "solid", "sweep", "loft"];

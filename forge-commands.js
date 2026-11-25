@@ -1021,7 +1021,7 @@ function profileNode(d, id, holder, frame, open, moves, pre) {
 // The body verbs: bodies made of other bodies (see the header's Picks).
 
 /// The body verbs' item kinds.
-const VERBS = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "split"];
+const VERBS = ["join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "split", "annotate"];
 
 /// The normal of each origin plane's frame, as the kernel's `xy` / `xz` / `yz` have it.
 const ORIGIN_NORMALS = { xy: [0, 0, 1], xz: [0, -1, 0], yz: [1, 0, 0] };
@@ -1201,6 +1201,35 @@ function verbSteps(d, n, c, pending, pre, numOr) {
             const [face] = picked(d, n, c, [get(c, "face")], "faceRefs", ["parts", "face", "ref"], (k) => faceOfPart(d, src, k, get(c, "ref")));
             return [{ kind: "sheet.face_sheet", solid, face }];
         }
+        case "annotate": {
+            // Each PMI entry one `solid.pmi` step, chained: the first reads the body, every
+            // later one the step before (CHAINED). No entry yet: the body passed through.
+            const solid = part(0);
+            const entries = Array.isArray(get(c, "pmi")) ? c.pmi : [];
+            if (!entries.length) return [{ kind: "solid.transform", solid }];
+            return entries.map((e, i) => {
+                if (!isMap(e)) refuse(`${base}: PMI entry ${i + 1} is not an object`);
+                // The references: the entry's own, else its index picks resolved off the body.
+                const refsOf = (key, refsKey, one) => {
+                    const given = get(e, refsKey);
+                    if (Array.isArray(given)) return clone(given);
+                    const ids = Array.isArray(get(e, key)) ? e[key].map(idOf) : [];
+                    if (ids.includes(undefined)) refuse(`${base}: PMI entry ${i + 1}: a pick is not a list of indices`);
+                    const refs = ids.map((k) => asked(base, () => one(k)));
+                    e[refsKey] = clone(refs);
+                    return refs;
+                };
+                const faces = refsOf("faces", "faceRefs", (k) => faceOfPart(d, src, k));
+                const edges = refsOf("edges", "edgeRefs", (k) => d.edgeRef(src, k));
+                const step = { kind: "solid.pmi", item: orElse(get(e, "item"), "note"), faces, edges };
+                if (i + 1 < entries.length) step.role = `pmi${i}`;
+                if (i === 0) step.solid = solid;
+                for (const k of ["label", "type", "datums", "modifiers", "text"]) if (typeof get(e, k) === "string") step[k] = e[k];
+                for (const k of ["value", "lower", "upper"]) if (num(get(e, k)) !== undefined) step[k] = e[k];
+                if (num(get(e, "origin")) !== undefined) step.origin_count = e.origin;
+                return step;
+            });
+        }
         case "fillet": {
             const solid = part(0);
             const edges = picked(d, n, c, get(c, "edges"), "edgeRefs", ["parts", "edges", "edgeNumbering"], (k) => d.edgeRef(src, k));
@@ -1257,6 +1286,8 @@ function verbHeld(get, n, verb, vk) {
         case "solid.rechamfer": put("radius", verb.distance); break;
         case "sheet.face_sheet": parts([verb.solid]); if (isMap(verb.face)) out.faceRefs = [clone(verb.face)]; break;
         case "solid.fillet": parts([verb.solid]); put("edgeRefs", verb.edges); put("radius", verb.radius); break;
+        // An annotation's chain: its first step reads the body.
+        case "solid.pmi": parts([(get(helperId(n, "pmi0")) ?? verb).solid]); break;
         case "solid.chamfer": parts([verb.solid]); put("edgeRefs", verb.edges); put("radius", verb.distance); break;
         case "solid.split_side": parts([verb.solid]); put("side", verb.side); put("cutter", itemOfId(verb.tool)); break;
         case "solid.split_side_by_plane": parts([verb.solid]); put("side", verb.side); put("cutter", planeOfFrame(verb.plane)); break;
@@ -1345,7 +1376,7 @@ function bodyHeld(get, n, head, kind) {
 }
 
 /// The steps that read the one before as their `solid`.
-const CHAINED = ["solid.transform", "solid.merge_flush"];
+const CHAINED = ["solid.transform", "solid.merge_flush", "solid.pmi"];
 
 /// A body's nodes (see the header): its helpers, then its chain, the last step `i<n>`.
 function bodyNodes(d, n, c, pending) {
@@ -2387,6 +2418,20 @@ function build(model, cmd, env, broken) {
             if (src.plane !== undefined) c.plane = clone(src.plane);
             Object.assign(c, { parts: [src.id], edges: [] });
             if (get(cmd, "radius") !== undefined) c.radius = clone(cmd.radius);
+            Object.assign(c, { tool: src.id, pivot: pivotOf(src), transform: still() });
+            writeItem(d, n, madeTail(c, true));
+            break;
+        }
+        // An annotation of a body: its PMI entries (`pmi`) on the body's faces and edges,
+        // the body passed through and hidden, as a fillet stands in for its solid.
+        case "annotate": {
+            const n = cmdId(cmd, "id", op);
+            d.bump(n);
+            const src = need(d, idOf(get(cmd, "source")), op);
+            hide(d, src.id);
+            const c = { id: n, name: d.nameFor("annotate"), kind: "annotate" };
+            if (src.plane !== undefined) c.plane = clone(src.plane);
+            Object.assign(c, { parts: [src.id], pmi: Array.isArray(get(cmd, "pmi")) ? kept(cmd.pmi) : [] });
             Object.assign(c, { tool: src.id, pivot: pivotOf(src), transform: still() });
             writeItem(d, n, madeTail(c, true));
             break;

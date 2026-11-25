@@ -94,6 +94,11 @@
     #dialog-body { padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; max-height: 45vh; overflow-y: auto; }
     #dialog .row { display: grid; grid-template-columns: 5.5em 1fr; align-items: center; gap: 8px; min-height: 24px; }
     #dialog .row.wide { grid-template-columns: 1fr; }
+    #pmi-list { display: flex; flex-direction: column; gap: 2px; }
+    #pmi-list .pmi-entry { display: grid; grid-template-columns: 1fr auto auto; gap: 4px; align-items: center; padding: 1px 2px; border-radius: 3px; }
+    #pmi-list .pmi-entry:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+    #pmi-list .pmi-entry button { padding: 0 6px; }
+    #pmi-list .muted { opacity: .6; }
     #dialog .row.buttons { grid-template-columns: 1fr 1fr; }
     #dialog .row.buttons.three { grid-template-columns: 1fr 1fr 1fr; }
     #dialog .row[hidden] { display: none; }
@@ -253,6 +258,7 @@
     <symbol id="i-intersect" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/><path d="M12 6.8 A6 6 0 0 1 12 17.2 A6 6 0 0 1 12 6.8 Z" fill="currentColor" fill-opacity=".45" stroke="none"/></symbol>
     <symbol id="i-thicken" viewBox="0 0 24 24"><path d="M3 14 C8 9 16 9 21 14"/><path d="M3 19 C8 14 16 14 21 19"/><path d="M3 14 V19 M21 14 V19"/><path d="M12 4 V9 M10 7 L12 9 L14 7"/></symbol>
     <symbol id="i-shell" viewBox="0 0 24 24"><path d="M4 7 L12 11 L20 7 M4 7 V16 L12 20 L20 16 V7 M12 11 V20"/><path d="M4 7 L12 3 L20 7" stroke-dasharray="2 2"/></symbol>
+    <symbol id="i-annotate" viewBox="0 0 24 24"><path d="M3 21 L10 14"/><path d="M10 14 H21"/><rect x="11" y="4" width="10" height="6" fill="currentColor" fill-opacity=".25"/><path d="M16 4 V10"/></symbol>
     <symbol id="i-fillet" viewBox="0 0 24 24"><path d="M20 20 H4 V10 Q4 4 10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-chamfer" viewBox="0 0 24 24"><path d="M20 20 H4 V10 L10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6 H10 L12 8 H21 V19 H3 Z" fill="currentColor" fill-opacity=".25"/></symbol>
@@ -401,6 +407,12 @@
             </div>
             <span>modify</span>
         </div>
+        <div class="group">
+            <div>
+                <button id="annotate" aria-pressed="false" disabled hidden title="PMI on the selected solid -- datums, dimensions, geometric tolerances and notes on its faces and edges; written to STEP as AP242"><svg class="g"><use href="#i-annotate"/></svg>annotate</button>
+            </div>
+            <span>PMI</span>
+        </div>
     </div>
     <div class="ribbon" id="ribbon-construct">
         <div class="group">
@@ -476,6 +488,18 @@
                 <label class="row" data-for="shell shellmode thicken">thickness <input type="number" id="thickness" value="2" min="-500" max="500" step="0.5"></label>
                 <label class="row" data-for="fillet refillet rechamfer"><span id="radius-label">radius</span> <input type="number" id="radius" value="2" min="0.01" max="500" step="0.5"></label>
                 <div class="row" data-for="picks"><span id="picks-label">picked</span><span id="picks"></span></div>
+                <label class="row" data-for="annotate">item <select id="pmi-item"><option value="datum">datum</option><option value="dimension">dimension</option><option value="tolerance">tolerance</option><option value="note">note</option></select></label>
+                <label class="row" data-for="pmi-datum">label <input id="pmi-label" value="A" maxlength="3"></label>
+                <label class="row" data-for="pmi-dimension pmi-tolerance">type <select id="pmi-type"></select></label>
+                <label class="row" data-for="pmi-dimension pmi-tolerance"><span id="pmi-value-label">value</span> <input type="number" id="pmi-value" step="any"></label>
+                <label class="row" data-for="pmi-dimension">upper <input type="number" id="pmi-upper" step="any" placeholder="+0.1"></label>
+                <label class="row" data-for="pmi-dimension">lower <input type="number" id="pmi-lower" step="any" placeholder="-0.1"></label>
+                <label class="row" data-for="pmi-tolerance">datums <input id="pmi-datums" placeholder="A, B"></label>
+                <label class="row" data-for="pmi-tolerance">modifiers <input id="pmi-modifiers" placeholder="M"></label>
+                <label class="row" data-for="pmi-note">text <input id="pmi-text"></label>
+                <div class="row buttons" data-for="annotate"><button id="pmi-add" title="the item on the picked faces and edges">add</button><button id="pmi-clear" title="forget the picks">clear picks</button></div>
+                <div class="row wide" data-for="annotate" id="pmi-list"></div>
+                <label class="row" data-for="annotate">draw <input type="checkbox" id="pmi-show" checked></label>
                 <div class="row buttons three" data-for="split-pick">
                     <button data-split-plane="top">Top</button>
                     <button data-split-plane="front">Front</button>

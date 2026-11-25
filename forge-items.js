@@ -43,7 +43,7 @@ export function createItemSync(viewer) {
                     let id = null;
                     try { id = w.show(); } catch (error) { if (typeof WebAssembly !== "undefined" && error instanceof WebAssembly.RuntimeError) throw error; console.error(`${w.key}:`, error); }
                     // Shown in its colour: `show` applied it, so it is not sent again.
-                    entry = { id, deps: w.deps.slice(), value: w.value ?? null, faces: null, colour: colourKey(w.colour) };
+                    entry = { id, deps: w.deps.slice(), value: w.value ?? null, faces: null, colour: colourKey(w.colour), pmi: null };
                     shown.set(w.key, entry);
                 }
                 if (entry.id === null) continue;
@@ -60,6 +60,12 @@ export function createItemSync(viewer) {
                     if (faces !== entry.faces) {
                         viewer.setFaceColours(entry.id, w.faceColours ?? null);
                         entry.faces = faces;
+                    }
+                    // The PMI item lit (an index, or none), sent only when it changes.
+                    const lit = Number.isInteger(w.pmiHighlight) ? w.pmiHighlight : null;
+                    if (lit !== entry.pmi && typeof viewer.setPmiHighlight === "function") {
+                        if (lit !== null || entry.pmi !== null) viewer.setPmiHighlight(entry.id, lit);
+                        entry.pmi = lit;
                     }
                 } catch (error) { if (typeof WebAssembly !== "undefined" && error instanceof WebAssembly.RuntimeError) throw error; console.error(`${w.key}:`, error); }
             }

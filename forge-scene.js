@@ -149,7 +149,7 @@ export const ISOCURVE_DENSITY = 1;
 // forge.js `isBody`: the item kinds that are bodies (node `i<id>` a solid or a sheet), another
 // app's held body (`held`) among them.
 const BODY_KINDS = new Set(["surface", "extrusion", "revolution", "solid", "sweep", "loft",
-    "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split",
+    "join", "cut", "intersect", "shell", "thicken", "trim", "prism", "press", "refillet", "rechamfer", "remove", "fillet", "face", "pipe", "split", "annotate",
     "box", "cylinder", "sphere", "cone", "pyramid", "torus", "coil", "held"]);
 export const isBodyKind = (kind) => BODY_KINDS.has(kind);
 // The item a node belongs to: `i<n>` and its helpers `i<n>_<role>` are item n's.
@@ -263,10 +263,21 @@ export function bodyTable(kernel, solid, { refs = faceRefs(kernel, solid), frame
     const diagonal = Math.hypot(h[0] - l[0], h[1] - l[1], h[2] - l[2]);
     const bounds = diagonal < 1e-12 ? { centre: l.slice(), radius: 1 } : { centre: [0, 1, 2].map((k) => (l[k] + h[k]) / 2), radius: diagonal / 2 };
     return {
-        faceKinds, frames, rounds, chamfers, edges: edgeList(kernel, solid),
+        faceKinds, frames, rounds, chamfers, edges: edgeList(kernel, solid), pmi: pmiOf(kernel, solid),
         box: curves ? { lo, hi } : null, edgeOnly: n === 0 && curves,
         bounds, closure: closureOf(kernel.cadaclysm_blacksmith_manifold(solid)),
     };
+}
+
+// The PMI a solid carries -- datums, dimensions, geometric tolerances, notes -- as the
+// kernel's `cadaclysm_blacksmith_pmi_items` lists them (`Scene.pmi()`'s JSON: kind, type,
+// label, value, lower, upper, datums, modifiers, text, targets), or [] where the loaded
+// module has no PMI (a web package before it: the Annotate tool hides itself then).
+export const hasPmi = (kernel) => typeof kernel.cadaclysm_blacksmith_pmi_items === "function" && typeof kernel.cadaclysm_blacksmith_with_note === "function";
+export function pmiOf(kernel, solid) {
+    if (!hasPmi(kernel)) return [];
+    try { return JSON.parse(kernel.cadaclysm_blacksmith_pmi_items(solid)); }
+    catch (error) { if (isTrap(error)) throw error; return []; }
 }
 
 // Whether a body is closed, off its B-rep's topology (the wasm's `manifold` row): what
@@ -590,7 +601,12 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
                     if (!body) continue;
                     const deps = [...item.deps, body.version];
                     if (body.table.edgeOnly) out.push({ key: item.key, deps, colour: EDGES, value: { body: item.body, ghost: false }, show: () => v.showCurves(wasm.cadaclysm_blacksmith_edge_beziers(body.solid, EDGE_TOLERANCE), EDGES) });
-                    else out.push({ key: item.key, deps, faceColours, value: { body: item.body, ghost: false }, show: () => v.showSolid(body.solid, lookOptions(item.look)) });
+                    else out.push({ key: item.key, deps: item.pmi ? [...deps, "pmi"] : deps, faceColours, pmiHighlight: item.pmiHighlight, value: { body: item.body, ghost: false }, show: () => {
+                        const id = v.showSolid(body.solid, lookOptions(item.look));
+                        // Its PMI drawn on it (the View's PMI calls, where the module has them).
+                        if (item.pmi && body.table.pmi?.length && typeof v.showPmi === "function") v.showPmi(id);
+                        return id;
+                    } });
                 } else if (item.kind === "ghost") {
                     if (!body) continue;
                     const ghost = ghostFor(item.body, body);
