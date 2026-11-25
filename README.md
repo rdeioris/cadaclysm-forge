@@ -11,7 +11,7 @@ Bodies can carry PMI (GD&T): the Annotate tool puts datums, dimensions (a value 
 limits), geometric tolerances (a class, a zone, datum references) and notes on a solid's
 faces and edges. They are drawn in the view, stay on their faces through later features
 such as a cut or a fillet, are saved in the document, and the STEP export writes them as
-AP242 semantic PMI. Annotate shows only on a web package that has PMI (after 0.16).
+AP242 semantic PMI. Annotate shows only on a web package that has PMI (newer than 0.16.0); on an older one it is hidden.
 
 The forge is open source under the Apache License 2.0. It runs on the cadaclysm web
 package, the kernel and its 3D view compiled to WebAssembly. That package is the
