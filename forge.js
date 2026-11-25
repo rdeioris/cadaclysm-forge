@@ -2510,13 +2510,19 @@ function pickPmiTarget(view, px, face) {
     renderDialog();
     schedule();
 }
-// The PMI index (the body's own numbering: what came on it before first) of the entry lit
-// in the list, for the View's highlight; null for none.
-function pmiHighlightOf(c) {
-    if (pmiLit === null || current() !== c || c.kind !== "annotate" || !c.gpu?.pmi) return null;
+// The PMI index of the entry lit in the active Annotations' list, for the View's highlight
+// on body `b`: the Annotations' own numbering (what came on it before first), which every
+// body made from it keeps -- a later feature carries the items in their order and adds its
+// own after them -- so the entry lights on the body that shows it now (a cut of it). Null for
+// none.
+function pmiHighlightOf(b) {
+    const c = current();
+    if (pmiLit === null || c?.kind !== "annotate" || !c.gpu?.pmi || !b.gpu?.pmi) return null;
     const entries = Array.isArray(c.pmi) ? c.pmi.length : 0;
     const k = c.gpu.pmi.length - entries + pmiLit;
-    return k >= 0 && k < c.gpu.pmi.length ? k : null;
+    if (k < 0 || k >= c.gpu.pmi.length || k >= b.gpu.pmi.length) return null;
+    // The same item: its callout on both.
+    return b.gpu.pmi[k]?.callout === c.gpu.pmi[k]?.callout ? k : null;
 }
 // The solid a fillet stands in for, as shown while its edges are picked: the item
 // itself where it still stands, with its edge list.
