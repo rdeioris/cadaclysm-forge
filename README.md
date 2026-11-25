@@ -7,6 +7,12 @@ analytic boundary representation built by the [cadaclysm](https://cadaclysm.blit
 CAD kernel. Edits replay through the document's history, and **the result downloads as a
 STEP file**: real solids that other CAD tools open as solids, not triangle soup.
 
+Bodies can carry PMI (GD&T): the Annotate tool puts datums, dimensions (a value with its
+limits), geometric tolerances (a class, a zone, datum references) and notes on a solid's
+faces and edges. They are drawn in the view, stay on their faces through later features
+such as a cut or a fillet, are saved in the document, and the STEP export writes them as
+AP242 semantic PMI. Annotate shows only on a web package that has PMI (after 0.16).
+
 The forge is open source under the Apache License 2.0. It runs on the cadaclysm web
 package, the kernel and its 3D view compiled to WebAssembly. That package is the
 closed-source part. `npm run setup` fetches it from the
@@ -109,6 +115,7 @@ turns picks into references. The nodes are all of kinds in the kernel's standard
 `curve.spline`, `curve.polycurve`, ...), sketches and frames (`sketch`, `frame.on_face`,
 `frame.tilted`, ...), and solids (`solid.extrude`, `solid.revolve_in_plane`,
 `solid.sweep`, `solid.loft_through`, `solid.cut`, `solid.fillet`, `solid.shell`, ...).
+An Annotations item is a chain of `solid.pmi` nodes, one a PMI entry, on the body it annotates.
 The kinds come from `cadaclysm_blacksmith_document_kinds()`, which `forge-commands.js`
 checks every node against. The kernel evaluates the graph into exact B-rep solids made of NURBS and analytic
 surfaces.
