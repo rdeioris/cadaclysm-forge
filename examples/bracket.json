@@ -1,0 +1,23 @@
+{
+  "format": "cadaclysm-blacksmith",
+  "version": 2,
+  "units": "mm",
+  "params": {},
+  "meta": {"forge": {"counters": {"polyline": 1, "surface": 1, "solid": 1}, "nextId": 4}},
+  "nodes": [
+    {"id": "i1", "kind": "curve.polyline", "name": "Polyline 1", "hidden": true, "meta": {"forge": {"kind": "polyline"}}, "points": [[-30, 0], [30, 0], [30, 8], [-22, 8], [-22, 40], [-30, 40]], "closed": true, "frame": "xz"},
+    {"id": "i2_src", "kind": "profile.from_curves", "curves": ["i1"], "per_loop": [1], "pivot": [0, 20]},
+    {"id": "i2", "kind": "sheet.face", "name": "Surface 1", "hidden": true, "meta": {"forge": {"kind": "surface", "source": null, "holes": 0, "height": 0, "axis": null, "angle": 0}}, "profile": "i2_src", "frame": "xz"},
+    {"id": "i3_src", "kind": "profile.from_curves", "curves": ["i1"], "per_loop": [1], "pivot": [0, 20]},
+    {"id": "i3", "kind": "solid.extrude", "name": "Solid 1", "meta": {"forge": {"kind": "solid", "source": null, "holes": 0, "axis": null, "angle": 0, "from": 2}}, "profile": "i3_src", "frame": "xz", "distance": -30}
+  ],
+  "commits": [
+    {"id": "c0", "parents": [], "ops": [], "inverses": []},
+    {"id": "c1", "parents": ["c0"], "ops": [{"op": "batch", "ops": [{"op": "add", "node": {"id": "i1", "kind": "curve.polyline", "name": "Polyline 1", "points": [[-30, 0], [30, 0], [30, 8], [-22, 8], [-22, 40], [-30, 40]], "closed": true, "frame": "xz", "meta": {"forge": {"kind": "polyline"}}}, "at": 0}, {"op": "meta", "app": "forge", "value": {"counters": {"polyline": 1}, "nextId": 2}}], "message": "forge: add"}], "inverses": [{"op": "batch", "ops": [{"op": "meta", "app": "forge", "value": null}, {"op": "remove", "id": "i1"}]}], "message": "forge: add"},
+    {"id": "c2", "parents": ["c1"], "ops": [{"op": "batch", "ops": [{"op": "add", "node": {"id": "i2_src", "kind": "profile.from_curves", "curves": ["i1"], "per_loop": [1], "pivot": [0, 20]}, "at": 1}, {"op": "add", "node": {"id": "i2", "kind": "sheet.face", "profile": "i2_src", "frame": "xz", "name": "Surface 1", "meta": {"forge": {"kind": "surface", "source": null, "holes": 0, "height": 0, "axis": null, "angle": 0}}}, "at": 2}, {"op": "set", "id": "i1", "fields": {"hidden": true}}, {"op": "meta", "app": "forge", "value": {"counters": {"polyline": 1, "surface": 1}, "nextId": 3}}], "message": "forge: surface"}], "inverses": [{"op": "batch", "ops": [{"op": "meta", "app": "forge", "value": {"counters": {"polyline": 1}, "nextId": 2}}, {"op": "set", "id": "i1", "fields": {"hidden": null}}, {"op": "remove", "id": "i2"}, {"op": "remove", "id": "i2_src"}]}], "message": "forge: surface"},
+    {"id": "c3", "parents": ["c2"], "ops": [{"op": "batch", "ops": [{"op": "add", "node": {"id": "i3_src", "kind": "profile.from_curves", "curves": ["i1"], "per_loop": [1], "pivot": [0, 20]}, "at": 3}, {"op": "add", "node": {"id": "i3", "kind": "solid.extrude", "profile": "i3_src", "frame": "xz", "distance": -30, "name": "Solid 1", "meta": {"forge": {"kind": "solid", "source": null, "holes": 0, "axis": null, "angle": 0, "from": 2}}}, "at": 4}, {"op": "set", "id": "i2", "fields": {"hidden": true}}, {"op": "meta", "app": "forge", "value": {"counters": {"polyline": 1, "surface": 1, "solid": 1}, "nextId": 4}}], "message": "forge: solid"}], "inverses": [{"op": "batch", "ops": [{"op": "meta", "app": "forge", "value": {"counters": {"polyline": 1, "surface": 1}, "nextId": 3}}, {"op": "set", "id": "i2", "fields": {"hidden": null}}, {"op": "remove", "id": "i3"}, {"op": "remove", "id": "i3_src"}]}], "message": "forge: solid"}
+  ],
+  "branches": {"main": "c3"},
+  "branch": "main",
+  "head": "c3"
+}
