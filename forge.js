@@ -2323,6 +2323,8 @@ const PMI_TYPES = {
     tolerance: ["flatness", "straightness", "roundness", "cylindricity", "line_profile", "surface_profile", "parallelism", "perpendicularity", "angularity", "position", "concentricity", "coaxiality", "symmetry", "circular_runout", "total_runout"],
 };
 const PMI_LOCATIONS = new Set(["linear_distance", "angular_location", "curved_distance"]);
+// How near an edge a click must be to pick the edge rather than the face under it (px).
+const PMI_EDGE_REACH = 5;
 let pmiLit = null;   // the entry of the active Annotations under the pointer in its list, or null
 function setAnnotateMode(body) {
     annotateMode = body ? { body, at: headNow(), faces: [], edges: [], editing: null } : null;
@@ -2499,7 +2501,7 @@ function deletePmi(c, i) {
 function pickPmiTarget(view, px, face) {
     const m = annotateMode, c = m ? byId(m.body.id) : null;
     if (!c?.gpu) return;
-    const edge = nearestEdge(c, view, px, face);
+    const edge = nearestEdge(c, view, px, face, PMI_EDGE_REACH);
     const toggle = (list, k) => { const at = list.indexOf(k); if (at >= 0) list.splice(at, 1); else list.push(k); };
     if (edge !== null) toggle(m.edges, edge);
     else if (face !== null) toggle(m.faces, face);
@@ -2550,12 +2552,12 @@ function pickFilletEdge(c, view, px, face) {
 // The edge of `src` nearest the pointer at `px` in `view`, within a few pixels, among
 // those on the face under it (`face`, or null for any) -- the one a click rounds, and
 // the one the pointer lights up on its way.
-function nearestEdge(src, view, px, face) {
+function nearestEdge(src, view, px, face, reach = 12) {
     if (!src?.gpu?.edges) return null;
     const all = parseEdges(src.gpu.edges);
     const size = sizeOf(view), p = local(px, view);
     const cam = camOf(view);
-    let best = null, bestD = 12;
+    let best = null, bestD = reach;
     all.forEach((e, k) => {
         if (face !== null && !e.faces.includes(face)) return;
         for (const [a, b] of e.segments) {
@@ -2918,7 +2920,7 @@ function hoverAt(view, px) {
             next = edge !== null ? { body: src, index: null, edge } : null;
         } else if (annotateMode) {
             const c = byId(annotateMode.body.id);
-            const edge = c ? nearestEdge(c, view, px, hit?.body === c ? hit.index : null) : null;
+            const edge = c ? nearestEdge(c, view, px, hit?.body === c ? hit.index : null, PMI_EDGE_REACH) : null;
             next = edge !== null ? { body: c, index: null, edge } : hit && hit.body === c ? { body: c, index: hit.index } : null;
         } else if (shellMode) {
             next = hit && hit.body === shellMode.body ? { body: hit.body, index: hit.index } : null;
@@ -4939,7 +4941,7 @@ const worldPivot = (c) => V.add(embed3(c.plane, pivotOf(c)), placeOf(c).offset);
 // with other cadaclysm pages; what the subject is and what a drag does to it are the forge's.
 function manipulatorOf(view) {
     const c = current();
-    if (!c || isSketch(c) || !visible(c) || sketchTrim) return null;   // a trim's clicks are for its pieces
+    if (!c || isSketch(c) || !visible(c) || sketchTrim || annotateMode) return null;   // a trim's clicks are for its pieces, an annotation's for its faces
     if (isBody(c)) return { subject: "place", body: c, pivot: worldPivot(c), axes: AXES3, rings: RINGS3, scale: !isMade(c) };
     const items = selectedCurves().filter((k) => isCurve(k) && k.plane === c.plane && visible(k) && drawn(k));
     if (!items.length) return null;
