@@ -2365,6 +2365,9 @@ function renderPmiPanel(c) {
     pmiAddEl.textContent = annotateMode && annotateMode.editing !== null ? "save" : "add";
     pmiAddEl.disabled = !annotateMode;
     const entries = Array.isArray(c.pmi) ? c.pmi : [];
+    // The rows are made again: one lit under a pointer that has not moved would never hear it
+    // leave, so none is lit until the pointer enters one.
+    if (pmiLit !== null) { pmiLit = null; schedule(); }
     const rows = entries.map((e, i) => {
         const row = document.createElement("div");
         row.className = "pmi-entry";
