@@ -200,6 +200,36 @@
     #overlay { cursor: default; touch-action: none; }
     /* A dimension's value typed over its label on a double-click. */
     #views input.dim-edit { position: absolute; z-index: 3; width: 76px; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--blue); border-radius: 0; padding: 0 4px; height: 18px; font: 11px system-ui, sans-serif; }
+    #links { border-top: 1px solid var(--rule); padding: 6px; font-size: 12px; }
+    #links-head { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+    #links-head span { flex: 1 0 100%; color: var(--muted); }
+    #links-head button { flex: 1; padding: 2px 0; }
+    #links-note { color: var(--muted); margin: 4px 0; }
+    #links-note:empty { display: none; }
+    #links-list { list-style: none; margin: 0; padding: 0; }
+    #links-list li { border-top: 1px solid var(--rule); padding: 4px 0; display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; }
+    #links-list .name { font-weight: 600; }
+    #links-list .path { color: var(--dim); flex: 1 0 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #links-list .chip { padding: 0 5px; border: 1px solid var(--edge); color: var(--muted); }
+    #links-list .chip.up_to_date { color: var(--fg); }
+    #links-list .chip.changed { color: var(--amber); border-color: var(--amber); }
+    #links-list .chip.missing, #links-list .chip.unreadable { color: var(--error); border-color: var(--error); }
+    #links-list .tools { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 3px; }
+    #links-list .tools button { padding: 0 6px; }
+    #links-list label { color: var(--muted); }
+    #part-dialog { background: var(--raised); color: var(--fg); border: 1px solid var(--edge); border-radius: 0; padding: 12px; width: min(460px, 90vw); }
+    #part-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+    #part-form { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+    #part-form p { margin: 0; color: var(--muted); }
+    #part-form label { display: flex; gap: 6px; align-items: center; }
+    #part-form input:not([type]), #part-form select { flex: 1; background: var(--bg); color: inherit; border: 1px solid var(--edge); border-radius: 0; padding: 2px 4px; font: inherit; }
+    #part-form fieldset { border: 1px solid var(--rule); margin: 0; padding: 4px 8px; display: flex; flex-direction: column; gap: 3px; max-height: 30vh; overflow: auto; }
+    #part-form fieldset:disabled label, #part-form label.off { opacity: .5; }
+    #part-form fieldset input:not([type]) { max-width: 10em; }
+    #part-error { color: var(--error) !important; }
+    #part-error:empty { display: none; }
+    #part-tools { display: flex; gap: 6px; justify-content: flex-end; }
+    #part-dialog button { background: var(--raised); color: inherit; border: 1px solid var(--edge); border-radius: 0; padding: 2px 10px; font: inherit; }
     #text-file { background: var(--raised); color: var(--fg); border: 1px solid var(--edge); border-radius: 0; padding: 12px; width: min(720px, 90vw); }
     #text-file::backdrop { background: rgba(0, 0, 0, .5); }
     #text-file p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
@@ -261,6 +291,8 @@
     <symbol id="i-annotate" viewBox="0 0 24 24"><path d="M3 21 L10 14"/><path d="M10 14 H21"/><rect x="11" y="4" width="10" height="6" fill="currentColor" fill-opacity=".25"/><path d="M16 4 V10"/></symbol>
     <symbol id="i-fillet" viewBox="0 0 24 24"><path d="M20 20 H4 V10 Q4 4 10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-chamfer" viewBox="0 0 24 24"><path d="M20 20 H4 V10 L10 4 H20 Z" fill="currentColor" fill-opacity=".25"/></symbol>
+    <symbol id="i-part" viewBox="0 0 24 24"><path d="M4 8 L12 4 L20 8 V16 L12 20 L4 16 Z" fill="currentColor" fill-opacity=".25"/><path d="M4 8 L12 12 L20 8 M12 12 V20"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14 L14 10"/><path d="M8.5 11.5 L6 14 A3 3 0 0 0 10 18 L12.5 15.5"/><path d="M15.5 12.5 L18 10 A3 3 0 0 0 14 6 L11.5 8.5"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6 H10 L12 8 H21 V19 H3 Z" fill="currentColor" fill-opacity=".25"/></symbol>
     <symbol id="i-measure" viewBox="0 0 24 24"><path d="M4 18 L20 6"/><path d="M4 14 L4 22 M20 2 L20 10"/><path d="M8 15 L9.5 17 M12 12 L13.5 14 M16 9 L17.5 11"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14"/><path d="M3 16 L9 10 L14 15 L17 12 L21 16"/><circle cx="16" cy="9" r="1.5"/></symbol>
@@ -413,6 +445,13 @@
             </div>
             <span>PMI</span>
         </div>
+        <div class="group" id="parts-group" hidden>
+            <div>
+                <button id="part-insert" title="another document's bodies, linked to its file: picked from a file, its bodies, configuration and parameters chosen; updated when the file changes"><svg class="g"><use href="#i-part"/></svg>insert part</button>
+                <button id="links-show" aria-pressed="false" title="the linked parts: whether each file changed, update, relink, break, edit, remove"><svg class="g"><use href="#i-link"/></svg>links</button>
+            </div>
+            <span>parts</span>
+        </div>
     </div>
     <div class="ribbon" id="ribbon-construct">
         <div class="group">
@@ -451,6 +490,16 @@
             <button id="duplicate" disabled>duplicate</button>
             <button id="rename" disabled>rename</button>
             <button id="delete" disabled>delete</button>
+        </div>
+        <div id="links" hidden>
+            <div id="links-head">
+                <span>linked parts</span>
+                <button id="links-check" title="read the linked files and say which changed (asks for the parts folder the first time)">check</button>
+                <button id="links-update-all" title="take every changed part's new file in, as one step">update all</button>
+                <button id="links-folder" title="the folder the link paths are relative to: the document's folder">folder&hellip;</button>
+            </div>
+            <div id="links-note"></div>
+            <ul id="links-list"></ul>
         </div>
     </aside>
     <div id="views">
@@ -553,6 +602,24 @@
 </div>
 <!-- Where no file dialog can open (the page in a sandboxed frame, as an artifact is), the
      document goes through this text instead: copied out on a save, pasted in on a load. -->
+<dialog id="part-dialog">
+    <form method="dialog" id="part-form">
+        <p id="part-title"></p>
+        <label>name <input id="part-name" spellcheck="false" autocomplete="off"></label>
+        <label>file <input id="part-path" spellcheck="false" autocomplete="off" title="relative to the parts folder (the document's folder)"></label>
+        <fieldset id="part-bodies"><legend>bodies</legend></fieldset>
+        <label id="part-config-row">configuration <select id="part-config"></select></label>
+        <fieldset id="part-params"><legend>parameters (blank: the part's own)</legend></fieldset>
+        <label><input type="checkbox" id="part-auto"> update automatically when the document opens</label>
+        <p id="part-error"></p>
+        <div id="part-tools">
+            <button value="cancel" formnovalidate>cancel</button>
+            <button value="ok" id="part-ok">insert</button>
+        </div>
+    </form>
+</dialog>
+<input type="file" id="part-file" accept=".json,.blacksmith,application/json" hidden>
+<input type="file" id="part-folder" webkitdirectory hidden>
 <dialog id="text-file">
     <p id="text-file-title"></p>
     <textarea id="text-file-body" spellcheck="false"></textarea>

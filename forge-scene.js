@@ -407,11 +407,13 @@ export function createForgeScene({ wasm, post, now = () => performance.now(), ho
         }
     }
 
-    // Whether a change (`Changed` as JSON, or "null") lists anything: a no-op set lists nothing.
+    // Whether a change (`Changed` as JSON, or "null") lists anything that can move a body: a
+    // no-op set lists nothing. A linked part's new copy (`components`) changes no node, yet
+    // every node that derives from it evaluates again; a link alone (`links`) moves nothing.
     function lists(changed) {
         if (changed === "null") return false;
         const c = JSON.parse(changed);
-        return ["added", "changed", "removed", "params"].some((k) => c?.[k]?.length);
+        return ["added", "changed", "removed", "params", "components"].some((k) => c?.[k]?.length) || c?.configuration === true;
     }
 
     function answerPick({ req, id, what, indices }) {

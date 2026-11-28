@@ -44,6 +44,7 @@ import { typedBytes, createWantedSender } from "./forge-wanted.js";
 import { faceColoursOver } from "./forge-items.js";
 import { attachViewer } from "./pkg/viewer-client.js";
 import { VIEW_ID, dropRedo, itemOfNode, createQuarantine, hasPmi } from "./forge-scene.js";
+import { createLinksPanel } from "./forge-links-panel.js";
 import { cameraOf } from "./projection.js";
 import { cubeFaces, cubeFaceAt, aimAt } from "./view-cube.js";
 import { AXES3, RINGS3, layoutManipulator as layoutShared, drawManipulator as drawShared, hitManipulator as hitShared, manipulatorPoint as pointShared, dragDelta, segmentDistance } from "./manipulator.js";
@@ -1153,9 +1154,13 @@ function afterChange({ reset = false } = {}) {
     if (reset) setSelection(selection);   // what still exists of it
     renderList();
     renderTimeline();
+    linksPanel?.refresh();
     schedule();
     wakeSettled();
 }
+// The linked parts (forge-links-panel.js): made once the wasm is loaded; hidden on a package
+// without the link calls.
+let linksPanel = null;
 // The page's items where they differ from the document's (a drag in progress, a pending
 // run, a typed field's in-place value): an `edit`'s items, `{ id, ...fields }`.
 function localEdits() {
@@ -8687,6 +8692,9 @@ function loadDocument(text) {
         undoOrder.reset();
         openWorkerReplica();
         afterChange({ reset: true });
+        // Its linked parts named, and checked when a parts folder is held: after this action,
+        // in an order turn of its own (an auto update is a command).
+        setTimeout(() => linksPanel?.opened(), 0);
     });
 }
 // Save and load go through the browser's file pickers (the File System Access API,
@@ -8881,6 +8889,7 @@ if (!("transferControlToOffscreen" in HTMLCanvasElement.prototype) || typeof Wor
 // the page's save as it starts.
 doc = wasm.cadaclysm_blacksmith_document_new(UNITS);
 model = new Model(wasm, doc);
+linksPanel = createLinksPanel({ wasm, doc: () => doc, model: () => model, run: (cmd) => run(cmd), say });
 afterChange();
 startWorker();
 // The page's own controls wait behind a command or action in flight; the view's own input and

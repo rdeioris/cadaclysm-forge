@@ -44,6 +44,9 @@
 //   unless a head's `meta.forge.node` already names it (a held body the page has placed).
 //   Held items come after the forge's own, in document order, numbered from
 //   `max(nextId, the largest item id + 1)` up, as the 0.14 layer numbered them.
+// - A linked part `<c>` (forge-links.js) is a document component, a `component.derive` node
+//   `p_<c>` (no item: not held) and a `value` node `p_<c>__<key>` per body with `meta.show`
+//   true -- held bodies as above, adopted and placed as any.
 // - Units: every forge document is "mm".
 //
 // # Here

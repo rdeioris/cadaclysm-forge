@@ -13,6 +13,17 @@ faces and edges. They are drawn in the view, stay on their faces through later f
 such as a cut or a fillet, are saved in the document, and the STEP export writes them as
 AP242 semantic PMI. Annotate shows only on a web package that has PMI (newer than 0.16.0); on an older one it is hidden.
 
+**Linked parts** bring another document's bodies in, linked to its file. **insert part** (Solid
+tab, `parts`) picks a cadaclysm-blacksmith document. You then choose which bodies, the
+configuration and parameter overrides. The bodies arrive as ordinary bodies, ready to move, join,
+cut or fillet. The **links** list then shows each part's file and whether it changed since its copy
+was taken. **check** reads the files, **update** takes a changed file's new copy in as one undoable
+step, and **relink**, **break**, **edit** and **remove** do what they say. A part marked **auto**
+is updated by itself when the document opens. Opening a document never reads a part file on its
+own: the copy kept in the document is what builds until you update it. Link paths are relative
+to the **parts folder**, the document's own folder, which the list asks for once. Linked parts
+need a web package with document links (newer than 0.16.0); on an older one they are hidden.
+
 The forge is open source under the Apache License 2.0. It runs on the cadaclysm web
 package, the kernel and its 3D view compiled to WebAssembly. That package is the
 closed-source part. `npm run setup` fetches it from the
@@ -140,6 +151,31 @@ commits. Undo and redo are the document's own (`cadaclysm_blacksmith_document_un
 `_redo`), and the branch calls (`_branch_new`, `_branch_switch`, ...) keep alternatives.
 The saved file is the document's own JSON (`cadaclysm_blacksmith_document_save`) with the
 whole log, so the SDK's `Document` can open what the forge saved and re-evaluate it.
+
+### Linked parts
+
+A linked part `<c>` is three things in the document (`forge-links.js`'s header):
+- the document component `<c>`: the part file's state, kept whole, with its `link` (a path
+  and `auto_update`);
+- a `component.derive` node `p_<c>`: the bodies chosen, the configuration and the parameter
+  overrides;
+- one `value` node per body, `p_<c>__<key>` = `=p_<c>.bodies.<key>`, with `meta.show`.
+
+Those value nodes are *held* bodies (`forge-model.js`), so every body tool takes them as it
+takes a held body from another app. The commands are `part`, `part_edit`, `part_update`,
+`relink`, `unlink` and `part_remove`. Each is one batch like every other command, replicated to
+the worker as its op.
+- An update re-applies the `component` op with the file's new text, which keeps the link. Undo
+  and redo therefore need nothing of their own.
+- The worker evaluates again on a changed set that lists `components`, even though no node
+  changed.
+- The list (`forge-links-panel.js`) reads the links off the document after every change
+  (`cadaclysm_blacksmith_document_check_links_from` with no sources). It compares each part's
+  copy hash with the one it last checked, so a part that changed since its check shows
+  "unchecked" again.
+- Files are read in the browser: Chromium keeps a `showDirectoryPicker` handle for the
+  session and reads it fresh on every check; other browsers take the folder through
+  `<input webkitdirectory>`.
 
 ### Drawing
 

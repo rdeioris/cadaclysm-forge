@@ -1,0 +1,23 @@
+{
+  "format": "cadaclysm-blacksmith",
+  "version": 1,
+  "units": "mm",
+  "params": {"r": 4},
+  "nodes": [
+    {"id": "shank", "kind": "solid.cylinder", "r": "=r", "h": 10},
+    {"id": "head", "kind": "solid.cylinder", "r": "=r + 2", "h": 2},
+    {"id": "pin_solid", "kind": "solid.join", "solids": ["shank", "head"]},
+    {"id": "body", "kind": "part.body", "body": "pin", "solids": ["pin_solid"]}
+  ],
+  "commits": [
+    {"id": "c0", "parents": [], "ops": [], "inverses": []},
+    {"id": "c1", "parents": ["c0"], "ops": [{"op": "param", "name": "r", "value": 4}], "inverses": [{"op": "param", "name": "r", "value": null}]},
+    {"id": "c2", "parents": ["c1"], "ops": [{"op": "add", "node": {"id": "shank", "kind": "solid.cylinder", "r": "=r", "h": 10}}], "inverses": [{"op": "remove", "id": "shank"}]},
+    {"id": "c3", "parents": ["c2"], "ops": [{"op": "add", "node": {"id": "head", "kind": "solid.cylinder", "r": "=r + 2", "h": 2}}], "inverses": [{"op": "remove", "id": "head"}]},
+    {"id": "c4", "parents": ["c3"], "ops": [{"op": "add", "node": {"id": "pin_solid", "kind": "solid.join", "solids": ["shank", "head"]}}], "inverses": [{"op": "remove", "id": "pin_solid"}]},
+    {"id": "c5", "parents": ["c4"], "ops": [{"op": "add", "node": {"id": "body", "kind": "part.body", "body": "pin", "solids": ["pin_solid"]}}], "inverses": [{"op": "remove", "id": "body"}]}
+  ],
+  "branches": {"main": "c5"},
+  "branch": "main",
+  "head": "c5"
+}

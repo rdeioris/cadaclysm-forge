@@ -7,6 +7,10 @@
 // pointer events, a line drawn onto two of the box's corners lands on them exactly, grid
 // snaps land on the step, Alt snaps nothing, a rectangle snaps onto another line's middle
 // and the grid, a dragged corner follows the pointer, and Measure reads a box edge's length.
+// Then the linked-parts check (on a package with document links; skipped on one without):
+// a part file brought in, its body built and cut from a box, the linked-parts list showing
+// it, an update to the part file's new version moving the body and the cut (undone and
+// redone), and a STEP export of them.
 //
 //     npm run test:browser                          # examples/box-fillet.json, the default backend
 //     node test/browser.mjs --webgl2                # the WebGL2 fallback (?backend=webgl2)
@@ -16,6 +20,7 @@
 //     node test/browser.mjs --chrome <path to chrome or msedge>   (or the CHROME variable)
 //     node test/browser.mjs --headed                # watch it
 //     node test/browser.mjs --no-snap               # the examples alone, no snap check
+//     node test/browser.mjs --no-links              # nor the linked-parts check
 //
 // Needs `npm run setup` first. Exits 1 on the first example that fails.
 import { spawn } from "node:child_process";
@@ -392,6 +397,63 @@ async function checkSnap(cdp, base, { webgl2, out }) {
     }
 }
 
+// ---- linked parts: insert, build, cut, update, undo, export ------------------------------
+async function checkLinks(cdp, base, { webgl2, out }) {
+    const { send, evaluate, errors, close } = await openForge(cdp, base, "box-fillet", { webgl2 });
+    try {
+        if (await evaluate(`document.getElementById("parts-group").hidden`)) {
+            console.log("ok - links: skipped (this package has no document links: the parts group hides)");
+            return;
+        }
+        const v1 = readFileSync(join(root, "test", "fixtures", "links-pin.json"), "utf8");
+        const v2 = readFileSync(join(root, "test", "fixtures", "links-pin-v2.json"), "utf8");
+        const run = async (cmd) => {
+            const ok = await evaluate(`Promise.resolve(window.__forgeTest.run(${JSON.stringify(cmd)}))`);
+            await evaluate("window.__forgeTest.settled()");
+            if (ok === false) throw new Error(`${cmd.op} was refused`);
+        };
+        await run({ op: "part", name: "pin", path: "parts/pin.json", text: v1, bodies: [{ key: "pin", name: "pin" }] });
+        const items = await evaluate("window.__forgeTest.items()");
+        const pin = items.find((c) => c.kind === "held" && c.name === "pin pin");
+        if (!pin) throw new Error(`no held body "pin pin" among ${items.map((c) => `${c.name} (${c.kind})`).join(", ")}`);
+        const box = await evaluate("window.__forgeTest.nextId()");
+        await run({ op: "primitive", id: box, kind: "box", plane: "top", dims: [30, 30, 8] });
+        const cut = await evaluate("window.__forgeTest.nextId()");
+        await run({ op: "cut", id: cut, parts: [box, pin.id] });
+        const figures = async () => {
+            const all = await evaluate("window.__forgeTest.figures()");
+            const bad = all.filter((f) => f.error);
+            if (bad.length) throw new Error(`bodies in error: ${bad.map((f) => `${f.id}: ${f.error}`).join("; ")}`);
+            return { cut: all.find((f) => f.id === cut)?.volume };
+        };
+        const before = await figures();
+        if (!(before.cut > 0 && before.cut < 30 * 30 * 8)) throw new Error(`the cut's volume ${before.cut}`);
+        const list = await evaluate(`[...document.querySelectorAll("#links-list li")].map((li) => li.textContent)`);
+        if (await evaluate(`document.getElementById("links").hidden`) || !list.some((t) => t.includes("pin") && t.includes("parts/pin.json")))
+            throw new Error(`the linked-parts list: ${JSON.stringify(list)}`);
+        await run({ op: "part_update", parts: { pin: v2 } });
+        const after = await figures();
+        if (!(after.cut < before.cut - 1)) throw new Error(`the update moved nothing: cut ${before.cut} -> ${after.cut}`);
+        await evaluate("window.__forgeTest.undo()"); await evaluate("window.__forgeTest.settled()");
+        const undone = await figures();
+        if (Math.abs(undone.cut - before.cut) > 1e-6 * before.cut) throw new Error(`undo: cut ${undone.cut}, was ${before.cut}`);
+        await evaluate("window.__forgeTest.redo()"); await evaluate("window.__forgeTest.settled()");
+        const step = await evaluate(`window.__forgeTest.exportBase64("step")`);
+        const text = Buffer.from(step?.base64 ?? "", "base64").toString("latin1");
+        const solids = (text.match(/MANIFOLD_SOLID_BREP/g) ?? []).length;
+        if (solids < 1) throw new Error("the STEP export holds no solid");
+        if (out) {
+            mkdirSync(out, { recursive: true });
+            const shot = await send("Page.captureScreenshot", { format: "png" });
+            writeFileSync(join(out, `links${webgl2 ? "-webgl2" : ""}.png`), Buffer.from(shot.data, "base64"));
+        }
+        if (errors.length) throw new Error(`the page logged errors:\n  ${errors.join("\n  ")}`);
+        console.log(`ok - links: a linked pin cut from a box (${before.cut.toFixed(1)} mm3), updated (${after.cut.toFixed(1)} mm3), undone and redone; STEP with ${solids} solid${solids === 1 ? "" : "s"}`);
+    } finally {
+        await close();
+    }
+}
+
 async function main() {
     if (!existsSync(join(root, "pkg", "cadaclysm_bg.wasm"))) throw new Error("no pkg/: run `npm run setup` first");
     const all = readdirSync(join(root, "examples")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
@@ -425,6 +487,14 @@ async function main() {
             } catch (e) {
                 failed++;
                 console.error(`not ok - snap: ${e.message}`);
+            }
+        }
+        if (!failed && !flag("--no-links")) {
+            try {
+                await checkLinks(cdp, `http://127.0.0.1:${port}`, { webgl2: flag("--webgl2"), out });
+            } catch (e) {
+                failed++;
+                console.error(`not ok - links: ${e.message}`);
             }
         }
     } finally {

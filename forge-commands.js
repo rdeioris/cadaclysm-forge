@@ -201,6 +201,7 @@
 // item.
 import { headId, helperId, itemOfId, isFacePlaneId, CURVE_KINDS, isBodyKind, isMadeKind, isQuickKind, isBody, isSketch, isCurve, isHeldProfile, metaOp, bumpId, heldOf } from "./forge-model.js";
 import { bodyNode, facePlaneId, docPicks } from "./forge-picks.js";
+import { partOps } from "./forge-links.js";
 
 /// How close the pieces of a curve must meet (the page's `LOOP_TOLERANCE`).
 const LOOP_TOLERANCE = 1e-3;
@@ -533,6 +534,12 @@ export class Draft {
         this.over.set(id, null);
         this.ops.push({ op: "remove", id });
         this._wrote(id);
+    }
+
+    /// An op that is no node's (a linked part's `component` or `link` op, forge-links.js),
+    /// recorded as it is.
+    raw(op) {
+        this.ops.push(clone(op));
     }
 
     /// Node `id` as `node`, whose kind differs: removed, and added again at its place.
@@ -1980,6 +1987,39 @@ function adoptHeld(d) {
     }
 }
 
+/// Items `ids` deleted (the `delete` command): a sketch takes what is on it along -- every
+/// item whose `plane` is the sketch (a made body keeps its first part's, with no node on the
+/// sketch's frame), as the page's walk did -- and what reads a deleted node is made a
+/// stand-in. Returns the removed node ids.
+function deleteItems(d, model, ids, extra = []) {
+    const doomed = ids.filter((n) => d.item(n));
+    for (const n of doomed.slice()) {
+        if (!isSketch(d.item(n))) continue;
+        for (const it of model.items()) {
+            if (doomed.includes(it.id) || it.of !== undefined) continue;
+            if (readItem(d, it.id).plane === n) doomed.push(it.id);
+        }
+    }
+    const gone = [];
+    const heldNamed = (keep) => new Set(model.items().filter((it) => keep(it.id)).map((it) => (it.of !== undefined ? it.node : model.node(headId(it.id))?.meta?.forge?.node)).filter((v) => typeof v === "string"));
+    const before = heldNamed((id) => doomed.includes(id));
+    const after = heldNamed((id) => !doomed.includes(id));
+    for (const n of doomed) {
+        const it = d.item(n);
+        if (it.of !== undefined) continue;
+        for (const id of d.nodesOf(n)) { d.remove(id); gone.push(id); }
+        if (isBody(it)) for (const id of d.order.filter((x) => isFacePlaneId(x) && x.startsWith(`f${n}_`))) { d.remove(id); gone.push(id); }
+    }
+    // A held node no item names any more goes with its last item.
+    for (const id of before) if (!after.has(id) && d.has(id)) { d.remove(id); gone.push(id); }
+    // The face readers of a face that went first: a stand-in each, in their words.
+    rewriteCopies(d);
+    // Nodes no item is (a linked part's derive node), taken out with the items.
+    for (const id of extra) if (d.has(id)) { d.remove(id); gone.push(id); }
+    orphanReaders(d, gone);
+    return gone;
+}
+
 /// The ops of `cmd` (see the header) on a draft.
 function build(model, cmd, env, broken) {
     const d = new Draft(model, env, broken);
@@ -2045,35 +2085,9 @@ function build(model, cmd, env, broken) {
             });
             break;
         }
-        case "delete": {
-            // A sketch takes what is on it along: every item whose `plane` is the sketch (a
-            // made body keeps its first part's, with no node on the sketch's frame), as the
-            // page's walk did.
-            const doomed = idsOf(get(cmd, "ids")).filter((n) => d.item(n));
-            for (const n of doomed.slice()) {
-                if (!isSketch(d.item(n))) continue;
-                for (const it of model.items()) {
-                    if (doomed.includes(it.id) || it.of !== undefined) continue;
-                    if (readItem(d, it.id).plane === n) doomed.push(it.id);
-                }
-            }
-            const gone = [];
-            const heldNamed = (keep) => new Set(model.items().filter((it) => keep(it.id)).map((it) => (it.of !== undefined ? it.node : model.node(headId(it.id))?.meta?.forge?.node)).filter((v) => typeof v === "string"));
-            const before = heldNamed((id) => doomed.includes(id));
-            const after = heldNamed((id) => !doomed.includes(id));
-            for (const n of doomed) {
-                const it = d.item(n);
-                if (it.of !== undefined) continue;
-                for (const id of d.nodesOf(n)) { d.remove(id); gone.push(id); }
-                if (isBody(it)) for (const id of d.order.filter((x) => isFacePlaneId(x) && x.startsWith(`f${n}_`))) { d.remove(id); gone.push(id); }
-            }
-            // A held node no item names any more goes with its last item.
-            for (const id of before) if (!after.has(id) && d.has(id)) { d.remove(id); gone.push(id); }
-            // The face readers of a face that went first: a stand-in each, in their words.
-            rewriteCopies(d);
-            orphanReaders(d, gone);
+        case "delete":
+            deleteItems(d, model, idsOf(get(cmd, "ids")));
             break;
-        }
         case "round": {
             const ids = idsOf(get(cmd, "ids"));
             const radius = num(get(cmd, "radius")) ?? NaN;
@@ -2456,7 +2470,11 @@ function build(model, cmd, env, broken) {
             fail("state: a version-1 forge file's items are not loaded; open a document");
             break;
         default:
-            fail(`unknown command ${op}`);
+            if (!partOps(d, cmd, (nodes) => {
+                const set = new Set(nodes);
+                const items = model.items().filter((it) => set.has(it.of !== undefined ? it.node : model.node(headId(it.id))?.meta?.forge?.node)).map((it) => it.id);
+                deleteItems(d, model, items, nodes);
+            })) fail(`unknown command ${op}`);
     }
     finish(d, cmd);
     rewriteCopies(d);
